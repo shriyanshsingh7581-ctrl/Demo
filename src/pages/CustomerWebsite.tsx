@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -80,6 +81,7 @@ const EVENT_TYPES: EventType[] = [
 ];
 
 export const CustomerWebsite: React.FC = () => {
+  const navigate = useNavigate();
   // Live synced state from storage
   const [settings, setSettings] = useState<BusinessSettings>(() => getBusinessSettings());
   const [services, setServices] = useState<ServiceCatalogItem[]>(() => getServicesCatalog());
@@ -2297,13 +2299,17 @@ export const CustomerWebsite: React.FC = () => {
             <div className="flex items-center gap-2">
               <span>Nagavarapalya / C V Raman Nagar, Bengaluru 560093</span>
               <span aria-hidden="true">·</span>
-              <a
-                href="/admin"
-                className="text-white/40 hover:text-[#D6B77A] transition-colors"
+              <button
+                type="button"
+                onClick={() => {
+                  navigate('/admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-white/45 hover:text-[#D6B77A] transition-colors cursor-pointer"
                 title="Staff Portal"
               >
                 Staff Login
-              </a>
+              </button>
             </div>
           </div>
         </div>

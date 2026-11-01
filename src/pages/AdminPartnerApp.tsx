@@ -409,7 +409,7 @@ export const AdminPartnerApp: React.FC = () => {
                     <span>·</span>
                     <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
                       <Database className="w-3 h-3" />
-                      Firebase Live
+                      Live Sync: edenrosesunisexsalon-phi.vercel.app
                     </span>
                   </>
                 )}
@@ -417,8 +417,17 @@ export const AdminPartnerApp: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: ACTIVE + Add Booking */}
+          {/* Right: Live Site Link + ACTIVE + Add Booking */}
           <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://edenrosesunisexsalon-phi.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-[#5b6324]/30 text-[#5b6324] text-[11px] font-bold hover:bg-[#e9ecd6]"
+            >
+              <Globe className="w-3 h-3" />
+              <span>Live Website</span>
+            </a>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[11px] font-bold tracking-wide">
               ACTIVE
             </span>
