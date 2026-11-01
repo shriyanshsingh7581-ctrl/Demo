@@ -28,7 +28,7 @@
       "destination": "/index.html"
     },
     {
-      "source": "/((?!assets/|robots\\.txt|sitemap\\.xml|favicon\\.ico).*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]

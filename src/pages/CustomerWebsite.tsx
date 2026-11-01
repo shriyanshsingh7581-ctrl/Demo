@@ -2294,7 +2294,17 @@ export const CustomerWebsite: React.FC = () => {
               © {new Date().getFullYear()} {settings.businessName} ({settings.makeupBrand}{' '}
               by {settings.artistName}). All rights reserved.
             </p>
-            <p>Nagavarapalya / C V Raman Nagar, Bengaluru, Karnataka 560093</p>
+            <div className="flex items-center gap-2">
+              <span>Nagavarapalya / C V Raman Nagar, Bengaluru 560093</span>
+              <span aria-hidden="true">·</span>
+              <a
+                href="/admin"
+                className="text-white/40 hover:text-[#D6B77A] transition-colors"
+                title="Staff Portal"
+              >
+                Staff Login
+              </a>
+            </div>
           </div>
         </div>
       </footer>
