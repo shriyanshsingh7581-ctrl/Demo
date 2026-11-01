@@ -1,0 +1,288 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "A customer makeup or salon appointment booking with Subba Lakshmi at Eden Roses Makeover.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique booking identifier (e.g. ID-1473826)",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Full name of the customer",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number",
+          "minLength": 5,
+          "maxLength": 30
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "Customer WhatsApp number",
+          "minLength": 5,
+          "maxLength": 30
+        },
+        "address": {
+          "type": "string",
+          "description": "Complete event or home address in Bengaluru",
+          "minLength": 3,
+          "maxLength": 500
+        },
+        "locality": {
+          "type": "string",
+          "description": "Bengaluru locality name",
+          "maxLength": 120
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Type of event",
+          "enum": ["Wedding", "Engagement", "Reception", "Party", "Photoshoot", "Other"],
+          "maxLength": 40
+        },
+        "services": {
+          "type": "array",
+          "description": "List of booked service items (max 30 items)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Appointment date in YYYY-MM-DD format",
+          "maxLength": 20
+        },
+        "time": {
+          "type": "string",
+          "description": "Appointment time slot (e.g. 08:00 AM)",
+          "maxLength": 20
+        },
+        "itemsTotal": {
+          "type": "number",
+          "description": "Subtotal of all booked items in INR"
+        },
+        "discount": {
+          "type": "number",
+          "description": "Discount amount in INR"
+        },
+        "advancePaid": {
+          "type": "number",
+          "description": "Advance payment received in INR"
+        },
+        "amountToCollect": {
+          "type": "number",
+          "description": "Remaining balance to be collected in INR"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Special notes or requests from the customer",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "description": "Current workflow status of the booking",
+          "enum": [
+            "Confirmed",
+            "Visit Scheduled",
+            "Journey Started",
+            "In Progress",
+            "Completed",
+            "Cancelled",
+            "Reported"
+          ],
+          "maxLength": 40
+        },
+        "bookingSource": {
+          "type": "string",
+          "description": "Origin channel of the booking",
+          "enum": [
+            "Customer Website",
+            "Admin Manual",
+            "Instagram",
+            "WhatsApp",
+            "Phone Call",
+            "Walk-in"
+          ],
+          "maxLength": 40
+        },
+        "assignedTeam": {
+          "type": "array",
+          "description": "Assigned makeup and hairstyling team members"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp",
+          "maxLength": 50
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO update timestamp",
+          "maxLength": 50
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "ISO completion timestamp",
+          "maxLength": 50
+        },
+        "reportReason": {
+          "type": "string",
+          "description": "Reason if the job was reported",
+          "maxLength": 500
+        },
+        "badgeType": {
+          "type": "string",
+          "description": "Partner app badge type",
+          "enum": ["VISIT", "CALL", "FOLLOWUP", "JOB"],
+          "maxLength": 20
+        }
+      },
+      "required": [
+        "id",
+        "customerName",
+        "phone",
+        "whatsapp",
+        "address",
+        "eventType",
+        "services",
+        "date",
+        "time",
+        "itemsTotal",
+        "discount",
+        "advancePaid",
+        "amountToCollect",
+        "notes",
+        "status",
+        "bookingSource",
+        "assignedTeam",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CustomerLead": {
+      "title": "CustomerLead",
+      "description": "Customer contact details, callback inquiry, or booking user record synced in real-time to the Admin Panel.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique customer or inquiry ID",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer full name",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number",
+          "minLength": 5,
+          "maxLength": 30
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "Customer WhatsApp number",
+          "maxLength": 30
+        },
+        "address": {
+          "type": "string",
+          "description": "Customer address or locality in Bengaluru",
+          "maxLength": 500
+        },
+        "locality": {
+          "type": "string",
+          "description": "Bengaluru locality",
+          "maxLength": 120
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Event type or inquiry category",
+          "maxLength": 60
+        },
+        "message": {
+          "type": "string",
+          "description": "Customer notes, inquiry message, or booked services summary",
+          "maxLength": 1000
+        },
+        "lastBookingId": {
+          "type": "string",
+          "description": "Associated booking ID if created via booking form",
+          "maxLength": 64
+        },
+        "totalSpend": {
+          "type": "number",
+          "description": "Total booking value in INR"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of customer lead (Booking Form, Callback Form, Admin)",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when customer details were submitted",
+          "maxLength": 50
+        }
+      },
+      "required": [
+        "id",
+        "customerName",
+        "phone",
+        "whatsapp",
+        "address",
+        "eventType",
+        "message",
+        "source",
+        "createdAt"
+      ]
+    },
+    "BusinessSettingsDoc": {
+      "title": "BusinessSettingsDoc",
+      "description": "Global business profile and studio settings for Eden Roses Makeover.",
+      "type": "object",
+      "properties": {
+        "businessName": { "type": "string", "maxLength": 150 },
+        "makeupBrand": { "type": "string", "maxLength": 150 },
+        "artistName": { "type": "string", "maxLength": 120 },
+        "logoUrl": { "type": "string", "maxLength": 1000 },
+        "footerLogoUrl": { "type": "string", "maxLength": 1000 },
+        "phonePrimary": { "type": "string", "maxLength": 40 },
+        "phoneSecondary": { "type": "string", "maxLength": 40 },
+        "whatsappNumber": { "type": "string", "maxLength": 40 },
+        "email": { "type": "string", "maxLength": 120 },
+        "address": { "type": "string", "maxLength": 500 },
+        "location": { "type": "string", "maxLength": 250 },
+        "googleMapsLink": { "type": "string", "maxLength": 1000 },
+        "openingHours": { "type": "string", "maxLength": 250 },
+        "websiteUrl": { "type": "string", "maxLength": 250 },
+        "instagramUrl": { "type": "string", "maxLength": 250 },
+        "facebookUrl": { "type": "string", "maxLength": 250 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "serviceArea": { "type": "string", "maxLength": 500 },
+        "heroImageUrl": { "type": "string", "maxLength": 1000 },
+        "blockedDates": { "type": "array" },
+        "timeSlots": { "type": "array" }
+      },
+      "required": ["businessName", "makeupBrand", "artistName", "phonePrimary", "address"]
+    }
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Real-time makeup and salon appointments synced between Customer Website and Partner Admin App."
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/CustomerLead" },
+      "description": "Real-time customer contact details and inquiries synced to the Partner Admin Panel."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/BusinessSettingsDoc" },
+      "description": "Business settings and configuration documents."
+    }
+  }
+}

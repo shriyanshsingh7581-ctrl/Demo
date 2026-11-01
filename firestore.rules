@@ -1,0 +1,201 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidBooking(data) {
+      return data.keys().hasAll([
+        'id',
+        'customerName',
+        'phone',
+        'whatsapp',
+        'address',
+        'eventType',
+        'services',
+        'date',
+        'time',
+        'itemsTotal',
+        'discount',
+        'advancePaid',
+        'amountToCollect',
+        'notes',
+        'status',
+        'bookingSource',
+        'assignedTeam',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id',
+        'customerName',
+        'phone',
+        'whatsapp',
+        'address',
+        'locality',
+        'eventType',
+        'services',
+        'date',
+        'time',
+        'itemsTotal',
+        'discount',
+        'advancePaid',
+        'amountToCollect',
+        'notes',
+        'status',
+        'bookingSource',
+        'assignedTeam',
+        'createdAt',
+        'updatedAt',
+        'completedAt',
+        'reportReason',
+        'badgeType'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 &&
+      data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120 &&
+      data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30 &&
+      data.whatsapp is string && data.whatsapp.size() <= 30 &&
+      data.address is string && data.address.size() <= 500 &&
+      (!('locality' in data) || (data.locality is string && data.locality.size() <= 120)) &&
+      data.eventType is string && data.eventType.size() <= 40 &&
+      data.eventType in ['Wedding', 'Engagement', 'Reception', 'Party', 'Photoshoot', 'Other'] &&
+      data.services is list && data.services.size() <= 30 &&
+      data.date is string && data.date.size() >= 1 && data.date.size() <= 20 &&
+      data.time is string && data.time.size() >= 1 && data.time.size() <= 20 &&
+      data.itemsTotal is number && data.itemsTotal >= 0 &&
+      data.discount is number && data.discount >= 0 &&
+      data.advancePaid is number && data.advancePaid >= 0 &&
+      data.amountToCollect is number && data.amountToCollect >= 0 &&
+      data.notes is string && data.notes.size() <= 1000 &&
+      data.status is string && data.status.size() <= 40 &&
+      data.status in [
+        'Confirmed',
+        'Visit Scheduled',
+        'Journey Started',
+        'In Progress',
+        'Completed',
+        'Cancelled',
+        'Reported'
+      ] &&
+      data.bookingSource is string && data.bookingSource.size() <= 40 &&
+      data.bookingSource in [
+        'Customer Website',
+        'Admin Manual',
+        'Instagram',
+        'WhatsApp',
+        'Phone Call',
+        'Walk-in'
+      ] &&
+      data.assignedTeam is list && data.assignedTeam.size() <= 20 &&
+      data.createdAt is string && data.createdAt.size() <= 50 &&
+      data.updatedAt is string && data.updatedAt.size() <= 50 &&
+      (!('completedAt' in data) || (data.completedAt is string && data.completedAt.size() <= 50)) &&
+      (!('reportReason' in data) || (data.reportReason is string && data.reportReason.size() <= 500)) &&
+      (!('badgeType' in data) || (data.badgeType is string && data.badgeType.size() <= 20));
+    }
+
+    function isValidCustomerLead(data) {
+      return data.keys().hasAll([
+        'id',
+        'customerName',
+        'phone',
+        'whatsapp',
+        'address',
+        'eventType',
+        'message',
+        'source',
+        'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id',
+        'customerName',
+        'phone',
+        'whatsapp',
+        'address',
+        'locality',
+        'eventType',
+        'message',
+        'lastBookingId',
+        'totalSpend',
+        'source',
+        'createdAt'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 &&
+      data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120 &&
+      data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30 &&
+      data.whatsapp is string && data.whatsapp.size() <= 30 &&
+      data.address is string && data.address.size() <= 500 &&
+      (!('locality' in data) || (data.locality is string && data.locality.size() <= 120)) &&
+      data.eventType is string && data.eventType.size() <= 60 &&
+      data.message is string && data.message.size() <= 1000 &&
+      (!('lastBookingId' in data) || (data.lastBookingId is string && data.lastBookingId.size() <= 64)) &&
+      (!('totalSpend' in data) || (data.totalSpend is number && data.totalSpend >= 0)) &&
+      data.source is string && data.source.size() <= 50 &&
+      data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidSettingsDoc(data) {
+      return data.keys().hasAll([
+        'businessName',
+        'makeupBrand',
+        'artistName',
+        'phonePrimary',
+        'address'
+      ]) &&
+      data.businessName is string && data.businessName.size() <= 150 &&
+      data.makeupBrand is string && data.makeupBrand.size() <= 150 &&
+      data.artistName is string && data.artistName.size() <= 120 &&
+      data.phonePrimary is string && data.phonePrimary.size() <= 40 &&
+      data.address is string && data.address.size() <= 500;
+    }
+
+    // 4. Collection Rules
+    match /test/{docId} {
+      allow get: if isValidId(docId);
+    }
+
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId);
+      allow list: if true;
+      allow create: if isValidId(bookingId) && isValidBooking(incoming()) && incoming().id == bookingId;
+      allow update: if isValidId(bookingId) &&
+        isValidBooking(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(bookingId);
+    }
+
+    match /customers/{customerId} {
+      allow get: if isValidId(customerId);
+      allow list: if true;
+      allow create: if isValidId(customerId) && isValidCustomerLead(incoming()) && incoming().id == customerId;
+      allow update: if isValidId(customerId) &&
+        isValidCustomerLead(incoming()) &&
+        incoming().id == existing().id;
+      allow delete: if isValidId(customerId);
+    }
+
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create, update: if isValidId(settingId) && isValidSettingsDoc(incoming());
+    }
+  }
+}

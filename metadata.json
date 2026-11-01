@@ -1,0 +1,10 @@
+{
+  "name": "Eden Roses Makeover — By Subba Lakshmi",
+  "description": "Luxury bridal makeup booking website and partner management app for Eden Roses Makeover by Subba Lakshmi in C V Raman Nagar, Bengaluru.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
