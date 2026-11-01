@@ -499,16 +499,9 @@ export const CustomerWebsite: React.FC = () => {
               <button
                 type="button"
                 onClick={() => scrollToSection('booking')}
-                className="flex-1 py-2.5 rounded-xl bg-[#B76E79] text-white text-sm font-semibold text-center"
+                className="w-full py-2.5 rounded-xl bg-[#B76E79] text-white text-sm font-semibold text-center"
               >
                 Book Appointment
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="px-4 py-2.5 rounded-xl bg-[#321E1E] text-[#D6B77A] text-sm font-semibold"
-              >
-                Partner App
               </button>
             </div>
           </div>
@@ -1214,9 +1207,8 @@ export const CustomerWebsite: React.FC = () => {
               Book Your Makeover Appointment
             </h2>
             <p className="text-sm sm:text-base text-[#321E1E]/75 mt-2">
-              Live availability synchronized with Subba Lakshmi&apos;s Partner Calendar.
-              Choose your packages, check available dates &amp; time slots, and receive
-              instant confirmation.
+              Live studio and venue availability for Subba Lakshmi. Choose your packages,
+              check available dates &amp; time slots, and receive instant confirmation.
             </p>
           </div>
 
@@ -2052,10 +2044,10 @@ export const CustomerWebsite: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/admin')}
+                    onClick={() => scrollToSection('booking')}
                     className="hover:text-[#D6B77A] cursor-pointer"
                   >
-                    Partner Admin App (PIN: 7777)
+                    Book Online Appointment
                   </button>
                 </li>
               </ul>
@@ -2082,26 +2074,7 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       </footer>
 
-      {/* FLOATING MODE SWITCHER (Customer Website | Partner Dashboard) & FLOATING WHATSAPP CTA */}
-      <div className="fixed bottom-4 left-4 z-40">
-        <div className="inline-flex items-center p-1 rounded-2xl bg-[#321E1E]/95 text-white shadow-xl border border-[#D6B77A]/40 backdrop-blur-md">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#B76E79] text-white whitespace-nowrap cursor-pointer"
-          >
-            Customer Website
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/admin')}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-[#D6B77A] hover:text-white flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Partner Dashboard</span>
-          </button>
-        </div>
-      </div>
+      {/* FLOATING WHATSAPP CTA */}
 
       <a
         href={`https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
@@ -2334,7 +2307,7 @@ export const CustomerWebsite: React.FC = () => {
                 <div className="pt-2 border-t border-stone-100 text-xs space-y-1 text-[#321E1E]/75">
                   <p>Event Type: {confirmedBooking.eventType}</p>
                   <p>Phone: {confirmedBooking.phone}</p>
-                  <p>Status: {confirmedBooking.status} (Synced with Partner App)</p>
+                  <p>Status: {confirmedBooking.status}</p>
                   {confirmedBooking.notes && <p>Notes: {confirmedBooking.notes}</p>}
                 </div>
               )}
