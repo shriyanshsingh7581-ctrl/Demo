@@ -24,6 +24,13 @@ import {
   Search,
   Sparkles,
   X,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Copy,
+  ShieldCheck,
+  UserPlus,
+  Lock,
 } from 'lucide-react';
 import {
   Booking,
@@ -33,12 +40,13 @@ import {
   ServiceCatalogItem,
   TeamMember,
   deleteServiceCatalogItem,
+  deleteTeamMember,
   resetDemoData,
   saveBusinessSettings,
   saveGalleryImages,
   saveServicesCatalog,
-  saveTeamMembers,
   upsertServiceCatalogItem,
+  upsertTeamMember,
 } from '../../services/bookingStorage';
 import { EdenRoseImage, GalleryFilterCategory } from '../../config/edenRosesImages';
 import { uploadImageAsset } from '../../services/firebaseConfig';
@@ -175,11 +183,15 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
   const [editIncludedText, setEditIncludedText] = useState('');
   const [showPhotoPickerForEdit, setShowPhotoPickerForEdit] = useState(false);
 
-  // New Team Member State
+  // New Team Member & Login Account State
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] =
     useState<TeamMember['role']>('Assistant Makeup Artist');
   const [newMemberPhone, setNewMemberPhone] = useState('');
+  const [newMemberUserId, setNewMemberUserId] = useState('');
+  const [newMemberPassword, setNewMemberPassword] = useState('eden123');
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
 
   // Availability State
   const [newSlotInput, setNewSlotInput] = useState('');
@@ -356,27 +368,128 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     showToast('Product / Service removed from catalog.');
   };
 
-  // Team Handlers
+  // Team & Login Account Handlers
   const handleAddTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberName.trim() || !newMemberPhone.trim()) return;
+
+    const cleanUserId = (
+      newMemberUserId.trim() ||
+      newMemberName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .slice(0, 20) ||
+      `team${Date.now().toString().slice(-4)}`
+    ).toLowerCase();
+
+    const cleanPassword = newMemberPassword.trim() || 'eden123';
+
+    // Prevent duplicate userId
+    if (
+      team.some((m) => (m.userId || '').toLowerCase() === cleanUserId) ||
+      ['admin', 'subbalakshmi', 'edenroses'].includes(cleanUserId)
+    ) {
+      showToast(`User ID "${cleanUserId}" is already in use. Please pick a unique User ID.`);
+      return;
+    }
+
     const member: TeamMember = {
       id: `tm-${Date.now()}`,
       name: newMemberName.trim(),
       role: newMemberRole,
       phone: newMemberPhone.trim(),
       active: true,
+      userId: cleanUserId,
+      password: cleanPassword,
+      createdAt: new Date().toISOString(),
     };
-    await saveTeamMembers([...team, member]);
+    await upsertTeamMember(member);
     setNewMemberName('');
     setNewMemberPhone('');
+    setNewMemberUserId('');
+    setNewMemberPassword('eden123');
     onRefresh();
-    showToast('Team member added!');
+    showToast(
+      `Team login created for ${member.name} (ID: ${cleanUserId} / Pass: ${cleanPassword})!`
+    );
   };
 
-  const handleRemoveTeamMember = async (id: string) => {
-    await saveTeamMembers(team.filter((m) => m.id !== id));
+  const handleToggleTeamMemberActive = async (member: TeamMember) => {
+    const updated: TeamMember = {
+      ...member,
+      active: !member.active,
+    };
+    await upsertTeamMember(updated);
     onRefresh();
+    showToast(
+      updated.active
+        ? `Login enabled for ${member.name} (${member.userId})`
+        : `Login disabled for ${member.name} (${member.userId})`
+    );
+  };
+
+  const handleSaveEditedTeamMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeamMember || !editingTeamMember.name.trim()) return;
+    const cleanUserId = (
+      editingTeamMember.userId?.trim() ||
+      editingTeamMember.name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+    ).toLowerCase();
+
+    const duplicate = team.find(
+      (m) =>
+        m.id !== editingTeamMember.id &&
+        (m.userId || '').toLowerCase() === cleanUserId
+    );
+    if (duplicate) {
+      showToast(`User ID "${cleanUserId}" is already assigned to ${duplicate.name}.`);
+      return;
+    }
+
+    const updated: TeamMember = {
+      ...editingTeamMember,
+      name: editingTeamMember.name.trim(),
+      phone: editingTeamMember.phone.trim(),
+      userId: cleanUserId,
+      password: (editingTeamMember.password || 'eden123').trim(),
+    };
+    await upsertTeamMember(updated);
+    setEditingTeamMember(null);
+    onRefresh();
+    showToast(`Updated login account for ${updated.name}!`);
+  };
+
+  const handleRemoveTeamMember = async (member: TeamMember) => {
+    await deleteTeamMember(member.id);
+    onRefresh();
+    showToast(
+      `Deleted ${member.name}'s account (${member.userId}). They can no longer log in.`
+    );
+  };
+
+  const handleCopyTeamCredentials = (member: TeamMember) => {
+    const text = `Eden Roses Partner App Login\nName: ${member.name} (${member.role})\nAdmin Login Link: https://edenrosesunisexsalon-phi.vercel.app/admin\nUser ID: ${member.userId || member.name.toLowerCase().replace(/\s+/g, '')}\nPassword: ${member.password || 'eden123'}`;
+    navigator.clipboard?.writeText(text);
+    showToast(`Copied login ID & Password for ${member.name}!`);
+  };
+
+  const buildTeamWhatsAppShareUrl = (member: TeamMember) => {
+    const digits = (member.phone || '').replace(/[^0-9]/g, '');
+    const targetPhone = digits.length === 10 ? `91${digits}` : digits;
+    const msg = [
+      `🌸 *EDEN ROSES PARTNER APP — TEAM LOGIN* 🌸`,
+      `Hi *${member.name}*, your team account has been created by Subba Lakshmi.`,
+      ``,
+      `🔗 *Login Link:* https://edenrosesunisexsalon-phi.vercel.app/admin`,
+      `👤 *User ID:* ${member.userId || member.name.toLowerCase().replace(/\s+/g, '')}`,
+      `🔑 *Password:* ${member.password || 'eden123'}`,
+      `💼 *Role:* ${member.role}`,
+    ].join('\n');
+    return `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
   };
 
   // Gallery Handlers
@@ -561,8 +674,8 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
       {
         id: 'team-management' as MoreSectionId,
         icon: Users,
-        title: 'Team Management',
-        subtitle: `${team.length} stylists, saree drapists & assistant makeup artists`,
+        title: 'Team Accounts & Login Management (User ID / Password)',
+        subtitle: `Create, edit or delete login IDs & passwords for ${team.length} team members`,
       },
       {
         id: 'gallery-management' as MoreSectionId,
@@ -1749,77 +1862,477 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 5. TEAM MANAGEMENT */}
+      {/* 5. TEAM MANAGEMENT & LOGIN ACCOUNTS */}
       {activeSubScreen === 'team-management' && (
         <div className="space-y-4">
+          {/* Top Banner: Admin & Team Login Overview */}
+          <div className="rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#160824] via-[#261139] to-[#160824] text-white border border-[#D6B77A]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#D6B77A]/20 border border-[#D6B77A]/40 text-[#F3E2BA] text-[10px] font-extrabold uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Team Login &amp; Access Control</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white">
+                Create &amp; Manage Team User ID + Password Accounts
+              </h3>
+              <p className="text-xs text-white/75">
+                Create individual login accounts for your makeup artists, hairstylists, and saree drapists. Deleting or disabling an account immediately revokes their Admin Panel access.
+              </p>
+            </div>
+            <div className="shrink-0 bg-white/10 border border-white/15 rounded-xl p-3 text-xs space-y-1">
+              <p className="text-[10px] uppercase tracking-wider text-[#F3E2BA] font-bold">
+                Master Admin Login
+              </p>
+              <p className="font-mono-num text-white">
+                ID: <strong className="text-[#F3E2BA]">admin</strong> or{' '}
+                <strong className="text-[#F3E2BA]">subbalakshmi</strong>
+              </p>
+              <p className="font-mono-num text-white">
+                Pass: <strong className="text-[#F3E2BA]">7777</strong> / PIN:{' '}
+                <strong className="text-[#F3E2BA]">7777</strong>
+              </p>
+            </div>
+          </div>
+
+          {/* Create New Team Member Login Account Form */}
           <form
             onSubmit={handleAddTeamMember}
-            className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3"
+            className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4"
           >
-            <h3 className="font-bold text-sm text-stone-900">+ Add Team Member</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-              <input
-                type="text"
-                required
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                placeholder="Full Name *"
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-              <select
-                value={newMemberRole}
-                onChange={(e) =>
-                  setNewMemberRole(e.target.value as TeamMember['role'])
-                }
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              >
-                <option value="Assistant Makeup Artist">Assistant Makeup Artist</option>
-                <option value="Hairstylist">Hairstylist</option>
-                <option value="Saree Drapist">Saree Drapist</option>
-                <option value="Other Team Member">Other Team Member</option>
-              </select>
-              <input
-                type="tel"
-                required
-                value={newMemberPhone}
-                onChange={(e) => setNewMemberPhone(e.target.value)}
-                placeholder="Phone Number *"
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#5b6324] text-white text-xs font-bold cursor-pointer"
-            >
-              Save Team Member
-            </button>
-          </form>
-
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-2.5">
-            <h3 className="font-bold text-sm text-stone-900">
-              Active Eden Roses Team ({team.length})
-            </h3>
-            {team.map((m) => (
-              <div
-                key={m.id}
-                className="p-3.5 rounded-xl bg-[#f8f9f0] border border-stone-200 flex items-center justify-between text-xs"
-              >
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#e9ecd6] text-[#5b6324] flex items-center justify-center">
+                  <UserPlus className="w-4 h-4" />
+                </div>
                 <div>
-                  <p className="font-bold text-sm text-stone-900">{m.name}</p>
-                  <p className="text-stone-600">
-                    {m.role} · {m.phone}
+                  <h3 className="font-bold text-sm text-stone-900">
+                    + Create New Team Member Login Account
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Team member can log in at /admin using this User ID &amp; Password
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTeamMember(m.id)}
-                  className="p-2 text-stone-400 hover:text-red-600 cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Team Member Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newMemberName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewMemberName(val);
+                    if (!newMemberUserId || newMemberUserId === newMemberName.toLowerCase().replace(/[^a-z0-9]/g, '')) {
+                      setNewMemberUserId(
+                        val
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]/g, '')
+                          .slice(0, 20)
+                      );
+                    }
+                  }}
+                  placeholder="e.g., Priya Sharma"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Role / Designation *
+                </label>
+                <select
+                  value={newMemberRole}
+                  onChange={(e) =>
+                    setNewMemberRole(e.target.value as TeamMember['role'])
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
+                >
+                  <option value="Assistant Makeup Artist">Assistant Makeup Artist</option>
+                  <option value="Hairstylist">Hairstylist</option>
+                  <option value="Saree Drapist">Saree Drapist</option>
+                  <option value="Other Team Member">Other Team Member</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Mobile / WhatsApp Number *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={newMemberPhone}
+                  onChange={(e) => setNewMemberPhone(e.target.value)}
+                  placeholder="+91 98450XXXXX"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num text-stone-900"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+              <div>
+                <label className="font-bold text-stone-700 flex items-center gap-1.5 mb-1">
+                  <KeyRound className="w-3.5 h-3.5 text-[#5b6324]" />
+                  <span>Login User ID (Username) *</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newMemberUserId}
+                  onChange={(e) =>
+                    setNewMemberUserId(
+                      e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '')
+                    )
+                  }
+                  placeholder="e.g., priya"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold text-stone-900"
+                />
+                <span className="text-[10px] text-stone-500 mt-0.5 block">
+                  Lowercase letters or numbers (used by team member to sign in)
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-stone-700 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-[#5b6324]" />
+                    <span>Login Password *</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+                      setNewMemberPassword(`eden${randomDigits}`);
+                    }}
+                    className="text-[10px] font-bold text-[#5b6324] hover:underline cursor-pointer"
+                  >
+                    Generate Random Password
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={newMemberPassword}
+                  onChange={(e) => setNewMemberPassword(e.target.value)}
+                  placeholder="e.g., eden123"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold text-stone-900"
+                />
+                <span className="text-[10px] text-stone-500 mt-0.5 block">
+                  You can share or change this password anytime
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-[11px] text-stone-500">
+                Account syncs immediately to Firebase Cloud &amp; live Admin Panel.
+              </p>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Team Login Account</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Active & Disabled Team Accounts List */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-stone-900">
+                  Team Login Accounts ({team.length})
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Manage credentials, share login on WhatsApp, or delete accounts to revoke access
+                </p>
+              </div>
+            </div>
+
+            {team.length === 0 ? (
+              <p className="text-xs text-stone-500 py-6 text-center">
+                No team accounts created yet. Use the form above to create a team login.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {team.map((m) => {
+                  const isPassVisible = Boolean(visiblePasswords[m.id]);
+                  const userIdDisplay =
+                    m.userId || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  const passDisplay = m.password || 'eden123';
+
+                  return (
+                    <div
+                      key={m.id}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        m.active !== false
+                          ? 'bg-[#f8f9f0] border-stone-200'
+                          : 'bg-stone-100/80 border-stone-200 opacity-75'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-bold text-sm text-stone-900">{m.name}</p>
+                            <span className="px-2 py-0.5 rounded-md bg-[#e9ecd6] text-[#5b6324] text-[10px] font-bold">
+                              {m.role}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                m.active !== false
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {m.active !== false ? '● Login Active' : '○ Login Disabled'}
+                            </span>
+                          </div>
+                          <p className="font-mono-num text-xs text-stone-600">
+                            Phone: {m.phone}
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyTeamCredentials(m)}
+                            title="Copy Login ID & Password"
+                            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 text-stone-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy ID</span>
+                          </button>
+
+                          <a
+                            href={buildTeamWhatsAppShareUrl(m)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5a] text-white text-[11px] font-bold flex items-center gap-1"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Send Login</span>
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingTeamMember({ ...m })}
+                            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#e9ecd6] border border-stone-300 text-stone-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleTeamMemberActive(m)}
+                            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer ${
+                              m.active !== false
+                                ? 'bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800'
+                                : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800'
+                            }`}
+                          >
+                            {m.active !== false ? 'Disable' : 'Enable'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTeamMember(m)}
+                            title="Delete Account & Revoke Login"
+                            className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Credentials Box */}
+                      <div className="mt-3 pt-2.5 border-t border-stone-200/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="px-3 py-2 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
+                          <span className="text-stone-500 font-medium">User ID:</span>
+                          <span className="font-mono-num font-bold text-stone-900">
+                            {userIdDisplay}
+                          </span>
+                        </div>
+
+                        <div className="px-3 py-2 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
+                          <span className="text-stone-500 font-medium">Password:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono-num font-bold text-[#5b6324]">
+                              {isPassVisible ? passDisplay : '••••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVisiblePasswords((prev) => ({
+                                  ...prev,
+                                  [m.id]: !prev[m.id],
+                                }))
+                              }
+                              className="text-stone-400 hover:text-stone-700 cursor-pointer"
+                            >
+                              {isPassVisible ? (
+                                <EyeOff className="w-3.5 h-3.5" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
+
+          {/* Edit Team Member Credentials Modal */}
+          {editingTeamMember && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-stone-200 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                  <div>
+                    <h3 className="font-bold text-base text-stone-900">
+                      Edit Team Account &amp; Password
+                    </h3>
+                    <p className="text-xs text-stone-500">{editingTeamMember.name}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingTeamMember(null)}
+                    className="p-1.5 rounded-xl bg-stone-100 text-stone-600 hover:text-stone-900 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditedTeamMember} className="space-y-3 text-xs">
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingTeamMember.name}
+                      onChange={(e) =>
+                        setEditingTeamMember({
+                          ...editingTeamMember,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">Role</label>
+                      <select
+                        value={editingTeamMember.role}
+                        onChange={(e) =>
+                          setEditingTeamMember({
+                            ...editingTeamMember,
+                            role: e.target.value as TeamMember['role'],
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                      >
+                        <option value="Assistant Makeup Artist">
+                          Assistant Makeup Artist
+                        </option>
+                        <option value="Hairstylist">Hairstylist</option>
+                        <option value="Saree Drapist">Saree Drapist</option>
+                        <option value="Other Team Member">Other Team Member</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={editingTeamMember.phone}
+                        onChange={(e) =>
+                          setEditingTeamMember({
+                            ...editingTeamMember,
+                            phone: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Login User ID *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingTeamMember.userId || ''}
+                        onChange={(e) =>
+                          setEditingTeamMember({
+                            ...editingTeamMember,
+                            userId: e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9_.-]/g, ''),
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Login Password *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingTeamMember.password || ''}
+                        onChange={(e) =>
+                          setEditingTeamMember({
+                            ...editingTeamMember,
+                            password: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditingTeamMember(null)}
+                      className="px-4 py-2.5 rounded-xl bg-stone-100 text-stone-700 font-bold cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold cursor-pointer"
+                    >
+                      Save Credentials
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -294,6 +294,22 @@
         "duration": { "type": "string", "maxLength": 60 }
       },
       "required": ["id", "name", "category", "description", "image", "isPackage"]
+    },
+    "TeamMemberDoc": {
+      "title": "TeamMemberDoc",
+      "description": "Team member profile and Admin Panel login credentials (User ID and Password) managed by Admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 80 },
+        "name": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "maxLength": 80 },
+        "phone": { "type": "string", "maxLength": 40 },
+        "active": { "type": "boolean" },
+        "userId": { "type": "string", "maxLength": 80 },
+        "password": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "role", "phone", "active"]
     }
   },
   "firestore": {
@@ -312,6 +328,10 @@
     "/services/{serviceId}": {
       "schema": { "$ref": "#/entities/ServiceItemDoc" },
       "description": "Real-time product, package, and service pricing catalog synced between Admin Panel and Customer Website."
+    },
+    "/team/{memberId}": {
+      "schema": { "$ref": "#/entities/TeamMemberDoc" },
+      "description": "Real-time team member accounts and login credentials managed from the Admin Panel."
     }
   }
 }

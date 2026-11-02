@@ -185,6 +185,24 @@ service cloud.firestore {
       (!('originalPrice' in data) || data.originalPrice == null || (data.originalPrice is number && data.originalPrice >= 0));
     }
 
+    function isValidTeamMember(data) {
+      return data.keys().hasAll([
+        'id',
+        'name',
+        'role',
+        'phone',
+        'active'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 80 &&
+      data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+      data.role is string && data.role.size() >= 1 && data.role.size() <= 80 &&
+      data.phone is string && data.phone.size() >= 3 && data.phone.size() <= 40 &&
+      data.active is bool &&
+      (!('userId' in data) || data.userId == null || (data.userId is string && data.userId.size() <= 80)) &&
+      (!('password' in data) || data.password == null || (data.password is string && data.password.size() <= 120)) &&
+      (!('createdAt' in data) || data.createdAt == null || (data.createdAt is string && data.createdAt.size() <= 50));
+    }
+
     // 4. Collection Rules
     match /test/{docId} {
       allow get: if isValidId(docId);
@@ -222,6 +240,13 @@ service cloud.firestore {
       allow list: if true;
       allow create, update: if isValidId(serviceId) && isValidServiceDoc(incoming()) && incoming().id == serviceId;
       allow delete: if isValidId(serviceId);
+    }
+
+    match /team/{memberId} {
+      allow get: if isValidId(memberId);
+      allow list: if true;
+      allow create, update: if isValidId(memberId) && isValidTeamMember(incoming()) && incoming().id == memberId;
+      allow delete: if isValidId(memberId);
     }
   }
 }

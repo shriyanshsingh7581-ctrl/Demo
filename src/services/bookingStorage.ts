@@ -71,6 +71,18 @@ export interface TeamMember {
   role: 'Assistant Makeup Artist' | 'Hairstylist' | 'Saree Drapist' | 'Other Team Member';
   phone: string;
   active: boolean;
+  userId?: string;
+  password?: string;
+  createdAt?: string;
+}
+
+export interface PartnerSessionUser {
+  id: string;
+  name: string;
+  role: string;
+  userId: string;
+  phone?: string;
+  isAdmin: boolean;
 }
 
 export interface Booking {
@@ -198,7 +210,7 @@ const STORAGE_KEYS = {
   CUSTOMERS: 'eden_roses_customers_v4',
   SERVICES: 'eden_roses_services_v5',
   SETTINGS: 'eden_roses_business_settings_v4',
-  TEAM: 'eden_roses_team_members_v4',
+  TEAM: 'eden_roses_team_members_v5',
   GALLERY: 'eden_roses_gallery_images_v4',
   SELFIES: 'eden_roses_partner_selfies_v4',
 };
@@ -1071,6 +1083,9 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     role: 'Hairstylist',
     phone: '+91 9845011223',
     active: true,
+    userId: 'kavya',
+    password: 'eden123',
+    createdAt: '2026-10-01T09:00:00.000Z',
   },
   {
     id: 'tm-2',
@@ -1078,6 +1093,9 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     role: 'Saree Drapist',
     phone: '+91 9845044556',
     active: true,
+    userId: 'deepika',
+    password: 'eden123',
+    createdAt: '2026-10-02T09:00:00.000Z',
   },
   {
     id: 'tm-3',
@@ -1085,6 +1103,9 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     role: 'Assistant Makeup Artist',
     phone: '+91 9845077889',
     active: true,
+    userId: 'anusha',
+    password: 'eden123',
+    createdAt: '2026-10-03T09:00:00.000Z',
   },
   {
     id: 'tm-4',
@@ -1092,6 +1113,9 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     role: 'Other Team Member',
     phone: '+91 9845099001',
     active: true,
+    userId: 'meghana',
+    password: 'eden123',
+    createdAt: '2026-10-04T09:00:00.000Z',
   },
 ];
 
@@ -1230,6 +1254,36 @@ function sanitizeServiceForFirestore(s: ServiceCatalogItem): ServiceCatalogItem 
     cleaned.additionalInfo = s.additionalInfo.map((a) => String(a).slice(0, 300)).slice(0, 10);
   }
 
+  return cleaned;
+}
+
+function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
+  const defaultUserId = String(m.name || 'team')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 24) || 'member';
+  const cleaned: TeamMember = {
+    id: String(m.id || `tm-${Date.now()}`).slice(0, 80).replace(/[^a-zA-Z0-9_-]/g, '-'),
+    name: String(m.name || 'Team Member').slice(0, 120),
+    role: (
+      [
+        'Assistant Makeup Artist',
+        'Hairstylist',
+        'Saree Drapist',
+        'Other Team Member',
+      ].includes(m.role)
+        ? m.role
+        : 'Assistant Makeup Artist'
+    ) as TeamMember['role'],
+    phone: String(m.phone || '+91 7019135530').slice(0, 40),
+    active: m.active !== false,
+    userId: String(m.userId || defaultUserId)
+      .trim()
+      .toLowerCase()
+      .slice(0, 80),
+    password: String(m.password || 'eden123').trim().slice(0, 120),
+    createdAt: String(m.createdAt || new Date().toISOString()).slice(0, 50),
+  };
   return cleaned;
 }
 
@@ -1723,6 +1777,52 @@ export function startFirebaseRealtimeSync(): void {
     },
     (error) => {
       console.warn('Services sync listener warning:', error);
+    }
+  );
+
+  // 4. Real-time Team Members & Login Accounts listener
+  const teamPath = 'team';
+  let isSeedingTeam = false;
+  onSnapshot(
+    collection(db, teamPath),
+    async (snapshot) => {
+      isFirebaseLiveConnected = true;
+      if (isSeedingTeam) return;
+
+      const teamSeededKey = 'eden_roses_team_cloud_seeded_v5';
+      if (snapshot.empty && !localStorage.getItem(teamSeededKey)) {
+        isSeedingTeam = true;
+        try {
+          const initialTeam = getTeamMembers();
+          await Promise.all(
+            initialTeam.map((member) => {
+              const clean = sanitizeTeamMemberForFirestore(member);
+              return setDoc(doc(db, teamPath, clean.id), clean).catch((err) => {
+                console.warn('Initial team seed warning:', err);
+              });
+            })
+          );
+          localStorage.setItem(teamSeededKey, 'true');
+        } finally {
+          isSeedingTeam = false;
+          notifyDataUpdated();
+        }
+        return;
+      }
+
+      const remoteTeam: TeamMember[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as TeamMember;
+        if (data && data.id) {
+          remoteTeam.push(sanitizeTeamMemberForFirestore(data));
+        }
+      });
+
+      localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(remoteTeam));
+      notifyDataUpdated();
+    },
+    (error) => {
+      console.warn('Team sync listener warning:', error);
     }
   );
 }
@@ -2306,15 +2406,149 @@ export function getTeamMembers(): TeamMember[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.TEAM);
     if (!raw) return INITIAL_TEAM_MEMBERS;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as TeamMember[];
+    return parsed.map((m) => sanitizeTeamMemberForFirestore(m));
   } catch {
     return INITIAL_TEAM_MEMBERS;
   }
 }
 
 export async function saveTeamMembers(members: TeamMember[]): Promise<void> {
-  localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(members));
+  const cleaned = members.map((m) => sanitizeTeamMemberForFirestore(m));
+  localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(cleaned));
   notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    try {
+      await Promise.all(
+        cleaned.map((member) => setDoc(doc(db, 'team', member.id), member))
+      );
+    } catch (error) {
+      console.warn('Firestore saveTeamMembers warning:', error);
+    }
+  }
+}
+
+export async function upsertTeamMember(member: TeamMember): Promise<TeamMember> {
+  const cleanMember = sanitizeTeamMemberForFirestore(member);
+  const current = getTeamMembers();
+  const exists = current.some((m) => m.id === cleanMember.id);
+  const nextList = exists
+    ? current.map((m) => (m.id === cleanMember.id ? cleanMember : m))
+    : [cleanMember, ...current];
+
+  localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(nextList));
+  notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    const path = `team/${cleanMember.id}`;
+    try {
+      await setDoc(doc(db, 'team', cleanMember.id), cleanMember);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  return cleanMember;
+}
+
+export async function deleteTeamMember(memberId: string): Promise<void> {
+  const current = getTeamMembers();
+  const nextList = current.filter((m) => m.id !== memberId);
+  localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(nextList));
+  notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    const path = `team/${memberId}`;
+    try {
+      await deleteDoc(doc(db, 'team', memberId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
+}
+
+export function authenticatePartnerLogin(
+  userIdInput: string,
+  passwordInput: string
+): {
+  success: boolean;
+  user?: PartnerSessionUser;
+  error?: string;
+} {
+  const cleanId = userIdInput.trim().toLowerCase();
+  const cleanPass = passwordInput.trim();
+
+  if (!cleanId || !cleanPass) {
+    return {
+      success: false,
+      error: 'Please enter both User ID and Password.',
+    };
+  }
+
+  // 1. Check Master Admin credentials (Subba Lakshmi)
+  const adminIds = ['admin', 'subbalakshmi', 'edenroses', '7019135530'];
+  const adminPasswords = ['7777', 'eden7777', 'admin123', '1234'];
+  if (adminIds.includes(cleanId) && adminPasswords.includes(cleanPass)) {
+    return {
+      success: true,
+      user: {
+        id: 'admin-master',
+        name: 'Subba Lakshmi',
+        role: 'Founder & Lead Makeup Artist (Admin)',
+        userId: cleanId,
+        phone: '+91 7019135530',
+        isAdmin: true,
+      },
+    };
+  }
+
+  // 2. Check Team Member accounts
+  const team = getTeamMembers();
+  const normalizedPhoneInput = cleanId.replace(/[^0-9]/g, '');
+  const matchedMember = team.find((m) => {
+    const memberUserId = (m.userId || '').trim().toLowerCase();
+    const memberPhoneDigits = (m.phone || '').replace(/[^0-9]/g, '');
+    return (
+      memberUserId === cleanId ||
+      (normalizedPhoneInput.length >= 10 &&
+        memberPhoneDigits.endsWith(normalizedPhoneInput.slice(-10)))
+    );
+  });
+
+  if (!matchedMember) {
+    return {
+      success: false,
+      error:
+        'User ID not found or account has been deleted by Admin. Please contact Subba Lakshmi.',
+    };
+  }
+
+  if (matchedMember.active === false) {
+    return {
+      success: false,
+      error: `Account "${matchedMember.userId || matchedMember.name}" is currently disabled by Admin.`,
+    };
+  }
+
+  if ((matchedMember.password || 'eden123') !== cleanPass) {
+    return {
+      success: false,
+      error: 'Incorrect password for this Team User ID. Please try again.',
+    };
+  }
+
+  return {
+    success: true,
+    user: {
+      id: matchedMember.id,
+      name: matchedMember.name,
+      role: matchedMember.role,
+      userId: matchedMember.userId || cleanId,
+      phone: matchedMember.phone,
+      isAdmin: false,
+    },
+  };
 }
 
 export function getGalleryImages(): EdenRoseImage[] {

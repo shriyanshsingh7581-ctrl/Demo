@@ -21,13 +21,20 @@ import {
   Database,
   Users,
   Tag,
+  KeyRound,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 import {
   Booking,
   BusinessSettings,
   CustomerLead,
+  PartnerSessionUser,
   ServiceCatalogItem,
   TeamMember,
+  authenticatePartnerLogin,
   formatDateISO,
   getBookingById,
   getBookings,
@@ -65,6 +72,7 @@ type StatCardFilter =
   | 'report';
 
 const AUTH_SESSION_KEY = 'eden_roses_partner_auth_v1';
+const AUTH_USER_KEY = 'eden_roses_partner_user_v1';
 const DEMO_PIN = '7777';
 
 export const AdminPartnerApp: React.FC = () => {
@@ -72,10 +80,25 @@ export const AdminPartnerApp: React.FC = () => {
   const location = useLocation();
   const { bookingId } = useParams<{ bookingId?: string }>();
 
-  // PIN Authentication State (Demo PIN: 7777)
+  // Authentication State (Supports User ID + Password AND 4-Digit PIN)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem(AUTH_SESSION_KEY) === 'true';
   });
+  const [currentUser, setCurrentUser] = useState<PartnerSessionUser | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(AUTH_USER_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as PartnerSessionUser;
+    } catch {
+      return null;
+    }
+  });
+  const [loginMode, setLoginMode] = useState<'credentials' | 'pin'>('credentials');
+  const [loginUserId, setLoginUserId] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+  const [loginErrorMsg, setLoginErrorMsg] = useState<string | null>(null);
+
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<boolean>(false);
 
@@ -108,6 +131,23 @@ export const AdminPartnerApp: React.FC = () => {
     return subscribeToDataUpdates(refreshData);
   }, []);
 
+  // Real-time check: if a logged-in Team Member's account is deleted or disabled by Admin, revoke session immediately
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser || currentUser.isAdmin) return;
+    const stillActiveMember = team.find(
+      (m) => m.id === currentUser.id && m.active !== false
+    );
+    if (!stillActiveMember && team.length > 0) {
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+      sessionStorage.removeItem(AUTH_USER_KEY);
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      setLoginErrorMsg(
+        'Your team account was removed or disabled by Admin. Please contact Subba Lakshmi.'
+      );
+    }
+  }, [team, isAuthenticated, currentUser]);
+
   // Determine Active Tab from URL or state
   const [activeTab, setActiveTab] = useState<AdminTab>(() =>
     location.pathname.includes('/admin/calendar') ? 'calendar' : 'dashboard'
@@ -117,6 +157,12 @@ export const AdminPartnerApp: React.FC = () => {
 
   const openProductsAndPricingManager = () => {
     setMoreInitialSubScreen('service-management');
+    setActiveTab('more');
+    navigate('/admin');
+  };
+
+  const openTeamAccountsManager = () => {
+    setMoreInitialSubScreen('team-management');
     setActiveTab('more');
     navigate('/admin');
   };
@@ -149,6 +195,27 @@ export const AdminPartnerApp: React.FC = () => {
   const [selfieBookingId, setSelfieBookingId] = useState<string | undefined>(undefined);
   const [flowGuideModalOpen, setFlowGuideModalOpen] = useState(false);
 
+  const completePartnerLogin = (user: PartnerSessionUser) => {
+    sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
+    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setLoginErrorMsg(null);
+    setPinError(false);
+    setPinInput('');
+  };
+
+  const handleCredentialsLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginErrorMsg(null);
+    const res = authenticatePartnerLogin(loginUserId, loginPassword);
+    if (!res.success || !res.user) {
+      setLoginErrorMsg(res.error || 'Invalid User ID or Password.');
+      return;
+    }
+    completePartnerLogin(res.user);
+  };
+
   // PIN Keypad Handlers
   const handleDigitPress = (digit: string) => {
     setPinError(false);
@@ -157,9 +224,14 @@ export const AdminPartnerApp: React.FC = () => {
     setPinInput(next);
     if (next.length === 4) {
       if (next === DEMO_PIN || next === '1234') {
-        sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
-        setIsAuthenticated(true);
-        setPinInput('');
+        completePartnerLogin({
+          id: 'admin-master',
+          name: 'Subba Lakshmi',
+          role: 'Founder & Lead Makeup Artist (Admin)',
+          userId: 'admin',
+          phone: '+91 7019135530',
+          isAdmin: true,
+        });
       } else {
         setPinError(true);
         setTimeout(() => setPinInput(''), 500);
@@ -277,105 +349,251 @@ export const AdminPartnerApp: React.FC = () => {
     });
   };
 
-  // ==================== PART 11: ADMIN PIN SCREEN ====================
+  // ==================== PART 11: ADMIN & TEAM LOGIN SCREEN ====================
   if (!isAuthenticated) {
+    const activeTeamPreview = team.filter((m) => m.active !== false).slice(0, 4);
+
     return (
       <div className="min-h-screen bg-[#f8f9f0] text-stone-900 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 border border-[#5b6324]/25 shadow-xl space-y-6 text-center">
-          <div className="w-28 h-20 rounded-2xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden mx-auto flex items-center justify-center shadow-md">
-            <SmartImage
-              src={settings.logoUrl}
-              alt="Eden Roses Partner App"
-              fit="cover"
-              className="w-full h-full object-center scale-110"
-            />
+        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 border border-[#5b6324]/25 shadow-xl space-y-5">
+          {/* Brand Header */}
+          <div className="text-center space-y-2">
+            <div className="w-28 h-20 rounded-2xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden mx-auto flex items-center justify-center shadow-md">
+              <SmartImage
+                src={settings.logoUrl}
+                alt="Eden Roses Partner App"
+                fit="cover"
+                className="w-full h-full object-center scale-110"
+              />
+            </div>
+
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
+                Eden Roses Partner App
+              </h1>
+              <p className="text-xs sm:text-sm font-semibold text-[#5b6324]">
+                Admin &amp; Team Login Portal · Subba Lakshmi Makeup
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-stone-900 tracking-tight">
-              Eden Roses Partner App
-            </h1>
-            <p className="text-sm font-semibold text-[#5b6324]">
-              Subba Lakshmi Makeup
-            </p>
-            <p className="font-mono-num text-xs font-bold text-stone-600 bg-[#e9ecd6] inline-block px-3 py-1 rounded-lg mt-2">
-              Demo PIN: 7777
-            </p>
-          </div>
-
-          {/* 4-Dot PIN Indicator */}
-          <div className="flex items-center justify-center gap-4 py-2">
-            {[0, 1, 2, 3].map((idx) => {
-              const filled = pinInput.length > idx;
-              return (
-                <div
-                  key={idx}
-                  className={`w-4 h-4 rounded-full transition-all ${
-                    pinError
-                      ? 'bg-red-500 scale-110'
-                      : filled
-                      ? 'bg-[#5b6324] scale-110'
-                      : 'bg-stone-200 border border-stone-300'
-                  }`}
-                />
-              );
-            })}
-          </div>
-
-          {pinError && (
-            <p className="text-xs font-semibold text-red-600">
-              Incorrect PIN. Enter Demo PIN: 7777
-            </p>
-          )}
-
-          {/* Numeric Keypad */}
-          <div className="grid grid-cols-3 gap-3">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-              <button
-                key={digit}
-                type="button"
-                onClick={() => handleDigitPress(digit)}
-                className="h-14 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6] active:scale-95 border border-stone-200 font-mono-num text-xl font-bold text-stone-900 transition-all cursor-pointer"
-              >
-                {digit}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setPinInput('')}
-              className="h-14 rounded-2xl bg-stone-100 hover:bg-stone-200 text-xs font-bold text-stone-600 cursor-pointer"
-            >
-              CLEAR
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDigitPress('0')}
-              className="h-14 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6] active:scale-95 border border-stone-200 font-mono-num text-xl font-bold text-stone-900 transition-all cursor-pointer"
-            >
-              0
-            </button>
-            <button
-              type="button"
-              onClick={handleBackspace}
-              aria-label="Backspace"
-              className="h-14 rounded-2xl bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-700 cursor-pointer"
-            >
-              <Delete className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="pt-2 flex flex-col gap-2">
+          {/* Login Mode Switcher: User ID & Password vs 4-Digit PIN */}
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-[#f8f9f0] border border-stone-200 text-xs font-bold">
             <button
               type="button"
               onClick={() => {
-                sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
-                setIsAuthenticated(true);
+                setLoginMode('credentials');
+                setLoginErrorMsg(null);
               }}
-              className="w-full py-3 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+              className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                loginMode === 'credentials'
+                  ? 'bg-[#160824] text-[#F3E2BA] shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>User ID &amp; Password</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('pin');
+                setPinError(false);
+              }}
+              className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                loginMode === 'pin'
+                  ? 'bg-[#160824] text-[#F3E2BA] shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Quick Unlock (Demo PIN 7777)</span>
+              <span>4-Digit PIN</span>
             </button>
+          </div>
+
+          {/* MODE 1: USER ID & PASSWORD LOGIN (FOR ADMIN & TEAM MEMBERS) */}
+          {loginMode === 'credentials' ? (
+            <form onSubmit={handleCredentialsLoginSubmit} className="space-y-4">
+              {loginErrorMsg && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{loginErrorMsg}</span>
+                </div>
+              )}
+
+              <div className="space-y-3 text-left text-xs">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    User ID / Username (Admin or Team Member)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={loginUserId}
+                    onChange={(e) => {
+                      setLoginUserId(e.target.value);
+                      setLoginErrorMsg(null);
+                    }}
+                    placeholder="Enter User ID (e.g., admin or kavya)"
+                    className="w-full px-3.5 py-3 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold text-sm text-stone-900 focus:outline-none focus:border-[#5b6324]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      required
+                      value={loginPassword}
+                      onChange={(e) => {
+                        setLoginPassword(e.target.value);
+                        setLoginErrorMsg(null);
+                      }}
+                      placeholder="Enter Password"
+                      className="w-full pl-3.5 pr-10 py-3 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold text-sm text-stone-900 focus:outline-none focus:border-[#5b6324]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer"
+                    >
+                      {showLoginPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Sign In with User ID &amp; Password</span>
+              </button>
+
+              {/* Quick Demo / Active Accounts Fill Box */}
+              <div className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 space-y-2 text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#5b6324]" />
+                    <span>Tap to Quick-Fill Login Credentials:</span>
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginUserId('admin');
+                      setLoginPassword('7777');
+                      setLoginErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#160824] text-[#F3E2BA] text-[11px] font-mono-num font-bold cursor-pointer hover:opacity-90"
+                  >
+                    Admin (ID: admin / Pass: 7777)
+                  </button>
+
+                  {activeTeamPreview.map((member) => {
+                    const uid =
+                      member.userId ||
+                      member.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const pass = member.password || 'eden123';
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => {
+                          setLoginUserId(uid);
+                          setLoginPassword(pass);
+                          setLoginErrorMsg(null);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-[#5b6324] text-stone-800 text-[11px] font-mono-num font-semibold cursor-pointer"
+                      >
+                        {member.name.split(' ')[0]} ({uid} / {pass})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </form>
+          ) : (
+            /* MODE 2: 4-DIGIT PIN KEYPAD */
+            <div className="space-y-4 text-center">
+              <p className="font-mono-num text-xs font-bold text-stone-600 bg-[#e9ecd6] inline-block px-3 py-1 rounded-lg">
+                Admin Quick PIN: 7777
+              </p>
+
+              {/* 4-Dot PIN Indicator */}
+              <div className="flex items-center justify-center gap-4 py-1">
+                {[0, 1, 2, 3].map((idx) => {
+                  const filled = pinInput.length > idx;
+                  return (
+                    <div
+                      key={idx}
+                      className={`w-4 h-4 rounded-full transition-all ${
+                        pinError
+                          ? 'bg-red-500 scale-110'
+                          : filled
+                          ? 'bg-[#5b6324] scale-110'
+                          : 'bg-stone-200 border border-stone-300'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+
+              {pinError && (
+                <p className="text-xs font-semibold text-red-600">
+                  Incorrect PIN. Enter Demo PIN: 7777
+                </p>
+              )}
+
+              {/* Numeric Keypad */}
+              <div className="grid grid-cols-3 gap-2.5">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                  <button
+                    key={digit}
+                    type="button"
+                    onClick={() => handleDigitPress(digit)}
+                    className="h-13 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6] active:scale-95 border border-stone-200 font-mono-num text-xl font-bold text-stone-900 transition-all cursor-pointer"
+                  >
+                    {digit}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPinInput('')}
+                  className="h-13 rounded-2xl bg-stone-100 hover:bg-stone-200 text-xs font-bold text-stone-600 cursor-pointer"
+                >
+                  CLEAR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDigitPress('0')}
+                  className="h-13 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6] active:scale-95 border border-stone-200 font-mono-num text-xl font-bold text-stone-900 transition-all cursor-pointer"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBackspace}
+                  aria-label="Backspace"
+                  className="h-13 rounded-2xl bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-700 cursor-pointer"
+                >
+                  <Delete className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-1 flex flex-col gap-2 border-t border-stone-100">
             <button
               type="button"
               onClick={() => navigate('/')}
@@ -396,10 +614,10 @@ export const AdminPartnerApp: React.FC = () => {
     <div className="min-h-screen bg-[#f8f9f0] text-stone-900 flex flex-col">
       {/* PART 12: ADMIN TOP BAR */}
       <header className="sticky top-0 z-30 bg-white border-b border-stone-200 shadow-xs">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          {/* Left: Uploaded Logo + Subba Lakshmi Makeup */}
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
+          {/* Left: Uploaded Logo + Subba Lakshmi Makeup + Logged-in User Badge */}
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-12 h-10 rounded-xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="w-11 h-10 rounded-xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden flex items-center justify-center shrink-0">
               <SmartImage
                 src={settings.logoUrl}
                 alt="Eden Roses Logo"
@@ -408,17 +626,36 @@ export const AdminPartnerApp: React.FC = () => {
               />
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-sm sm:text-base text-stone-900 truncate">
-                Subba Lakshmi Makeup
-              </h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-bold text-sm sm:text-base text-stone-900 truncate">
+                  Subba Lakshmi Makeup
+                </h1>
+                {currentUser && (
+                  <span
+                    className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                      currentUser.isAdmin
+                        ? 'bg-[#160824] text-[#F3E2BA]'
+                        : 'bg-[#e9ecd6] text-[#5b6324]'
+                    }`}
+                  >
+                    {currentUser.isAdmin
+                      ? 'Admin'
+                      : `Team: ${currentUser.name.split(' ')[0]}`}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-stone-500 truncate flex items-center gap-1.5">
-                <span>Eden Roses Partner App</span>
+                <span>
+                  {currentUser
+                    ? `${currentUser.name} (${currentUser.userId})`
+                    : 'Eden Roses Partner App'}
+                </span>
                 {firebaseConnected && (
                   <>
-                    <span>·</span>
-                    <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                    <span className="hidden sm:inline">·</span>
+                    <span className="hidden sm:inline-flex text-emerald-700 font-semibold items-center gap-1">
                       <Database className="w-3 h-3" />
-                      Live Sync: edenrosesunisexsalon-phi.vercel.app
+                      Live Sync
                     </span>
                   </>
                 )}
@@ -426,24 +663,33 @@ export const AdminPartnerApp: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Live Site Link + Products & Pricing + Add Booking */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Right: Team Accounts + Products & Pricing + Add Booking + Logout */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <a
               href="https://edenrosesunisexsalon-phi.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-[#5b6324]/30 text-[#5b6324] text-[11px] font-bold hover:bg-[#e9ecd6]"
+              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-[#5b6324]/30 text-[#5b6324] text-[11px] font-bold hover:bg-[#e9ecd6]"
             >
               <Globe className="w-3 h-3" />
-              <span>Live Website</span>
+              <span>Live Site</span>
             </a>
             <button
               type="button"
+              onClick={openTeamAccountsManager}
+              title="Create or Delete Team Login Accounts"
+              className="px-2.5 py-2 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F3E2BA] border border-[#D6B77A]/40 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Team Login</span>
+            </button>
+            <button
+              type="button"
               onClick={openProductsAndPricingManager}
-              className="px-2.5 sm:px-3 py-2 rounded-xl bg-[#e9ecd6] hover:bg-[#dfe4c4] border border-[#5b6324]/30 text-[#5b6324] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+              className="px-2.5 py-2 rounded-xl bg-[#e9ecd6] hover:bg-[#dfe4c4] border border-[#5b6324]/30 text-[#5b6324] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
               <Tag className="w-3.5 h-3.5" />
-              <span>Products &amp; Price</span>
+              <span className="hidden sm:inline">Products &amp; Price</span>
             </button>
             <button
               type="button"
@@ -451,10 +697,23 @@ export const AdminPartnerApp: React.FC = () => {
                 setAddBookingPreselectedDate(undefined);
                 setAddBookingModalOpen(true);
               }}
-              className="px-3 sm:px-3.5 py-2 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+              className="px-2.5 sm:px-3 py-2 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Booking</span>
+              <span>Booking</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.removeItem(AUTH_SESSION_KEY);
+                sessionStorage.removeItem(AUTH_USER_KEY);
+                setIsAuthenticated(false);
+                setCurrentUser(null);
+              }}
+              title="Logout"
+              className="p-2 rounded-xl bg-stone-100 hover:bg-red-50 text-stone-600 hover:text-red-600 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1234,7 +1493,9 @@ export const AdminPartnerApp: React.FC = () => {
                 onRefresh={refreshData}
                 onLogout={() => {
                   sessionStorage.removeItem(AUTH_SESSION_KEY);
+                  sessionStorage.removeItem(AUTH_USER_KEY);
                   setIsAuthenticated(false);
+                  setCurrentUser(null);
                 }}
               />
             )}
