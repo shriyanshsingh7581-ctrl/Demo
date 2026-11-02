@@ -166,6 +166,25 @@ service cloud.firestore {
       data.address is string && data.address.size() <= 500;
     }
 
+    function isValidServiceDoc(data) {
+      return data.keys().hasAll([
+        'id',
+        'name',
+        'category',
+        'description',
+        'image',
+        'isPackage'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 80 &&
+      data.name is string && data.name.size() >= 1 && data.name.size() <= 160 &&
+      data.category is string && data.category.size() <= 80 &&
+      data.description is string && data.description.size() <= 1500 &&
+      data.image is string && data.image.size() <= 2000 &&
+      data.isPackage is bool &&
+      (!('price' in data) || data.price == null || (data.price is number && data.price >= 0)) &&
+      (!('originalPrice' in data) || data.originalPrice == null || (data.originalPrice is number && data.originalPrice >= 0));
+    }
+
     // 4. Collection Rules
     match /test/{docId} {
       allow get: if isValidId(docId);
@@ -196,6 +215,13 @@ service cloud.firestore {
       allow get: if isValidId(settingId);
       allow list: if true;
       allow create, update: if isValidId(settingId) && isValidSettingsDoc(incoming());
+    }
+
+    match /services/{serviceId} {
+      allow get: if isValidId(serviceId);
+      allow list: if true;
+      allow create, update: if isValidId(serviceId) && isValidServiceDoc(incoming()) && incoming().id == serviceId;
+      allow delete: if isValidId(serviceId);
     }
   }
 }

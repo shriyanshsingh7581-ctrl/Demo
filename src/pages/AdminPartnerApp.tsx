@@ -20,6 +20,7 @@ import {
   MessageCircle,
   Database,
   Users,
+  Tag,
 } from 'lucide-react';
 import {
   Booking,
@@ -49,7 +50,7 @@ import {
   ServiceFlowGuideModal,
 } from '../components/admin/AdminModals';
 import { JobDetailsView } from '../components/admin/JobDetailsView';
-import { AdminMoreScreen } from '../components/admin/AdminMoreScreen';
+import { AdminMoreScreen, MoreSectionId } from '../components/admin/AdminMoreScreen';
 import { SmartImage } from '../components/SmartImage';
 
 type AdminTab = 'dashboard' | 'calendar' | 'wallet' | 'earnings' | 'more';
@@ -111,6 +112,14 @@ export const AdminPartnerApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>(() =>
     location.pathname.includes('/admin/calendar') ? 'calendar' : 'dashboard'
   );
+  const [moreInitialSubScreen, setMoreInitialSubScreen] =
+    useState<MoreSectionId>('menu');
+
+  const openProductsAndPricingManager = () => {
+    setMoreInitialSubScreen('service-management');
+    setActiveTab('more');
+    navigate('/admin');
+  };
 
   useEffect(() => {
     if (location.pathname.includes('/admin/calendar')) {
@@ -417,27 +426,32 @@ export const AdminPartnerApp: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Live Site Link + ACTIVE + Add Booking */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right: Live Site Link + Products & Pricing + Add Booking */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href="https://edenrosesunisexsalon-phi.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-[#5b6324]/30 text-[#5b6324] text-[11px] font-bold hover:bg-[#e9ecd6]"
+              className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-[#5b6324]/30 text-[#5b6324] text-[11px] font-bold hover:bg-[#e9ecd6]"
             >
               <Globe className="w-3 h-3" />
               <span>Live Website</span>
             </a>
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[11px] font-bold tracking-wide">
-              ACTIVE
-            </span>
+            <button
+              type="button"
+              onClick={openProductsAndPricingManager}
+              className="px-2.5 sm:px-3 py-2 rounded-xl bg-[#e9ecd6] hover:bg-[#dfe4c4] border border-[#5b6324]/30 text-[#5b6324] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>Products &amp; Price</span>
+            </button>
             <button
               type="button"
               onClick={() => {
                 setAddBookingPreselectedDate(undefined);
                 setAddBookingModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+              className="px-3 sm:px-3.5 py-2 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Booking</span>
@@ -495,7 +509,18 @@ export const AdminPartnerApp: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={openProductsAndPricingManager}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white text-[#5b6324] hover:bg-[#e9ecd6] text-left text-xs font-bold flex items-center justify-between transition-colors shadow-xs cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 shrink-0" />
+                        <span>+ Add Product / Change Price ({services.length})</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 shrink-0" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -512,7 +537,7 @@ export const AdminPartnerApp: React.FC = () => {
                       onClick={() => setFlowGuideModalOpen(true)}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-left text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
                     >
-                      <span>Service Flow Guide (Read steps to avoid penalties)</span>
+                      <span>Service Flow Guide</span>
                       <ChevronRight className="w-4 h-4 shrink-0" />
                     </button>
                   </div>
@@ -1204,6 +1229,8 @@ export const AdminPartnerApp: React.FC = () => {
                 team={team}
                 gallery={gallery}
                 bookings={bookings}
+                initialSubScreen={moreInitialSubScreen}
+                onSubScreenChange={setMoreInitialSubScreen}
                 onRefresh={refreshData}
                 onLogout={() => {
                   sessionStorage.removeItem(AUTH_SESSION_KEY);
@@ -1257,6 +1284,9 @@ export const AdminPartnerApp: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => {
+                  if (tab.id === 'more') {
+                    setMoreInitialSubScreen('menu');
+                  }
                   setActiveTab(tab.id);
                   navigate(tab.path);
                 }}

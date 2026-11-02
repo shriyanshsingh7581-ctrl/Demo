@@ -18,23 +18,33 @@ import {
   CalendarOff,
   ChevronRight,
   ArrowLeft,
+  Tag,
+  IndianRupee,
+  Edit3,
+  Search,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import {
   Booking,
   BusinessSettings,
+  MakeupLandingGroup,
+  MakeupSubCategory,
   ServiceCatalogItem,
   TeamMember,
+  deleteServiceCatalogItem,
   resetDemoData,
   saveBusinessSettings,
   saveGalleryImages,
   saveServicesCatalog,
   saveTeamMembers,
+  upsertServiceCatalogItem,
 } from '../../services/bookingStorage';
 import { EdenRoseImage, GalleryFilterCategory } from '../../config/edenRosesImages';
 import { uploadImageAsset } from '../../services/firebaseConfig';
 import { SmartImage } from '../SmartImage';
 
-type MoreSectionId =
+export type MoreSectionId =
   | 'menu'
   | 'business-profile'
   | 'service-management'
@@ -51,8 +61,61 @@ interface AdminMoreScreenProps {
   team: TeamMember[];
   gallery: EdenRoseImage[];
   bookings: Booking[];
+  initialSubScreen?: MoreSectionId;
+  onSubScreenChange?: (screen: MoreSectionId) => void;
   onRefresh: () => void;
   onLogout: () => void;
+}
+
+const MAKEUP_SUB_CATEGORIES: MakeupSubCategory[] = [
+  'Party Makeup',
+  'Engagement Makeup',
+  'Bridal Makeup',
+  'Wedding Guest Makeup',
+  'Saree Draping',
+  'Hair Styling',
+  'Packages',
+  'Add-ons',
+  'Salon for Women',
+  'Salon for Men',
+];
+
+function mapSubCategoryToMainCategory(
+  sub: MakeupSubCategory
+): ServiceCatalogItem['category'] {
+  switch (sub) {
+    case 'Party Makeup':
+    case 'Engagement Makeup':
+    case 'Bridal Makeup':
+    case 'Packages':
+      return 'Bridal & Makeup Packages';
+    case 'Wedding Guest Makeup':
+    case 'Add-ons':
+      return 'Makeup Services';
+    case 'Saree Draping':
+    case 'Hair Styling':
+    case 'Salon for Men':
+      return 'Hair & Styling';
+    case 'Salon for Women':
+      return 'Skin & Facial';
+    default:
+      return 'Makeup Services';
+  }
+}
+
+function mapSubCategoryToLandingGroup(sub: MakeupSubCategory): MakeupLandingGroup {
+  switch (sub) {
+    case 'Saree Draping':
+      return 'Saree Draping';
+    case 'Hair Styling':
+      return 'Hair Styling for Women';
+    case 'Salon for Women':
+      return 'Salon for Women';
+    case 'Salon for Men':
+      return 'Salon for Men';
+    default:
+      return 'Makeup & Styling for Women';
+  }
 }
 
 export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
@@ -61,24 +124,56 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
   team,
   gallery,
   bookings,
+  initialSubScreen = 'menu',
+  onSubScreenChange,
   onRefresh,
   onLogout,
 }) => {
-  const [activeSubScreen, setActiveSubScreen] = useState<MoreSectionId>('menu');
+  const [activeSubScreen, setActiveSubScreenState] =
+    useState<MoreSectionId>(initialSubScreen);
   const [savedBanner, setSavedBanner] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setActiveSubScreenState(initialSubScreen);
+  }, [initialSubScreen]);
+
+  const setActiveSubScreen = (screen: MoreSectionId) => {
+    setActiveSubScreenState(screen);
+    onSubScreenChange?.(screen);
+  };
 
   // Editable Business Settings State
   const [formSettings, setFormSettings] = useState<BusinessSettings>(settings);
 
-  // New Service State
+  // New Product / Service State
   const [newServiceName, setNewServiceName] = useState('');
+  const [newServiceSubCategory, setNewServiceSubCategory] =
+    useState<MakeupSubCategory>('Party Makeup');
   const [newServiceCategory, setNewServiceCategory] =
     useState<ServiceCatalogItem['category']>('Bridal & Makeup Packages');
-  const [newServicePrice, setNewServicePrice] = useState<string>('1499');
+  const [newServicePrice, setNewServicePrice] = useState<string>('1999');
+  const [newServiceOriginalPrice, setNewServiceOriginalPrice] = useState<string>('2499');
+  const [newServiceDuration, setNewServiceDuration] = useState<string>('1 hr 30 mins');
   const [newServiceDesc, setNewServiceDesc] = useState('');
+  const [newServiceHighlights, setNewServiceHighlights] = useState('');
+  const [newServiceAirbrush, setNewServiceAirbrush] = useState(false);
   const [newServiceImage, setNewServiceImage] = useState(
     gallery[0]?.url || settings.heroImageUrl
   );
+  const [showPhotoPickerForNew, setShowPhotoPickerForNew] = useState(false);
+  const [uploadingProductImg, setUploadingProductImg] = useState(false);
+
+  // Filter & Search State for Product/Pricing Manager
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogSubCategoryFilter, setCatalogSubCategoryFilter] = useState<
+    'All' | MakeupSubCategory
+  >('All');
+
+  // Full Edit Product Modal State
+  const [editingService, setEditingService] = useState<ServiceCatalogItem | null>(null);
+  const [editHighlightsText, setEditHighlightsText] = useState('');
+  const [editIncludedText, setEditIncludedText] = useState('');
+  const [showPhotoPickerForEdit, setShowPhotoPickerForEdit] = useState(false);
 
   // New Team Member State
   const [newMemberName, setNewMemberName] = useState('');
@@ -101,7 +196,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
 
   const showToast = (msg: string) => {
     setSavedBanner(msg);
-    setTimeout(() => setSavedBanner(null), 2500);
+    setTimeout(() => setSavedBanner(null), 2800);
   };
 
   // Save Business Settings
@@ -112,39 +207,153 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     showToast('Business Settings updated and synced to Customer Website!');
   };
 
-  // Service Catalog Handlers
+  // Service Catalog & Pricing Handlers
   const handleUpdateServicePrice = async (id: string, priceStr: string) => {
-    const val = priceStr.trim() === '' ? null : Number(priceStr);
-    const updated = services.map((s) => (s.id === id ? { ...s, price: val } : s));
-    await saveServicesCatalog(updated);
+    const val = priceStr.trim() === '' ? null : Math.max(0, Number(priceStr));
+    const target = services.find((s) => s.id === id);
+    if (!target) return;
+    await upsertServiceCatalogItem({ ...target, price: val });
     onRefresh();
+  };
+
+  const handleUpdateServiceOriginalPrice = async (id: string, origPriceStr: string) => {
+    const val = origPriceStr.trim() === '' ? undefined : Math.max(0, Number(origPriceStr));
+    const target = services.find((s) => s.id === id);
+    if (!target) return;
+    await upsertServiceCatalogItem({ ...target, originalPrice: val });
+    onRefresh();
+  };
+
+  const handleQuickAdjustPrice = async (id: string, delta: number) => {
+    const target = services.find((s) => s.id === id);
+    if (!target) return;
+    const currentPrice = target.price ?? 1000;
+    const nextPrice = Math.max(99, currentPrice + delta);
+    await upsertServiceCatalogItem({ ...target, price: nextPrice });
+    onRefresh();
+    showToast(`Updated "${target.name}" price to ₹${nextPrice.toLocaleString('en-IN')}`);
+  };
+
+  const handleUploadProductPhoto = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    mode: 'new' | 'edit'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingProductImg(true);
+    try {
+      const url = await uploadImageAsset(file);
+      if (mode === 'new') {
+        setNewServiceImage(url);
+      } else if (editingService) {
+        setEditingService({ ...editingService, image: url });
+      }
+      showToast('Product photo uploaded!');
+    } finally {
+      setUploadingProductImg(false);
+    }
   };
 
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName.trim()) return;
+    const parsedHighlights = newServiceHighlights
+      .split(/\n|,/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const mappedCategory = mapSubCategoryToMainCategory(newServiceSubCategory);
+    const mappedLanding = mapSubCategoryToLandingGroup(newServiceSubCategory);
+
     const item: ServiceCatalogItem = {
       id: `srv-custom-${Date.now()}`,
       name: newServiceName.trim(),
-      category: newServiceCategory,
+      category: mappedCategory || newServiceCategory,
+      makeupSubCategory: newServiceSubCategory,
+      landingGroup: mappedLanding,
       description:
         newServiceDesc.trim() ||
-        'Professional makeup & beauty service at Eden Roses Makeover.',
-      price: newServicePrice.trim() === '' ? null : Number(newServicePrice),
-      image: newServiceImage,
-      isPackage: newServiceCategory === 'Bridal & Makeup Packages',
+        `Professional ${newServiceSubCategory} service by Subba Lakshmi at Eden Roses Makeover.`,
+      price:
+        newServicePrice.trim() === '' ? null : Math.max(0, Number(newServicePrice)),
+      originalPrice:
+        newServiceOriginalPrice.trim() === ''
+          ? undefined
+          : Math.max(0, Number(newServiceOriginalPrice)),
+      duration: newServiceDuration.trim() || '1 hr 15 mins',
+      rating: 4.9,
+      reviewCount: 38,
+      highlights:
+        parsedHighlights.length > 0
+          ? parsedHighlights
+          : [
+              `Professional ${newServiceSubCategory} using luxury HD international brands`,
+              'Available at C V Raman Nagar Studio or doorstep across Bengaluru',
+            ],
+      whatsIncluded:
+        parsedHighlights.length > 0
+          ? parsedHighlights
+          : [
+              'Complete skin preparation & long-wear HD base',
+              'Complimentary basic hairstyling & outfit/saree draping assistance',
+            ],
+      image: newServiceImage || gallery[0]?.url || settings.heroImageUrl,
+      isPackage:
+        newServiceSubCategory === 'Packages' ||
+        newServiceSubCategory === 'Bridal Makeup' ||
+        newServiceSubCategory === 'Engagement Makeup',
+      airbrushAvailable: newServiceAirbrush,
     };
-    await saveServicesCatalog([item, ...services]);
+
+    await upsertServiceCatalogItem(item);
     setNewServiceName('');
     setNewServiceDesc('');
+    setNewServiceHighlights('');
     onRefresh();
-    showToast('New service added to catalog!');
+    showToast(`Added "${item.name}" (₹${item.price ?? 'Consult'}) to live website!`);
+  };
+
+  const openEditServiceModal = (srv: ServiceCatalogItem) => {
+    setEditingService({ ...srv });
+    setEditHighlightsText((srv.highlights || []).join('\n'));
+    setEditIncludedText((srv.whatsIncluded || []).join('\n'));
+    setShowPhotoPickerForEdit(false);
+  };
+
+  const handleSaveEditedService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingService || !editingService.name.trim()) return;
+    const subCat = editingService.makeupSubCategory || 'Party Makeup';
+    const updatedHighlights = editHighlightsText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const updatedIncluded = editIncludedText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const updatedItem: ServiceCatalogItem = {
+      ...editingService,
+      name: editingService.name.trim(),
+      makeupSubCategory: subCat,
+      category: mapSubCategoryToMainCategory(subCat),
+      landingGroup: mapSubCategoryToLandingGroup(subCat),
+      highlights: updatedHighlights.length > 0 ? updatedHighlights : editingService.highlights,
+      whatsIncluded:
+        updatedIncluded.length > 0 ? updatedIncluded : editingService.whatsIncluded,
+    };
+
+    await upsertServiceCatalogItem(updatedItem);
+    setEditingService(null);
+    onRefresh();
+    showToast(`Saved changes to "${updatedItem.name}" & synced to website!`);
   };
 
   const handleDeleteService = async (id: string) => {
-    await saveServicesCatalog(services.filter((s) => s.id !== id));
+    await deleteServiceCatalogItem(id);
     onRefresh();
-    showToast('Service removed from catalog.');
+    showToast('Product / Service removed from catalog.');
   };
 
   // Team Handlers
@@ -681,115 +890,703 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </form>
       )}
 
-      {/* 2. SERVICE MANAGEMENT */}
+      {/* 2. PRODUCT, SERVICE & PRICING MANAGEMENT */}
       {activeSubScreen === 'service-management' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* TOP BANNER */}
+          <div className="rounded-2xl bg-[#5b6324] text-white p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#e9ecd6]" />
+                <h3 className="font-bold text-sm sm:text-base">
+                  Products, Services &amp; Pricing Manager (प्रोडक्ट और प्राइसिंग मैनेजर)
+                </h3>
+              </div>
+              <p className="text-xs text-[#e9ecd6] mt-1">
+                Add new makeup packages/services or change prices anytime — updates sync live to Customer Website!
+              </p>
+            </div>
+            <div className="px-3 py-1.5 rounded-xl bg-white/15 text-xs font-bold whitespace-nowrap self-start sm:self-auto">
+              Total Products: {services.length}
+            </div>
+          </div>
+
+          {/* ADD NEW PRODUCT / SERVICE / PACKAGE FORM */}
           <form
             onSubmit={handleAddService}
-            className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3"
+            className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4"
           >
-            <h3 className="font-bold text-sm text-stone-900">
-              + Add New Service or Package
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#e9ecd6] text-[#5b6324] flex items-center justify-center font-bold">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-stone-900">
+                    + Add New Product / Makeup Service / Package (नया प्रोडक्ट या सर्विस जोड़ें)
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Appears immediately in the selected Makeup &amp; Styling category on the website
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Product / Service Name (प्रोडक्ट / सर्विस का नाम) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newServiceName}
+                  onChange={(e) => setNewServiceName(e.target.value)}
+                  placeholder="e.g., HD Bridal Muhurtham Makeup or Saree Pre-Pleating"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Website Category (किस कैटेगरी में दिखाना है) *
+                </label>
+                <select
+                  value={newServiceSubCategory}
+                  onChange={(e) => {
+                    const sub = e.target.value as MakeupSubCategory;
+                    setNewServiceSubCategory(sub);
+                    setNewServiceCategory(mapSubCategoryToMainCategory(sub));
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
+                >
+                  {MAKEUP_SUB_CATEGORIES.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Selling Price ₹ (ऑफर प्राइस ₹)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-stone-500">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newServicePrice}
+                    onChange={(e) => setNewServicePrice(e.target.value)}
+                    placeholder="e.g. 1999"
+                    className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold text-stone-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  MRP / Original Price ₹ (डिस्काउंट से पहले)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-stone-400">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newServiceOriginalPrice}
+                    onChange={(e) => setNewServiceOriginalPrice(e.target.value)}
+                    placeholder="e.g. 2499"
+                    className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num text-stone-700"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Duration (समय)
+                </label>
+                <input
+                  type="text"
+                  value={newServiceDuration}
+                  onChange={(e) => setNewServiceDuration(e.target.value)}
+                  placeholder="e.g. 1 hr 30 mins"
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 text-stone-800"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Product / Service Description (विवरण)
+                </label>
+                <textarea
+                  rows={2}
+                  value={newServiceDesc}
+                  onChange={(e) => setNewServiceDesc(e.target.value)}
+                  placeholder="Describe what this makeup or styling service offers..."
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Key Highlights / What&apos;s Included (एक लाइन में एक पॉइंट लिखें)
+                </label>
+                <textarea
+                  rows={2}
+                  value={newServiceHighlights}
+                  onChange={(e) => setNewServiceHighlights(e.target.value)}
+                  placeholder={'Long-wear waterproof HD base\nIncludes hairstyling & saree draping'}
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+            </div>
+
+            {/* PRODUCT PHOTO SELECTOR */}
+            <div className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 space-y-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-stone-300 shrink-0">
+                    <SmartImage
+                      src={newServiceImage}
+                      alt="Product preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold text-stone-900">Product Photo (फोटो चुनें या अपलोड करें)</p>
+                    <p className="text-[11px] text-stone-500">
+                      Upload from mobile/PC, choose from studio gallery, or paste image link
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="px-3 py-2 rounded-xl bg-[#5b6324] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{uploadingProductImg ? 'Uploading...' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleUploadProductPhoto(e, 'new')}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPhotoPickerForNew((v) => !v)}
+                    className="px-3 py-2 rounded-xl bg-white border border-stone-300 text-stone-800 font-bold text-xs cursor-pointer"
+                  >
+                    {showPhotoPickerForNew ? 'Hide Studio Photos' : 'Pick from Studio Gallery'}
+                  </button>
+                </div>
+              </div>
+
               <input
                 type="text"
-                required
-                value={newServiceName}
-                onChange={(e) => setNewServiceName(e.target.value)}
-                placeholder="Service Name *"
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                value={newServiceImage}
+                onChange={(e) => setNewServiceImage(e.target.value)}
+                placeholder="Or paste image URL here..."
+                className="w-full px-3 py-2 rounded-xl bg-white border border-stone-300 text-[11px]"
               />
-              <select
-                value={newServiceCategory}
-                onChange={(e) =>
-                  setNewServiceCategory(
-                    e.target.value as ServiceCatalogItem['category']
-                  )
-                }
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              >
-                {[
-                  'Bridal & Makeup Packages',
-                  'Makeup Services',
-                  'Hair & Styling',
-                  'Skin & Facial',
-                  'Permanent Makeup',
-                  'Spa & Nails',
-                ].map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                value={newServicePrice}
-                onChange={(e) => setNewServicePrice(e.target.value)}
-                placeholder="Price ₹ (Leave blank for Consultation)"
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num"
-              />
+
+              {showPhotoPickerForNew && (
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 max-h-40 overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
+                  {gallery.slice(0, 24).map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => {
+                        setNewServiceImage(g.url);
+                        setShowPhotoPickerForNew(false);
+                      }}
+                      className={`aspect-square rounded-lg overflow-hidden border-2 cursor-pointer ${
+                        newServiceImage === g.url
+                          ? 'border-[#5b6324] ring-2 ring-[#5b6324]/30'
+                          : 'border-transparent'
+                      }`}
+                    >
+                      <SmartImage
+                        src={g.url}
+                        alt={g.alt}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <label className="inline-flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={newServiceAirbrush}
+                  onChange={(e) => setNewServiceAirbrush(e.target.checked)}
+                  className="rounded border-stone-300 text-[#5b6324]"
+                />
+                <span className="font-semibold text-stone-700">
+                  Show &quot;HD &amp; Airbrush Available&quot; badge on this product
+                </span>
+              </label>
             </div>
-            <input
-              type="text"
-              value={newServiceDesc}
-              onChange={(e) => setNewServiceDesc(e.target.value)}
-              placeholder="Service description..."
-              className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 text-xs"
-            />
+
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#5b6324] text-white text-xs font-bold cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
-              Add Service to Catalog
+              <Plus className="w-4 h-4" />
+              <span>Add Product &amp; Sync Price to Website (वेबसाइट पर जोड़ें)</span>
             </button>
           </form>
 
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3">
-            <h3 className="font-bold text-sm text-stone-900">
-              Edit Catalog Prices &amp; Services ({services.length})
-            </h3>
-            <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
-              {services.map((srv) => (
-                <div
-                  key={srv.id}
-                  className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 flex items-center justify-between gap-3 text-xs"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-white">
-                      <SmartImage
-                        src={srv.image}
-                        alt={srv.name}
-                        className="w-full h-full object-cover"
-                      />
+          {/* EXISTING PRODUCTS & INSTANT PRICE EDITOR */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="font-bold text-sm sm:text-base text-stone-900">
+                  Change Pricing &amp; Edit Products ({services.length} Active Items)
+                </h3>
+                <p className="text-[11px] text-stone-500">
+                  Type a new Selling Price (₹) or MRP (₹) below or tap -₹100 / +₹100 / +₹500 for instant update
+                </p>
+              </div>
+
+              {/* Search input */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                  placeholder="Search product or price..."
+                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {(['All', ...MAKEUP_SUB_CATEGORIES] as const).map((cat) => {
+                const active = catalogSubCategoryFilter === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCatalogSubCategoryFilter(cat)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                      active
+                        ? 'bg-[#5b6324] text-white'
+                        : 'bg-[#f8f9f0] text-stone-700 border border-stone-200 hover:bg-[#e9ecd6]/50'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Product List */}
+            <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
+              {services
+                .filter((srv) => {
+                  if (
+                    catalogSubCategoryFilter !== 'All' &&
+                    srv.makeupSubCategory !== catalogSubCategoryFilter
+                  ) {
+                    return false;
+                  }
+                  if (catalogSearch.trim()) {
+                    const q = catalogSearch.toLowerCase();
+                    return (
+                      srv.name.toLowerCase().includes(q) ||
+                      (srv.makeupSubCategory || '').toLowerCase().includes(q) ||
+                      srv.category.toLowerCase().includes(q) ||
+                      String(srv.price || '').includes(q)
+                    );
+                  }
+                  return true;
+                })
+                .map((srv) => (
+                  <div
+                    key={srv.id}
+                    className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 text-xs hover:border-[#5b6324]/40 transition-colors"
+                  >
+                    {/* Left: Image & Info */}
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white border border-stone-200">
+                        <SmartImage
+                          src={srv.image}
+                          alt={srv.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-[#e9ecd6] text-[#5b6324] text-[10px] font-bold">
+                            {srv.makeupSubCategory || srv.category}
+                          </span>
+                          {srv.duration && (
+                            <span className="text-[10px] text-stone-500 font-medium">
+                              · {srv.duration}
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-bold text-sm text-stone-900 leading-snug">
+                          {srv.name}
+                        </p>
+                        <p className="text-[11px] text-stone-500 line-clamp-1">
+                          {srv.description}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-stone-900 truncate">{srv.name}</p>
-                      <p className="text-[11px] text-stone-500">{srv.category}</p>
+
+                    {/* Right: Price Inputs + Quick Adjusters + Edit / Delete */}
+                    <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-stone-200/80 shrink-0">
+                      {/* Selling Price Input */}
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-stone-500 mb-0.5">
+                          Selling Price (₹)
+                        </span>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-500 font-bold">
+                            ₹
+                          </span>
+                          <input
+                            type="number"
+                            placeholder="Consult"
+                            value={srv.price ?? ''}
+                            onChange={(e) => handleUpdateServicePrice(srv.id, e.target.value)}
+                            className="w-24 pl-6 pr-2 py-1.5 rounded-xl bg-white border border-[#5b6324]/40 font-mono-num font-bold text-stone-900 text-right"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Original Price / MRP Input */}
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-stone-400 mb-0.5">
+                          MRP / Strike (₹)
+                        </span>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400">
+                            ₹
+                          </span>
+                          <input
+                            type="number"
+                            placeholder="MRP"
+                            value={srv.originalPrice ?? ''}
+                            onChange={(e) =>
+                              handleUpdateServiceOriginalPrice(srv.id, e.target.value)
+                            }
+                            className="w-22 pl-6 pr-2 py-1.5 rounded-xl bg-white border border-stone-300 font-mono-num text-stone-600 text-right"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Quick Adjuster Buttons */}
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-stone-500 mb-0.5">
+                          Quick Change
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleQuickAdjustPrice(srv.id, -100)}
+                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-stone-100 border border-stone-300 font-mono-num font-bold text-[11px] text-stone-700 cursor-pointer"
+                            title="Decrease price by ₹100"
+                          >
+                            -100
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickAdjustPrice(srv.id, 100)}
+                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-stone-100 border border-stone-300 font-mono-num font-bold text-[11px] text-[#5b6324] cursor-pointer"
+                            title="Increase price by ₹100"
+                          >
+                            +100
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickAdjustPrice(srv.id, 500)}
+                            className="px-2 py-1.5 rounded-lg bg-[#e9ecd6] hover:bg-[#dfe4c4] border border-[#5b6324]/30 font-mono-num font-bold text-[11px] text-[#5b6324] cursor-pointer"
+                            title="Increase price by ₹500"
+                          >
+                            +500
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Full Edit & Delete */}
+                      <div className="flex items-center gap-1.5 self-end">
+                        <button
+                          type="button"
+                          onClick={() => openEditServiceModal(srv)}
+                          className="px-3 py-1.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteService(srv.id)}
+                          className="p-2 rounded-xl bg-white hover:bg-red-50 border border-stone-200 text-stone-400 hover:text-red-600 cursor-pointer"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* FULL EDIT PRODUCT MODAL */}
+          {editingService && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 border border-stone-200 shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                  <div>
+                    <h3 className="font-bold text-base text-stone-900">
+                      Edit Product &amp; Pricing (प्रोडक्ट और प्राइस एडिट करें)
+                    </h3>
+                    <p className="text-xs text-stone-500">{editingService.id}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingService(null)}
+                    className="p-2 rounded-full hover:bg-stone-100 text-stone-500 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditedService} className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Product / Service Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingService.name}
+                      onChange={(e) =>
+                        setEditingService({ ...editingService, name: e.target.value })
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-bold text-stone-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Website Makeup Sub-Category
+                      </label>
+                      <select
+                        value={editingService.makeupSubCategory || 'Party Makeup'}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            makeupSubCategory: e.target.value as MakeupSubCategory,
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                      >
+                        {MAKEUP_SUB_CATEGORIES.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Duration
+                      </label>
+                      <input
+                        type="text"
+                        value={editingService.duration || ''}
+                        onChange={(e) =>
+                          setEditingService({ ...editingService, duration: e.target.value })
+                        }
+                        placeholder="e.g. 1 hr 30 mins"
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                      />
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-stone-500">₹</span>
-                    <input
-                      type="number"
-                      placeholder="Consult"
-                      value={srv.price ?? ''}
-                      onChange={(e) => handleUpdateServicePrice(srv.id, e.target.value)}
-                      className="w-20 px-2 py-1.5 rounded-lg bg-white border border-stone-300 font-mono-num font-bold text-right"
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Selling Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingService.price ?? ''}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            price: e.target.value === '' ? null : Number(e.target.value),
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324] font-mono-num font-bold text-sm text-stone-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Original / MRP Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingService.originalPrice ?? ''}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            originalPrice:
+                              e.target.value === '' ? undefined : Number(e.target.value),
+                          })
+                        }
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num text-sm text-stone-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editingService.description}
+                      onChange={(e) =>
+                        setEditingService({
+                          ...editingService,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
                     />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Card Bullet Highlights (1 per line)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editHighlightsText}
+                      onChange={(e) => setEditHighlightsText(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      What&apos;s Included in View Details (1 per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editIncludedText}
+                      onChange={(e) => setEditIncludedText(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                    />
+                  </div>
+
+                  {/* Photo selector in Edit modal */}
+                  <div className="p-3 rounded-2xl bg-[#f8f9f0] border border-stone-200 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-stone-300 shrink-0">
+                          <SmartImage
+                            src={editingService.image}
+                            alt={editingService.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="font-bold text-stone-800">Product Image</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <label className="px-2.5 py-1.5 rounded-xl bg-[#5b6324] text-white font-bold text-[11px] cursor-pointer">
+                          <span>Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleUploadProductPhoto(e, 'edit')}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowPhotoPickerForEdit((v) => !v)}
+                          className="px-2.5 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-bold text-[11px] cursor-pointer"
+                        >
+                          Gallery
+                        </button>
+                      </div>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={editingService.image}
+                      onChange={(e) =>
+                        setEditingService({ ...editingService, image: e.target.value })
+                      }
+                      className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-stone-300 text-[11px]"
+                    />
+
+                    {showPhotoPickerForEdit && (
+                      <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
+                        {gallery.slice(0, 20).map((g) => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              setEditingService({ ...editingService, image: g.url });
+                              setShowPhotoPickerForEdit(false);
+                            }}
+                            className="aspect-square rounded-lg overflow-hidden border border-stone-200 cursor-pointer"
+                          >
+                            <SmartImage
+                              src={g.url}
+                              alt={g.alt}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2">
                     <button
                       type="button"
-                      onClick={() => handleDeleteService(srv.id)}
-                      className="p-1.5 text-stone-400 hover:text-red-600 cursor-pointer"
+                      onClick={() => setEditingService(null)}
+                      className="px-4 py-2.5 rounded-xl bg-stone-100 text-stone-700 font-bold cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold cursor-pointer"
+                    >
+                      Save &amp; Sync Product
                     </button>
                   </div>
-                </div>
-              ))}
+                </form>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

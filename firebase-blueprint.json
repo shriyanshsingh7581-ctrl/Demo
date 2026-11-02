@@ -269,6 +269,31 @@
         "timeSlots": { "type": "array" }
       },
       "required": ["businessName", "makeupBrand", "artistName", "phonePrimary", "address"]
+    },
+    "ServiceItemDoc": {
+      "title": "ServiceItemDoc",
+      "description": "Makeup, hairstyling, saree draping, or salon product/service item with pricing managed from the Admin Panel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 80 },
+        "name": { "type": "string", "maxLength": 160 },
+        "category": { "type": "string", "maxLength": 80 },
+        "makeupSubCategory": { "type": "string", "maxLength": 80 },
+        "landingGroup": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 1500 },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "highlights": { "type": "array" },
+        "whatsIncluded": { "type": "array" },
+        "additionalInfo": { "type": "array" },
+        "image": { "type": "string", "maxLength": 2000 },
+        "isPackage": { "type": "boolean" },
+        "airbrushAvailable": { "type": "boolean" },
+        "duration": { "type": "string", "maxLength": 60 }
+      },
+      "required": ["id", "name", "category", "description", "image", "isPackage"]
     }
   },
   "firestore": {
@@ -283,6 +308,10 @@
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/BusinessSettingsDoc" },
       "description": "Business settings and configuration documents."
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/ServiceItemDoc" },
+      "description": "Real-time product, package, and service pricing catalog synced between Admin Panel and Customer Website."
     }
   }
 }

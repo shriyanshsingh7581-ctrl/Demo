@@ -114,6 +114,25 @@ export interface CustomerLead {
   createdAt: string;
 }
 
+export type MakeupSubCategory =
+  | 'Party Makeup'
+  | 'Engagement Makeup'
+  | 'Bridal Makeup'
+  | 'Wedding Guest Makeup'
+  | 'Saree Draping'
+  | 'Hair Styling'
+  | 'Packages'
+  | 'Add-ons'
+  | 'Salon for Women'
+  | 'Salon for Men';
+
+export type MakeupLandingGroup =
+  | 'Makeup & Styling for Women'
+  | 'Saree Draping'
+  | 'Hair Styling for Women'
+  | 'Salon for Women'
+  | 'Salon for Men';
+
 export interface ServiceCatalogItem {
   id: string;
   name: string;
@@ -124,8 +143,16 @@ export interface ServiceCatalogItem {
     | 'Skin & Facial'
     | 'Permanent Makeup'
     | 'Spa & Nails';
+  makeupSubCategory?: MakeupSubCategory;
+  landingGroup?: MakeupLandingGroup;
   description: string;
   price: number | null;
+  originalPrice?: number;
+  rating?: number;
+  reviewCount?: number;
+  highlights?: string[];
+  whatsIncluded?: string[];
+  additionalInfo?: string[];
   image: string;
   isPackage: boolean;
   airbrushAvailable?: boolean;
@@ -166,10 +193,10 @@ export interface PartnerSelfieLog {
 }
 
 const STORAGE_KEYS = {
-  SEED_VERSION: 'eden_roses_seed_v4',
+  SEED_VERSION: 'eden_roses_seed_v5',
   BOOKINGS: 'eden_roses_bookings_v4',
   CUSTOMERS: 'eden_roses_customers_v4',
-  SERVICES: 'eden_roses_services_v4',
+  SERVICES: 'eden_roses_services_v5',
   SETTINGS: 'eden_roses_business_settings_v4',
   TEAM: 'eden_roses_team_members_v4',
   GALLERY: 'eden_roses_gallery_images_v4',
@@ -199,336 +226,840 @@ export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
   description:
     'At Eden Roses Makeover, beauty is more than makeup. It is about confidence, individuality, and creating unforgettable memories. Subba Lakshmi specializes in professional makeup artistry, bridal transformations, hairstyling, and personalized beauty services designed to complement every client’s personality and special occasion.',
   serviceArea:
-    'C V Raman Nagar, Nagavarapalya, Kaggadasapura, Indiranagar, Brookefield, Whitefield, Jayanagar & All Across Bengaluru',
+    'Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman Nagar, Nagavarapalya, Brookefield, Whitefield, Jayanagar, Koramangala & All Across Bengaluru',
   heroImageUrl:
     'https://edenroses.in/wp-content/uploads/2024/12/Short-and-sweet-just-like-a-perfect-love-story.-.A-touch-of-makeup-a-touch-of-magicWe-are-here-to-doll-you-up-for.your-best-day.jpg',
   blockedDates: [],
   timeSlots: [...AVAILABLE_TIME_SLOTS],
 };
 
+// Configurable Demo Service Catalog (Editable anytime from Admin Panel -> More -> Services)
 export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
-  {
-    id: 'pkg-saree-draping',
-    name: 'Basic Saree Draping',
-    category: 'Bridal & Makeup Packages',
-    description:
-      'Crisp, structured pleating, pallu pinning, and silhouette draping for silk, Kanjeevaram, organza, and designer sarees.',
-    price: 599,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-saree-draping'].url,
-    isPackage: true,
-    duration: '30 mins',
-  },
-  {
-    id: 'pkg-hair-half-up',
-    name: 'Half - up & down Advance Hairstyling',
-    category: 'Bridal & Makeup Packages',
-    description:
-      'Sculpted crown volume paired with soft, long-lasting cascading waves—ideal for engagements, receptions, and sangeet.',
-    price: 999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-half-up'].url,
-    isPackage: true,
-    duration: '45 mins',
-  },
-  {
-    id: 'pkg-hair-braid-curls',
-    name: 'Braid with curls Advance Hairstyling',
-    category: 'Bridal & Makeup Packages',
-    description:
-      'Intricate bridal or festive braid woven with defined curls, ready for fresh floral veni, poola jada, or hair accessories.',
-    price: 999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-braid-curls'].url,
-    isPackage: true,
-    duration: '45 mins',
-  },
-  {
-    id: 'pkg-hair-messy-updo',
-    name: 'Messy up-do Advance Hairstyling',
-    category: 'Bridal & Makeup Packages',
-    description:
-      'Romantic textured messy bun with delicate face-framing tendrils that complements both traditional sarees and modern gowns.',
-    price: 999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-messy-updo'].url,
-    isPackage: true,
-    duration: '45 mins',
-  },
+  // ==================== 1. PARTY MAKEUP ====================
   {
     id: 'pkg-party-makeup',
     name: 'Basic Party Makeup',
     category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Party Makeup',
+    landingGroup: 'Makeup & Styling for Women',
     description:
-      'Wedding in the family, birthday, baby shower, graduation, or theme party? Look glamorous and dazzle on every special occasion.',
+      'Glow effortlessly with a fresh, party-ready makeover tailored for birthdays, family functions, baby showers, and evening celebrations.',
     price: 1599,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-party-makeup'].url,
+    originalPrice: 1999,
+    rating: 4.8,
+    reviewCount: 64,
+    duration: '1 hr 15 mins',
+    highlights: [
+      'Glow effortlessly with a fresh, long-wear party-ready base',
+      'Includes basic hairstyling (blow-dry/curls) and outfit/saree draping',
+    ],
+    whatsIncluded: [
+      'Skin prep, hydrating primer & colour correction',
+      'Flawless medium-to-full coverage party foundation base',
+      'Customized eye makeup (shimmer, soft smokey, or winged liner)',
+      'Basic hairstyling (soft curls, straightening, or simple bun)',
+      'Complimentary basic saree or dupatta draping',
+    ],
+    additionalInfo: [
+      'Available at our C V Raman Nagar studio or at your home/venue across Bengaluru',
+      'High-hygiene sanitized brushes and authentic international cosmetics used',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.34.17.jpeg',
     isPackage: true,
     airbrushAvailable: true,
-    duration: '60 mins',
   },
   {
-    id: 'pkg-engagement-makeup',
-    name: 'Engagement Makeup & Hair Package',
-    category: 'Bridal & Makeup Packages',
+    id: 'srv-hd-party-makeup',
+    name: 'HD Finish Party Makeup',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Party Makeup',
+    landingGroup: 'Makeup & Styling for Women',
     description:
-      'Complete HD engagement makeover with skin prep, customized eye artistry, eyelashes, advance hairstyling, and outfit draping.',
-    price: 4999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-engagement-makeup'].url,
+      'Experience high-definition, camera-ready radiance with premium HD foundation, sculpted contouring, lashes, and advance hairstyling.',
+    price: 2299,
+    originalPrice: 2799,
+    rating: 4.9,
+    reviewCount: 52,
+    duration: '1 hr 30 mins',
+    highlights: [
+      'Experience high-definition, photo-ready radiance under all lighting',
+      'Includes hairstyling, false eyelashes & saree/lehenga draping',
+    ],
+    whatsIncluded: [
+      'Luxury skin prep & pore-blurring HD primer',
+      'High-Definition foundation & soft dimensional contouring',
+      'Defined eye artistry with premium Mink/Natural false eyelashes',
+      'Advance party hairstyling (curls, half-updo, or braided styling)',
+      'Professional saree or lehenga dupatta draping',
+    ],
+    additionalInfo: [
+      'Ideal for cocktail nights, sangeet, receptions, and studio photoshoots',
+      'Long-wear sweat-resistant setting spray included',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.34.17-1.jpeg',
     isPackage: true,
     airbrushAvailable: true,
-    duration: '120 mins',
+  },
+  {
+    id: 'srv-luxury-party-makeup',
+    name: 'Luxury Party Makeup',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Party Makeup',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Step into the spotlight with a high-glam luxury makeover featuring international luxury brands, statement eye makeup, and signature hairstyling.',
+    price: 2999,
+    originalPrice: 3599,
+    rating: 4.9,
+    reviewCount: 41,
+    duration: '1 hr 45 mins',
+    highlights: [
+      'Step into the spotlight with a high-glam luxury international brand look',
+      'Complete with advance hairstyling, premium lashes & flawless draping',
+    ],
+    whatsIncluded: [
+      '100% luxury international cosmetics (MAC, Huda Beauty, NARS, Estée Lauder)',
+      'Waterproof, transfer-resistant luminous glass-skin or matte finish',
+      'Intricate eye makeup (halo eyes, glitter cut-crease, or smokey glam)',
+      'Signature advance hairstyling & accessory placement',
+      'Precision saree pleating & silhouette draping',
+    ],
+    additionalInfo: [
+      'Recommended for close family weddings, milestone anniversaries & red-carpet events',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2024/12/Purple-or-pink-Makeup-by-@subbalakshmi.s_makeup_artist-Outfit-@fashionnova-2.jpg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+
+  // ==================== 2. ENGAGEMENT MAKEUP ====================
+  {
+    id: 'pkg-engagement-makeup',
+    name: 'Engagement Makeup',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Engagement Makeup',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Radiant, photo-perfect engagement makeover crafted to complement your ring ceremony saree, gown, or pastel lehenga.',
+    price: 4499,
+    originalPrice: 5499,
+    rating: 4.9,
+    reviewCount: 58,
+    duration: '2 hrs',
+    highlights: [
+      'Soft-glam or traditional engagement look tailored to your outfit palette',
+      'Includes advance hairstyling, false lashes, draping & jewellery setting',
+    ],
+    whatsIncluded: [
+      'In-depth skin prep & luminous priming for close-up ring ceremony photography',
+      'Seamless full-coverage base with soft blush & collarbone highlight',
+      'Customized engagement eye makeup + premium false eyelashes',
+      'Advance engagement hairstyling (half-up curls, floral bun, or waves)',
+      'Complete saree/lehenga draping & jewellery pinning',
+    ],
+    additionalInfo: [
+      'Available at studio or on-venue across Indiranagar, Varthur, Yelahanka, Kaggadasapura & all Bengaluru',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.28.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+  {
+    id: 'srv-hd-engagement-makeup',
+    name: 'HD Engagement Makeup',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Engagement Makeup',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Ultra-refined 4K High-Definition engagement transformation by Subba Lakshmi with pro hairstyling, lashes, and dupatta/saree styling.',
+    price: 5499,
+    originalPrice: 6499,
+    rating: 5.0,
+    reviewCount: 47,
+    duration: '2 hrs 15 mins',
+    highlights: [
+      '4K camera-ready HD finish that looks like second skin in stage lighting',
+      'Includes signature hairstyling, mink lashes, draping & floral/accessory setting',
+    ],
+    whatsIncluded: [
+      'Luxury hydrating prep + 4K HD international foundation system',
+      'Precision facial sculpting, dewy highlight & long-wear lip artistry',
+      'Bespoke eye styling with mink/silk lashes & brow architecture',
+      'Advance bridal-grade hairstyling with padding/extensions support',
+      'Crisp box-pleated saree draping or double-dupatta lehenga styling',
+    ],
+    additionalInfo: [
+      'Includes complimentary touch-up kit for your ceremony',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.09-1.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+
+  // ==================== 3. BRIDAL MAKEUP ====================
+  {
+    id: 'srv-bridal-makeover',
+    name: 'Bridal Makeup',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Bridal Makeup',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Timeless traditional or contemporary bridal makeover designed to keep you glowing through every ritual from Muhurtham to Reception.',
+    price: 6999,
+    originalPrice: 8499,
+    rating: 4.9,
+    reviewCount: 86,
+    duration: '2 hrs 30 mins',
+    highlights: [
+      'Complete bridal look with long-lasting waterproof base & expressive eyes',
+      'Includes bridal hairstyling, Kanjeevaram/bridal draping & jewellery setting',
+    ],
+    whatsIncluded: [
+      'Bridal skin preparation, under-eye correction & sweat-lock priming',
+      'Long-wear bridal base tailored to your skin undertone',
+      'Traditional or modern bridal eye artistry + premium lashes',
+      'Bridal hairstyling (traditional bun, braid, or reception waves)',
+      'Bridal saree pre-pleating, draping & full temple/bridal jewellery setting',
+    ],
+    additionalInfo: [
+      'Early morning Muhurtham slots available from 04:30 AM / 05:00 AM onwards',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
   },
   {
     id: 'pkg-luxury-bridal',
-    name: 'Luxury Bridal Makeup Package',
+    name: 'HD Bridal Makeup',
     category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Bridal Makeup',
+    landingGroup: 'Makeup & Styling for Women',
     description:
-      'Signature bridal transformation by Subba Lakshmi including luxury HD skin finish, bespoke bridal hairstyling, saree draping, and jewellery setting.',
+      'Signature High-Definition bridal transformation by Subba Lakshmi including luxury HD skin finish, bespoke bridal hairstyling, saree draping, and jewellery setting.',
     price: 8999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-luxury-bridal'].url,
+    originalPrice: 10999,
+    rating: 5.0,
+    reviewCount: 112,
+    duration: '3 hrs',
+    highlights: [
+      'Signature 4K HD bridal transformation by Lead Artist Subba Lakshmi',
+      'Includes intricate bridal hairstyling, silk saree box-draping & maang tikka setting',
+    ],
+    whatsIncluded: [
+      '1-on-1 bridal look consultation & luxury dermal prep',
+      'Ultra-HD waterproof, tear-proof & flash-friendly bridal skin finish',
+      'Detailed bridal eye artistry, 3D lashes & custom lip layering',
+      'Traditional Poola Jada / Jasmine Veni bridal hairstyling or sculptural updo',
+      'Master Kanjeevaram silk saree box-pleating, belt & veil/pallu pinning',
+    ],
+    additionalInfo: [
+      'Most popular bridal choice for South Indian Muhurtham & Grand Receptions',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08.jpeg',
     isPackage: true,
-    airbrushAvailable: true,
-    duration: '180 mins',
-  },
-  {
-    id: 'srv-basic-makeover',
-    name: 'Basic Make Over',
-    category: 'Makeup Services',
-    description:
-      'Natural, radiant makeover tailored for intimate gatherings, corporate events, and daytime celebrations.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-basic-makeover'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-party-makeover',
-    name: 'Party Make Over',
-    category: 'Makeup Services',
-    description:
-      'Wedding in the family, birthday, baby shower, graduation, or attending a theme party? Come in for a transformation that leaves everyone in awe.',
-    price: 1599,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-party-makeup'].url,
-    isPackage: false,
-    airbrushAvailable: true,
-  },
-  {
-    id: 'srv-bridal-makeover',
-    name: 'Bridal Make Over',
-    category: 'Makeup Services',
-    description:
-      'Getting married? Look mesmerizing every step of the way! From your engagement and pre-bridal shoot to pre-wedding ceremonies and the final wedding look.',
-    price: 8999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-luxury-bridal'].url,
-    isPackage: false,
-    airbrushAvailable: true,
-  },
-  {
-    id: 'srv-special-bridal',
-    name: 'Special Bridal Packages',
-    category: 'Makeup Services',
-    description:
-      'We offer special tailor-made packages to suit your unique requirements for all your events. Let us create the perfect look for your special day!',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-special-bridal'].url,
-    isPackage: false,
     airbrushAvailable: true,
   },
   {
     id: 'srv-airbrush-makeup',
-    name: 'Airbrush Makeup',
+    name: 'Premium Bridal Makeup',
     category: 'Makeup Services',
+    makeupSubCategory: 'Bridal Makeup',
+    landingGroup: 'Makeup & Styling for Women',
     description:
-      'We use the latest equipment and silicone-based formulas to create High-Definition makeup. Can be requested for party or bridal looks at an additional cost.',
-    price: null,
+      'Ultra-luxury Silicone Airbrush & International Couture Bridal Makeover for a weightless, porcelain 16-hour waterproof glow.',
+    price: 11999,
+    originalPrice: 14999,
+    rating: 5.0,
+    reviewCount: 74,
+    duration: '3 hrs 15 mins',
+    highlights: [
+      'Silicone Airbrush + Luxury Couture cosmetics for 16-hour weightless perfection',
+      'Complete bridal hair architecture, luxury lashes, draping & full jewellery styling',
+    ],
+    whatsIncluded: [
+      'Advanced Silicone Airbrush system for a featherlight, poreless finish',
+      '100% luxury couture palette (Charlotte Tilbury, Dior, NARS, Huda Beauty)',
+      'Multi-dimensional eye artistry with luxury mink lashes & coloured lens support',
+      'Bespoke bridal hairstyling with hair padding & floral/jewellery integration',
+      'Complimentary bridal pre-pleating, draping & bridal touch-up kit',
+    ],
+    additionalInfo: [
+      'Includes dedicated senior stylist assistance for rapid outfit/look transitions',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.30.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+
+  // ==================== 4. WEDDING GUEST MAKEUP ====================
+  {
+    id: 'srv-wedding-guest-makeup',
+    name: 'Wedding Guest Makeup',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Wedding Guest Makeup',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Look radiant as the sister, mother, or bridesmaid of the bride/groom with a long-wear festive makeover, hairstyling, and draping.',
+    price: 1899,
+    originalPrice: 2399,
+    rating: 4.8,
+    reviewCount: 49,
+    duration: '1 hr 15 mins',
+    highlights: [
+      'Specially curated for bridesmaids, sisters & close family members',
+      'Includes festive eye makeup, hairstyling & saree/lehenga draping',
+    ],
+    whatsIncluded: [
+      'Skin prep & long-wear festive foundation base',
+      'Soft glam or traditional eye makeup with liner & mascara',
+      'Festive hairstyling (curls, braid, or bun with floral pin placement)',
+      'Saree pleating or lehenga dupatta pinning',
+    ],
+    additionalInfo: [
+      'Group bookings supported for bridal families at wedding venues or home',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.24.57.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+  {
+    id: 'srv-hd-wedding-guest-makeup',
+    name: 'HD Wedding Guest Makeup',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Wedding Guest Makeup',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'High-definition wedding guest makeover with premium HD base, false eyelashes, advance hairstyling, and crisp saree draping.',
+    price: 2599,
+    originalPrice: 3199,
+    rating: 4.9,
+    reviewCount: 38,
+    duration: '1 hr 30 mins',
+    highlights: [
+      'Camera-ready HD finish for wedding stage photos & videography',
+      'Includes false eyelashes, advance hairstyling & complete outfit draping',
+    ],
+    whatsIncluded: [
+      'HD primer & high-definition photo-friendly foundation',
+      'Sculpted contour, luminous blush & waterproof eye makeup',
+      'Pair of natural/glam false eyelashes included',
+      'Advance hairstyling & traditional/modern saree draping',
+    ],
+    additionalInfo: [
+      'Ideal for Haldi, Mehendi, Sangeet, Muhurtham & Reception guests',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.24.50.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+
+  // ==================== 5. SAREE DRAPING ====================
+  {
+    id: 'pkg-saree-draping',
+    name: 'Basic Saree Draping',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Saree Draping',
+    landingGroup: 'Saree Draping',
+    description:
+      'Crisp, structured pleating, pallu pinning, and silhouette draping for silk, Kanjeevaram, organza, georgette, and designer sarees.',
+    price: 599,
+    originalPrice: 799,
+    rating: 4.9,
+    reviewCount: 94,
+    duration: '30 mins',
+    highlights: [
+      'Crisp center pleats & narrow/broad pallu pinning tailored to your height',
+      'Secure, comfortable pinning that stays intact through hours of rituals',
+    ],
+    whatsIncluded: [
+      'Professional pallu & center pleat alignment',
+      'Flattering hip-hugging silhouette pinning (safety pins included)',
+      'Supports Kanjeevaram, Banarasi, Organza, Tissue, Net & Nauvari styles',
+    ],
+    additionalInfo: [
+      'Can be booked standalone or combined with any hairstyling or makeup service',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-saree-draping'].url,
+    isPackage: true,
+  },
+  {
+    id: 'srv-bridal-saree-draping',
+    name: 'Bridal Saree Draping',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Saree Draping',
+    landingGroup: 'Saree Draping',
+    description:
+      'Master bridal Kanjeevaram silk saree pre-pleating, iron-pressed box folding, waist-belt (Oddiyanam) setting, and Muhurtham draping.',
+    price: 999,
+    originalPrice: 1299,
+    rating: 5.0,
+    reviewCount: 67,
+    duration: '45 mins',
+    highlights: [
+      'Precision bridal box-pleating & iron-pressed Kanjeevaram silk alignment',
+      'Includes Oddiyanam (waist belt) setting & double-pallu / veil draping',
+    ],
+    whatsIncluded: [
+      'Steam/iron-pressed micro-pleating for heavy bridal silk sarees',
+      'Traditional South Indian Muhurtham, Coorgi, Tamil Madisar, or Gujarati drape',
+      'Bridal waist-belt & blouse shoulder pinning for zero-slip security',
+    ],
+    additionalInfo: [
+      'Pre-pleating service also available a day prior to the wedding',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07-1.jpeg',
+    isPackage: true,
+  },
+
+  // ==================== 6. HAIR STYLING ====================
+  {
+    id: 'pkg-hair-half-up',
+    name: 'Basic Hair Styling',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Hair Styling',
+    landingGroup: 'Hair Styling for Women',
+    description:
+      'Sculpted crown volume paired with soft, long-lasting cascading waves, curls, or sleek blow-dry—ideal for engagements, parties, and sangeet.',
+    price: 799,
+    originalPrice: 999,
+    rating: 4.8,
+    reviewCount: 72,
+    duration: '45 mins',
+    highlights: [
+      'Heat-protected soft Hollywood waves, bouncy curls, or half-up & down styling',
+      'Includes volume crimping, back-combing & long-hold setting spray',
+    ],
+    whatsIncluded: [
+      'Thermal heat-protectant prep & crown volume texturizing',
+      'Choice of Half-up & down curls, soft open waves, or sleek classic bun',
+      'Complimentary pinning of client-provided hair accessories or flowers',
+    ],
+    additionalInfo: [
+      'Please ensure hair is washed and completely dry prior to appointment',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-half-up'].url,
+    isPackage: true,
+  },
+  {
+    id: 'pkg-hair-braid-curls',
+    name: 'Bridal Hair Styling',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Hair Styling',
+    landingGroup: 'Hair Styling for Women',
+    description:
+      'Intricate bridal braid, traditional South Indian Poola Jada, or sculptural bridal updo adorned with jasmine veni, jadai billai, and hair extensions support.',
+    price: 1499,
+    originalPrice: 1899,
+    rating: 5.0,
+    reviewCount: 83,
+    duration: '1 hr',
+    highlights: [
+      'Traditional bridal braid, Poola Jada, or multi-textured reception updo',
+      'Includes donut padding, extension blending & bridal floral/jewellery pinning',
+    ],
+    whatsIncluded: [
+      'Full crown architecture & volume padding for bridal Maang Tikka / Matha Patti',
+      'Intricate bridal braid with curls or traditional South Indian Jada styling',
+      'Secure pinning of fresh jasmine garlands, baby’s breath, or golden Rakodi/Billai',
+    ],
+    additionalInfo: [
+      'Supports clip-in hair extensions and long bridal braids',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-braid-curls'].url,
+    isPackage: true,
+  },
+  {
+    id: 'pkg-hair-messy-updo',
+    name: 'Party Hair Styling',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Hair Styling',
+    landingGroup: 'Hair Styling for Women',
+    description:
+      'Romantic textured messy bun, Russian updo, or braided crown with delicate face-framing tendrils that complements both sarees and modern gowns.',
+    price: 999,
+    originalPrice: 1299,
+    rating: 4.9,
+    reviewCount: 61,
+    duration: '45 mins',
+    highlights: [
+      'Romantic textured messy up-do or braided party hairstyle with tendrils',
+      'Designed to stay voluminous and frizz-free for 8+ hours',
+    ],
+    whatsIncluded: [
+      'Texture crimping & sculptural pin-work for effortless volume',
+      'Face-framing curls tailored to your jawline and neckline',
+      'Accessory & floral baby’s breath / pearl pin placement',
+    ],
+    additionalInfo: [
+      'Perfect for cocktail nights, receptions, bridesmaids & festive parties',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-messy-updo'].url,
+    isPackage: true,
+  },
+
+  // ==================== 7. PACKAGES ====================
+  {
+    id: 'pkg-makeup-hair-combo',
+    name: 'Makeup + Hairstyling Package',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Packages',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'All-in-one value combo combining HD Party/Festive Makeup, Advance Hairstyling (Curls/Updo/Braid), False Eyelashes, and Saree Draping.',
+    price: 2499,
+    originalPrice: 3299,
+    rating: 4.9,
+    reviewCount: 91,
+    duration: '1 hr 45 mins',
+    highlights: [
+      'Complete head-to-toe makeover: HD Makeup + Advance Hair + Saree Draping',
+      'Save ₹800 compared to booking individual services separately',
+    ],
+    whatsIncluded: [
+      'Full HD Party / Festive Makeup with skin prep & contouring',
+      'Pair of premium false eyelashes & long-wear lip color',
+      'Advance Hairstyling (Messy Updo, Half-up Curls, or Braid with Curls)',
+      'Complete Saree Draping or Lehenga Dupatta styling',
+    ],
+    additionalInfo: [
+      'Bestseller combo for wedding guests, housewarmings, naming ceremonies & parties',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.28.14.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+  {
+    id: 'srv-special-bridal',
+    name: 'Bridal Package',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Packages',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Complete 2-Look Wedding Combo (Muhurtham + Reception) by Subba Lakshmi including HD/Airbrush Bridal Makeup, 2 Advance Hairstyles, Saree Box-Draping & Pre-Bridal Skin Prep.',
+    price: 14999,
+    originalPrice: 18999,
+    rating: 5.0,
+    reviewCount: 63,
+    duration: '5 hrs (2 Looks)',
+    highlights: [
+      'Covers both Wedding Muhurtham Look + Grand Reception Transformation',
+      'Includes 2 HD Bridal Makeovers, 2 Bridal Hairstyles, Saree Pre-Pleating & Lashes',
+    ],
+    whatsIncluded: [
+      'Look 1: Traditional Muhurtham HD Bridal Makeup, Poola Jada/Bun & Silk Saree Draping',
+      'Look 2: Glamorous Reception HD Makeover, Voluminous Waves/Updo & Gown/Lehenga Styling',
+      'Luxury international cosmetics, 2 pairs of mink lashes & hair padding',
+      'Complete jewellery setting and look-change assistance at the venue',
+    ],
+    additionalInfo: [
+      'Custom multi-event packages (Haldi + Mehendi + Sangeet + Muhurtham) also available',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.10.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+  {
+    id: 'pkg-engagement-combo',
+    name: 'Engagement Package',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Packages',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Complete Engagement Makeover + Pre-Event Hydra/Glow Facial Prep + Advance Hairstyling + Saree Pre-Pleating & Draping.',
+    price: 5999,
+    originalPrice: 7499,
+    rating: 4.9,
+    reviewCount: 44,
+    duration: '2 hrs 30 mins',
+    highlights: [
+      'Includes HD Engagement Makeup + Advance Hair + Saree Pre-Pleating + Lashes',
+      'Plus complimentary Bridesmaid/Mother basic saree draping',
+    ],
+    whatsIncluded: [
+      '4K HD Engagement Makeup with dewy/matte skin finish',
+      'Advance Engagement Hairstyling with floral or crystal accessory setting',
+      'Silk Saree Pre-Pleating & Box Draping',
+      '1 Complimentary Basic Saree Draping for Mother or Sister',
+    ],
+    additionalInfo: [
+      'Available at studio or at your engagement venue in Bengaluru',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.31.jpeg',
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+
+  // ==================== 8. ADD-ONS ====================
+  {
+    id: 'addon-false-eyelashes',
+    name: 'False Eyelashes',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Add-ons',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Pair of lightweight, reusable luxury 3D Mink or Natural Silk false eyelashes with waterproof lash adhesive application.',
+    price: 299,
+    originalPrice: 450,
+    rating: 4.9,
+    reviewCount: 108,
+    duration: '15 mins',
+    highlights: [
+      'Featherlight 3D Mink or Natural Wispy lashes for expressive eyes',
+      'Includes custom trimming and waterproof latex-free lash glue application',
+    ],
+    whatsIncluded: [
+      '1 Pair of premium false eyelashes (Natural, Wispy, or Bridal Volume)',
+      'Seamless lash-line blending with liner & mascara',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08-2.jpeg',
+    isPackage: false,
+  },
+  {
+    id: 'addon-hair-accessories',
+    name: 'Hair Accessories',
+    category: 'Hair & Styling',
+    makeupSubCategory: 'Add-ons',
+    landingGroup: 'Hair Styling for Women',
+    description:
+      'Fresh Jasmine Veni / Baby’s Breath floral arrangement, pearl pins, crystal hair vines, or South Indian Jadai Billai placement.',
+    price: 399,
+    originalPrice: 599,
+    rating: 4.9,
+    reviewCount: 79,
+    duration: '20 mins',
+    highlights: [
+      'Artistic placement of floral venis, baby’s breath, pearls & bridal hair jewellery',
+      'Secured with invisible interlocking pins for zero movement',
+    ],
+    whatsIncluded: [
+      'Decorative pearl/crystal pins or floral styling arrangement',
+      'Secure pinning of Maang Tikka, Matha Patti, Jhumar, or Rakodi',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.25.00.jpeg',
+    isPackage: false,
+  },
+  {
+    id: 'addon-premium-hairstyle-upgrade',
+    name: 'Premium Hairstyle Upgrade',
+    category: 'Hair & Styling',
+    makeupSubCategory: 'Add-ons',
+    landingGroup: 'Hair Styling for Women',
+    description:
+      'Upgrade any basic hairstyling to an intricate 3D Russian Updo, Hollywood Waves, or Long Bridal Poola Jada with extension blending.',
+    price: 499,
+    originalPrice: 799,
+    rating: 4.9,
+    reviewCount: 54,
+    duration: '30 mins',
+    highlights: [
+      'Upgrade basic curls/blow-dry to advanced sculptural braids or Hollywood waves',
+      'Includes hair donut padding and clip-in extension blending',
+    ],
+    whatsIncluded: [
+      'Full hair texturizing, volume crimping & structural updo/braid crafting',
+      'Blending and securing of client’s hair extensions',
+    ],
+    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.28.15.jpeg',
+    isPackage: false,
+  },
+  {
+    id: 'addon-additional-makeup-services',
+    name: 'Additional Makeup Services',
+    category: 'Makeup Services',
+    makeupSubCategory: 'Add-ons',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Silicone Airbrush Base Upgrade, Saree Pre-Pleating & Box Folding, or Quick Groom Touch-up & Beard Styling.',
+    price: 999,
+    originalPrice: 1499,
+    rating: 4.9,
+    reviewCount: 46,
+    duration: '30 mins',
+    highlights: [
+      'Upgrade HD base to Silicone Airbrush or add pre-wedding Saree Pre-Pleating',
+      'Also supports Groom HD photo-ready touch-up & hair styling',
+    ],
+    whatsIncluded: [
+      'Choice of Airbrush Base Upgrade, 2 Saree Pre-Pleatings, or Groom Touch-up',
+      'Performed at studio or at your event venue',
+    ],
     image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-airbrush-makeup'].url,
     isPackage: false,
     airbrushAvailable: true,
   },
-  {
-    id: 'srv-hair-treatments',
-    name: 'Hair Treatments',
-    category: 'Hair & Styling',
-    description:
-      'Transform your hair with our expert treatments at Eden Roses Unisex Salon in Bengaluru. Perfect for all hair types.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-hair-treatments'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-hair-spa',
-    name: 'Hair Spa',
-    category: 'Hair & Styling',
-    description:
-      'Deep nourishing and revitalizing hair spa rituals for silky, frizz-free, healthy shine.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-hair-spa'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-haircuts',
-    name: 'Haircuts for Men and Women',
-    category: 'Hair & Styling',
-    description:
-      'Precision haircuts, layering, and contemporary styling for men and women by experienced stylists.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-haircuts'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-skin-care',
-    name: 'Skin Care',
-    category: 'Skin & Facial',
-    description:
-      'Revitalize your skin with premium facials and treatments at our salon in C V Raman Nagar, Bengaluru.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-skin-care'].url,
-    isPackage: false,
-  },
+
+  // ==================== 9. SALON FOR WOMEN & SALON FOR MEN ====================
   {
     id: 'srv-hydra-facial',
-    name: 'Hydra Facial',
+    name: 'Hydra Facial & Bridal Glow Facial',
     category: 'Skin & Facial',
+    makeupSubCategory: 'Salon for Women',
+    landingGroup: 'Salon for Women',
     description:
-      'Experience the ultimate skin rejuvenation with HydraFacial at Eden Roses Unisex Salon. Say goodbye to dull skin and hello to a radiant complexion!',
-    price: null,
+      'Experience the ultimate 7-step skin rejuvenation with HydraFacial at Eden Roses Unisex Salon for instant glass-skin bridal radiance.',
+    price: 1999,
+    originalPrice: 2999,
+    rating: 4.9,
+    reviewCount: 88,
+    duration: '1 hr',
+    highlights: [
+      'Deep hydro-dermabrasion cleansing, pore extraction & hyaluronic infusion',
+      'Instant dewy bridal glow with zero downtime',
+    ],
+    whatsIncluded: [
+      'Vortex cleansing, gentle peel, painless suction extraction & LED therapy',
+      'Antioxidant & peptide serum infusion',
+    ],
     image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-hydra-facial'].url,
     isPackage: false,
   },
   {
-    id: 'srv-bridal-salon',
-    name: 'Bridal Makeup (In-Studio & Venue)',
-    category: 'Makeup Services',
+    id: 'srv-skin-care',
+    name: 'Luxury Skin Care & Detan Rituals',
+    category: 'Skin & Facial',
+    makeupSubCategory: 'Salon for Women',
+    landingGroup: 'Salon for Women',
     description:
-      'Look stunning on your big day with bridal makeup by our experts in Bengaluru.',
-    price: 8999,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-bridal-salon'].url,
+      'Revitalize your skin with O3+ Bridal Facial, Kanpeki Japanese Facial, Gold Facial, and organic detan rituals at our C V Raman Nagar studio.',
+    price: 1299,
+    originalPrice: 1699,
+    rating: 4.8,
+    reviewCount: 62,
+    duration: '1 hr',
+    highlights: [
+      'Brightening facial & detan treatments tailored for dry, oily, or sensitive skin',
+      'Performed by certified aestheticians in private studio suites',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-skin-care'].url,
     isPackage: false,
   },
   {
-    id: 'srv-waxing',
-    name: 'Waxing Services',
-    category: 'Spa & Nails',
+    id: 'srv-hair-spa',
+    name: 'Deep Nourishing Hair Spa & Keratin Ritual',
+    category: 'Hair & Styling',
+    makeupSubCategory: 'Salon for Women',
+    landingGroup: 'Salon for Women',
     description:
-      'Smooth and flawless skin with our hygienic, gentle professional waxing services in Bangalore.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-waxing'].url,
+      'Deep nourishing L’Oréal / Moroccan Oil hair spa, Dandruff Control, Botox, and Keratin smoothing rituals for silky, frizz-free shine.',
+    price: 999,
+    originalPrice: 1399,
+    rating: 4.9,
+    reviewCount: 75,
+    duration: '1 hr',
+    highlights: [
+      'Repairs heat-damaged and dry hair with deep steam conditioning & head massage',
+      'Leaves hair silky, manageable, and wedding-ready',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-hair-spa'].url,
     isPackage: false,
   },
   {
     id: 'srv-mani-pedi',
-    name: 'Manicure and Pedicure',
+    name: 'Luxury Manicure, Pedicure & Nail Art',
     category: 'Spa & Nails',
+    makeupSubCategory: 'Salon for Women',
+    landingGroup: 'Salon for Women',
     description:
-      'Pamper your hands and feet with luxurious manicure and pedicure services at our salon.',
-    price: null,
+      'Pamper your hands and feet with crystal spa manicure, pedicure, bridal gel nail extensions, and custom French/chrome nail art.',
+    price: 899,
+    originalPrice: 1199,
+    rating: 4.8,
+    reviewCount: 53,
+    duration: '1 hr',
+    highlights: [
+      'Spa manicure & pedicure with cuticle care, heel buffing & relaxing foot massage',
+      'Bridal gel polish & nail extension upgrades available',
+    ],
     image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-mani-pedi'].url,
     isPackage: false,
   },
   {
-    id: 'srv-massage',
-    name: 'Massage Therapies',
+    id: 'srv-waxing',
+    name: 'Rica & Roll-On Hygienic Waxing',
     category: 'Spa & Nails',
+    makeupSubCategory: 'Salon for Women',
+    landingGroup: 'Salon for Women',
     description:
-      'Relaxing head, shoulder, and body massage therapies tailored for complete stress relief and rejuvenation.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-massage'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-nail-art',
-    name: 'Nail Art',
-    category: 'Spa & Nails',
-    description:
-      'Bridal nail extensions, gel polish, French tips, and custom nail art designs.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-nail-art'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-permanent-makeup',
-    name: 'Permanent Makeup',
-    category: 'Permanent Makeup',
-    description:
-      'Long-lasting cosmetic artistry performed with precision equipment and certified pigments.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-permanent-makeup'].url,
+      'Smooth and flawless skin with gentle Italian Rica liposoluble waxing for full arms, full legs, and underarms.',
+    price: 799,
+    originalPrice: 999,
+    rating: 4.8,
+    reviewCount: 69,
+    duration: '45 mins',
+    highlights: [
+      'Single-use cartridges & soothing post-wax oil for zero redness',
+      'Removes tan and leaves skin velvety smooth',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-waxing'].url,
     isPackage: false,
   },
   {
     id: 'srv-bb-glow',
-    name: 'BB Glow',
+    name: 'Permanent Makeup · Microblading & BB Glow',
     category: 'Permanent Makeup',
+    makeupSubCategory: 'Salon for Women',
+    landingGroup: 'Salon for Women',
     description:
-      'Semi-permanent foundation glow facial for even-toned, radiant, pore-refined skin.',
-    price: null,
+      'Semi-permanent BB Glow foundation facial, Eyebrow Microblading, Ombre Brows, and Lip Neutralization by certified cosmetologists.',
+    price: 2999,
+    originalPrice: 3999,
+    rating: 4.9,
+    reviewCount: 39,
+    duration: '1 hr 30 mins',
+    highlights: [
+      'Certified pigments & precision micro-needling / brow architecture',
+      'Wake up with naturally defined brows, tinted lips, and luminous skin',
+    ],
     image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-bb-glow'].url,
     isPackage: false,
   },
   {
-    id: 'srv-cc-glow',
-    name: 'CC Glow',
-    category: 'Permanent Makeup',
+    id: 'srv-haircuts',
+    name: 'Men’s Grooming, Haircut, Beard & Groom Package',
+    category: 'Hair & Styling',
+    makeupSubCategory: 'Salon for Men',
+    landingGroup: 'Salon for Men',
     description:
-      'Color-correcting luminous skin treatment targeting pigmentation and uneven skin tone.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-cc-glow'].url,
+      'Precision men’s haircut, fade styling, beard sculpting, detan facial, and HD Groom Makeover at Eden Roses Unisex Salon.',
+    price: 699,
+    originalPrice: 999,
+    rating: 4.9,
+    reviewCount: 84,
+    duration: '1 hr',
+    highlights: [
+      'Includes Men’s Designer Haircut, Beard Styling & Refreshing Detan Clean-up',
+      'Groom Wedding & Engagement HD Makeover packages also available',
+    ],
+    whatsIncluded: [
+      'Consultation, hair wash, precision haircut & blow-dry styling',
+      'Beard trim/shaping with hot towel compress',
+      'Face detan pack or Express Glow cleanup',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-haircuts'].url,
     isPackage: false,
   },
   {
-    id: 'srv-microblading',
-    name: 'Microblading',
-    category: 'Permanent Makeup',
+    id: 'srv-men-groom-facial',
+    name: 'Men’s HydraFacial, Hair Spa & Head Massage',
+    category: 'Skin & Facial',
+    makeupSubCategory: 'Salon for Men',
+    landingGroup: 'Salon for Men',
     description:
-      'Natural hair-stroke eyebrow architecture customized to your facial proportions.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-microblading'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-micro-shading',
-    name: 'Micro Shading',
-    category: 'Permanent Makeup',
-    description:
-      'Soft powdered brow definition ideal for all skin types and long-lasting fullness.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-micro-shading'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-ombre-brows',
-    name: 'Ombre Brows',
-    category: 'Permanent Makeup',
-    description:
-      'Seamless gradient brow styling transitioning from a soft front to a defined tail.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-ombre-brows'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-lip-pigment',
-    name: 'Lip Pigment',
-    category: 'Permanent Makeup',
-    description:
-      'Lip neutralization and natural tint enhancement for soft, youthful lip color.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-lip-pigment'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-beauty-spot',
-    name: 'Beauty Spot',
-    category: 'Permanent Makeup',
-    description:
-      'Delicate cosmetic beauty mark placement tailored to your aesthetic preference.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-permanent-makeup'].url,
-    isPackage: false,
-  },
-  {
-    id: 'srv-permanent-blush',
-    name: 'Permanent Blush',
-    category: 'Permanent Makeup',
-    description:
-      'Subtle, natural-looking cheek tint treatment for a fresh everyday bridal flush.',
-    price: null,
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-bb-glow'].url,
+      'Complete men’s revitalizing ritual featuring Deep Cleansing Facial / Detan, Anti-Dandruff Hair Spa, and Stress-Relief Head & Shoulder Massage.',
+    price: 1299,
+    originalPrice: 1699,
+    rating: 4.8,
+    reviewCount: 47,
+    duration: '1 hr 15 mins',
+    highlights: [
+      'Removes sun tan, unclogs pores, and nourishes scalp & hair',
+      'Ideal pre-event grooming package for grooms and wedding guests',
+    ],
+    whatsIncluded: [
+      'Men’s Deep Pore Cleansing / O3+ Detan Facial',
+      'Nourishing Hair Spa with steam & 20-min head/shoulder massage',
+    ],
+    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-massage'].url,
     isPackage: false,
   },
 ];
@@ -664,6 +1195,41 @@ function sanitizeCustomerLeadForFirestore(lead: CustomerLead): CustomerLead {
   if (lead.lastBookingId) cleaned.lastBookingId = String(lead.lastBookingId).slice(0, 64);
   if (lead.totalSpend !== undefined)
     cleaned.totalSpend = Math.max(0, Number(lead.totalSpend));
+  return cleaned;
+}
+
+function sanitizeServiceForFirestore(s: ServiceCatalogItem): ServiceCatalogItem {
+  const cleaned: ServiceCatalogItem = {
+    id: String(s.id || `srv-${Date.now()}`).slice(0, 80).replace(/[^a-zA-Z0-9_-]/g, '-'),
+    name: String(s.name || 'Makeup Service').slice(0, 160),
+    category: s.category || 'Makeup Services',
+    description: String(
+      s.description || 'Professional makeup & beauty service at Eden Roses Makeover.'
+    ).slice(0, 1500),
+    price: s.price === null || s.price === undefined ? null : Math.max(0, Number(s.price)),
+    image: String(s.image || '').slice(0, 1500),
+    isPackage: Boolean(s.isPackage),
+  };
+
+  if (s.makeupSubCategory) cleaned.makeupSubCategory = s.makeupSubCategory;
+  if (s.landingGroup) cleaned.landingGroup = s.landingGroup;
+  if (s.originalPrice !== undefined && s.originalPrice !== null && Number(s.originalPrice) > 0) {
+    cleaned.originalPrice = Math.max(0, Number(s.originalPrice));
+  }
+  if (s.rating !== undefined) cleaned.rating = Number(s.rating);
+  if (s.reviewCount !== undefined) cleaned.reviewCount = Number(s.reviewCount);
+  if (s.duration) cleaned.duration = String(s.duration).slice(0, 80);
+  if (s.airbrushAvailable !== undefined) cleaned.airbrushAvailable = Boolean(s.airbrushAvailable);
+  if (Array.isArray(s.highlights) && s.highlights.length > 0) {
+    cleaned.highlights = s.highlights.map((h) => String(h).slice(0, 300)).slice(0, 12);
+  }
+  if (Array.isArray(s.whatsIncluded) && s.whatsIncluded.length > 0) {
+    cleaned.whatsIncluded = s.whatsIncluded.map((w) => String(w).slice(0, 300)).slice(0, 15);
+  }
+  if (Array.isArray(s.additionalInfo) && s.additionalInfo.length > 0) {
+    cleaned.additionalInfo = s.additionalInfo.map((a) => String(a).slice(0, 300)).slice(0, 10);
+  }
+
   return cleaned;
 }
 
@@ -986,10 +1552,11 @@ export function subscribeToDataUpdates(callback: () => void): () => void {
 
 let isSeedingBookings = false;
 let isSeedingCustomers = false;
+let isSeedingServices = false;
 
 /**
- * Starts real-time Firebase listeners (`onSnapshot`) on `/bookings` and `/customers`.
- * Automatically seeds initial bookings into Firebase if the cloud collection is empty!
+ * Starts real-time Firebase listeners (`onSnapshot`) on `/bookings`, `/customers`, and `/services`.
+ * Automatically seeds initial bookings and services into Firebase if the cloud collection is empty!
  */
 export function startFirebaseRealtimeSync(): void {
   if (firebaseListenersAttached || !isFirebaseConfigured) return;
@@ -1093,6 +1660,69 @@ export function startFirebaseRealtimeSync(): void {
     },
     (error) => {
       handleFirestoreError(error, OperationType.GET, customersPath);
+    }
+  );
+
+  // 3. Real-time Services & Pricing Catalog listener
+  const servicesPath = 'services';
+  onSnapshot(
+    collection(db, servicesPath),
+    async (snapshot) => {
+      isFirebaseLiveConnected = true;
+      if (isSeedingServices) return;
+
+      const servicesSeededKey = 'eden_roses_services_cloud_seeded_v5';
+      if (snapshot.empty || (snapshot.size < 10 && !localStorage.getItem(servicesSeededKey))) {
+        isSeedingServices = true;
+        try {
+          const initialCatalog = getServicesCatalog();
+          await Promise.all(
+            initialCatalog.map((item) => {
+              const clean = sanitizeServiceForFirestore(item);
+              return setDoc(doc(db, servicesPath, clean.id), clean).catch((err) => {
+                console.warn('Initial service seed warning:', err);
+              });
+            })
+          );
+          localStorage.setItem(servicesSeededKey, 'true');
+        } finally {
+          isSeedingServices = false;
+          notifyDataUpdated();
+        }
+        return;
+      }
+
+      const remoteServicesMap = new Map<string, ServiceCatalogItem>();
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as ServiceCatalogItem;
+        if (data && data.id) {
+          remoteServicesMap.set(data.id, data);
+        }
+      });
+
+      if (remoteServicesMap.size > 0) {
+        // Keep initial catalog ordering for known IDs, and put newly added custom products at the top
+        const knownOrderIds = new Set(INITIAL_SERVICES_CATALOG.map((s) => s.id));
+        const customServices: ServiceCatalogItem[] = [];
+        remoteServicesMap.forEach((srv, id) => {
+          if (!knownOrderIds.has(id)) {
+            customServices.push(srv);
+          }
+        });
+        const orderedKnown: ServiceCatalogItem[] = [];
+        INITIAL_SERVICES_CATALOG.forEach((seedSrv) => {
+          const remoteSrv = remoteServicesMap.get(seedSrv.id);
+          if (remoteSrv) {
+            orderedKnown.push({ ...seedSrv, ...remoteSrv });
+          }
+        });
+        const merged = [...customServices, ...orderedKnown];
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(merged));
+        notifyDataUpdated();
+      }
+    },
+    (error) => {
+      console.warn('Services sync listener warning:', error);
     }
   );
 }
@@ -1617,8 +2247,58 @@ export function getServicesCatalog(): ServiceCatalogItem[] {
 }
 
 export async function saveServicesCatalog(services: ServiceCatalogItem[]): Promise<void> {
-  localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+  const cleanedList = services.map((s) => sanitizeServiceForFirestore(s));
+  localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(cleanedList));
   notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    try {
+      await Promise.all(
+        cleanedList.map((item) => setDoc(doc(db, 'services', item.id), item))
+      );
+    } catch (error) {
+      console.warn('Firestore saveServicesCatalog warning:', error);
+    }
+  }
+}
+
+export async function upsertServiceCatalogItem(item: ServiceCatalogItem): Promise<ServiceCatalogItem> {
+  const cleanItem = sanitizeServiceForFirestore(item);
+  const current = getServicesCatalog();
+  const exists = current.some((s) => s.id === cleanItem.id);
+  const nextList = exists
+    ? current.map((s) => (s.id === cleanItem.id ? cleanItem : s))
+    : [cleanItem, ...current];
+
+  localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(nextList));
+  notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    const path = `services/${cleanItem.id}`;
+    try {
+      await setDoc(doc(db, 'services', cleanItem.id), cleanItem);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  return cleanItem;
+}
+
+export async function deleteServiceCatalogItem(serviceId: string): Promise<void> {
+  const current = getServicesCatalog();
+  const nextList = current.filter((s) => s.id !== serviceId);
+  localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(nextList));
+  notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    const path = `services/${serviceId}`;
+    try {
+      await deleteDoc(doc(db, 'services', serviceId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
 }
 
 export function getTeamMembers(): TeamMember[] {

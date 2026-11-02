@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Star,
   Sparkles,
   Award,
@@ -21,9 +22,15 @@ import {
   ExternalLink,
   MessageCircle,
   ArrowRight,
+  ArrowLeft,
   Menu,
   Check,
   Tag,
+  Search,
+  ListFilter,
+  Info,
+  Home,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { SmartImage } from '../components/SmartImage';
 import {
@@ -38,6 +45,8 @@ import {
   BookingServiceItem,
   BusinessSettings,
   EventType,
+  MakeupLandingGroup,
+  MakeupSubCategory,
   ServiceCatalogItem,
   buildWhatsAppBookingUrl,
   formatDateISO,
@@ -52,22 +61,25 @@ import {
   subscribeToDataUpdates,
 } from '../services/bookingStorage';
 
+// Configurable Service Areas in Bangalore (Editable / extensible via Business Settings)
 const BENGALURU_LOCALITIES = [
+  'Indiranagar',
+  'Varthur',
+  'Yelahanka',
+  'Kaggadasapura',
   'C V Raman Nagar',
   'Nagavarapalya',
-  'Kaggadasapura',
-  'Indiranagar',
-  'Brookefield',
   'Whitefield',
+  'Brookefield',
   'Jayanagar',
   'Koramangala',
   'HSR Layout',
   'Marathahalli',
   'Domlur',
   'Banaswadi',
-  'Electronic City',
   'Hebbal',
   'Malleswaram',
+  'Electronic City',
   'Other Bengaluru Locality',
 ];
 
@@ -80,8 +92,216 @@ const EVENT_TYPES: EventType[] = [
   'Other',
 ];
 
+// 2. MAKEUP & STYLING LANDING PAGE CATEGORIES (Matches Reference Video 0:00 - 0:10)
+interface LandingCategoryCard {
+  id: MakeupLandingGroup;
+  title: string;
+  group: 'MAKEUP' | 'MEN SALON';
+  image: string;
+  targetSubCategory?: MakeupSubCategory;
+  badge?: string;
+}
+
+const MAKEUP_STYLING_LANDING_CATEGORIES: LandingCategoryCard[] = [
+  {
+    id: 'Makeup & Styling for Women',
+    title: 'Makeup & Styling for Women',
+    group: 'MAKEUP',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08.jpeg',
+    targetSubCategory: 'Party Makeup',
+    badge: 'Popular',
+  },
+  {
+    id: 'Saree Draping',
+    title: 'Saree Draping',
+    group: 'MAKEUP',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07-2.jpeg',
+    targetSubCategory: 'Saree Draping',
+  },
+  {
+    id: 'Hair Styling for Women',
+    title: 'Hair Styling for Women',
+    group: 'MAKEUP',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.26.53.jpeg',
+    targetSubCategory: 'Hair Styling',
+  },
+  {
+    id: 'Salon for Women',
+    title: 'Salon for Women',
+    group: 'MAKEUP',
+    image:
+      'https://edenroses.in/wp-content/uploads/2024/12/Untitled-design-2024-12-28T120023.379.png',
+    targetSubCategory: 'Salon for Women',
+  },
+  {
+    id: 'Salon for Men',
+    title: 'Salon for Men',
+    group: 'MEN SALON',
+    image: 'https://edenroses.in/wp-content/uploads/2021/03/haircut.jpg',
+    targetSubCategory: 'Salon for Men',
+  },
+];
+
+// 4. MAKEUP SERVICE CATEGORY GRID (8 Categories matching Reference Video 0:15 - 0:20)
+interface MakeupGridCategory {
+  id: MakeupSubCategory;
+  label: string;
+  shortLabel: string;
+  image: string;
+}
+
+const MAKEUP_ARTIST_8_CATEGORIES: MakeupGridCategory[] = [
+  {
+    id: 'Party Makeup',
+    label: 'Party Makeup',
+    shortLabel: 'Party Makeup',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.34.17.jpeg',
+  },
+  {
+    id: 'Engagement Makeup',
+    label: 'Engagement Makeup',
+    shortLabel: 'Engagement Makeup',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.28.jpeg',
+  },
+  {
+    id: 'Bridal Makeup',
+    label: 'Bridal Makeup',
+    shortLabel: 'Bridal Makeup',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07.jpeg',
+  },
+  {
+    id: 'Wedding Guest Makeup',
+    label: 'Wedding Guest Makeup',
+    shortLabel: 'Wedding Guest Makeup',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.24.57.jpeg',
+  },
+  {
+    id: 'Saree Draping',
+    label: 'Saree Draping',
+    shortLabel: 'Saree Draping',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07-2.jpeg',
+  },
+  {
+    id: 'Hair Styling',
+    label: 'Hair Styling',
+    shortLabel: 'Hair Styling',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.26.54.jpeg',
+  },
+  {
+    id: 'Packages',
+    label: 'Packages',
+    shortLabel: 'Packages',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.10.jpeg',
+  },
+  {
+    id: 'Add-ons',
+    label: 'Add-ons',
+    shortLabel: 'Add-ons',
+    image:
+      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08-2.jpeg',
+  },
+];
+
+const ALL_SERVICE_SECTIONS_ORDER: {
+  id: MakeupSubCategory;
+  title: string;
+  subtitle: string;
+}[] = [
+  {
+    id: 'Party Makeup',
+    title: 'Party Makeup',
+    subtitle: 'Flawless party, cocktail & festive looks with hairstyling and draping',
+  },
+  {
+    id: 'Engagement Makeup',
+    title: 'Engagement Makeup',
+    subtitle: 'Camera-ready HD engagement makeovers tailored to your outfit palette',
+  },
+  {
+    id: 'Bridal Makeup',
+    title: 'Bridal Makeup',
+    subtitle: 'Signature Muhurtham & Reception bridal artistry by Subba Lakshmi',
+  },
+  {
+    id: 'Wedding Guest Makeup',
+    title: 'Wedding Guest Makeup',
+    subtitle: 'Curated looks for bridesmaids, sisters & close family members',
+  },
+  {
+    id: 'Saree Draping',
+    title: 'Saree Draping',
+    subtitle: 'Crisp Kanjeevaram box-pleating, silhouette pinning & bridal draping',
+  },
+  {
+    id: 'Hair Styling',
+    title: 'Hair Styling',
+    subtitle: 'Curls, braided crowns, messy updos & traditional South Indian Poola Jada',
+  },
+  {
+    id: 'Packages',
+    title: 'Packages',
+    subtitle: 'Value makeover combinations for Makeup, Hairstyling & Multi-Event Brides',
+  },
+  {
+    id: 'Add-ons',
+    title: 'Add-ons',
+    subtitle: 'Enhance your booking with lashes, floral hair accessories & upgrades',
+  },
+  {
+    id: 'Salon for Women',
+    title: 'Salon for Women',
+    subtitle: 'HydraFacial, luxury facials, hair spa, nail art, waxing & BB Glow',
+  },
+  {
+    id: 'Salon for Men',
+    title: 'Salon for Men',
+    subtitle: 'Precision haircuts, beard styling, detan facials & groom packages',
+  },
+];
+
+function inferMakeupSubCategory(srv: ServiceCatalogItem): MakeupSubCategory {
+  if (srv.makeupSubCategory) return srv.makeupSubCategory;
+  const nameLower = srv.name.toLowerCase();
+  if (nameLower.includes('saree')) return 'Saree Draping';
+  if (nameLower.includes('engagement')) return 'Engagement Makeup';
+  if (nameLower.includes('party')) return 'Party Makeup';
+  if (nameLower.includes('guest')) return 'Wedding Guest Makeup';
+  if (nameLower.includes('package') || nameLower.includes('combo')) return 'Packages';
+  if (
+    nameLower.includes('hair') &&
+    !nameLower.includes('men') &&
+    !nameLower.includes('spa')
+  ) {
+    return 'Hair Styling';
+  }
+  if (nameLower.includes('bridal') || nameLower.includes('airbrush')) {
+    return 'Bridal Makeup';
+  }
+  if (nameLower.includes('men')) return 'Salon for Men';
+  if (
+    srv.category === 'Skin & Facial' ||
+    srv.category === 'Spa & Nails' ||
+    srv.category === 'Permanent Makeup'
+  ) {
+    return 'Salon for Women';
+  }
+  return 'Party Makeup';
+}
+
 export const CustomerWebsite: React.FC = () => {
   const navigate = useNavigate();
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
   // Live synced state from storage
   const [settings, setSettings] = useState<BusinessSettings>(() => getBusinessSettings());
   const [services, setServices] = useState<ServiceCatalogItem[]>(() => getServicesCatalog());
@@ -98,10 +318,25 @@ export const CustomerWebsite: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // Navigation & Drawer UI States
+  // App-like Screen & Navigation States
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
-  const [activeServiceTab, setActiveServiceTab] = useState<string>('All');
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [floatingMenuOpen, setFloatingMenuOpen] = useState(false);
+  const [selectedServiceDetail, setSelectedServiceDetail] =
+    useState<ServiceCatalogItem | null>(null);
+
+  // Search & Category Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSubCategory, setActiveSubCategory] = useState<MakeupSubCategory | 'All'>(
+    'All'
+  );
+  const [activeLandingCategory, setActiveLandingCategory] =
+    useState<MakeupLandingGroup>('Makeup & Styling for Women');
+  const [showLandingCategoryModal, setShowLandingCategoryModal] = useState(false);
+
+  // Gallery & Hero States
   const [activeGalleryCategory, setActiveGalleryCategory] =
     useState<GalleryFilterCategory>('All');
   const [lightboxImage, setLightboxImage] = useState<EdenRoseImage | null>(null);
@@ -110,16 +345,16 @@ export const CustomerWebsite: React.FC = () => {
   // Cart & Package Selection State
   const [cart, setCart] = useState<BookingServiceItem[]>([
     {
-      id: 'pkg-luxury-bridal',
-      name: 'Luxury Bridal Makeup Package',
-      price: 8999,
+      id: 'pkg-party-makeup',
+      name: 'Basic Party Makeup',
+      price: 1599,
       quantity: 1,
       category: 'Bridal & Makeup Packages',
     },
   ]);
   const [promoCode, setPromoCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState<number>(0);
-  const [advancePayment, setAdvancePayment] = useState<number>(1000);
+  const [advancePayment, setAdvancePayment] = useState<number>(500);
 
   // Interactive Monthly Booking Calendar State
   const todayISO = getTodayISO();
@@ -140,7 +375,7 @@ export const CustomerWebsite: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [address, setAddress] = useState('');
-  const [locality, setLocality] = useState('C V Raman Nagar');
+  const [locality, setLocality] = useState('Indiranagar');
   const [eventType, setEventType] = useState<EventType>('Wedding');
   const [specialNotes, setSpecialNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -155,21 +390,57 @@ export const CustomerWebsite: React.FC = () => {
   const [inquiryLocality, setInquiryLocality] = useState('');
   const [inquiryMessage, setInquiryMessage] = useState('');
 
-  // Derived Packages & Categories
-  const packagesList = useMemo(
-    () => services.filter((s) => s.isPackage && s.price !== null),
-    [services]
-  );
+  // Dynamic Service Areas combining defaults + admin configured serviceArea
+  const availableLocalities = useMemo(() => {
+    const customFromSettings = (settings.serviceArea || '')
+      .split(',')
+      .map((s) => s.replace(/& All Across Bengaluru/i, '').trim())
+      .filter((s) => s.length > 2 && s.length < 35);
+    return Array.from(new Set([...BENGALURU_LOCALITIES, ...customFromSettings]));
+  }, [settings.serviceArea]);
 
-  const serviceCategories = useMemo(() => {
-    const cats = Array.from(new Set(services.map((s) => s.category)));
-    return ['All', ...cats];
+  const filteredLocalities = useMemo(() => {
+    if (!locationSearchQuery.trim()) return availableLocalities;
+    const q = locationSearchQuery.toLowerCase();
+    return availableLocalities.filter((loc) => loc.toLowerCase().includes(q));
+  }, [availableLocalities, locationSearchQuery]);
+
+  // Enrich services with inferred subCategory
+  const enrichedServices = useMemo(() => {
+    return services.map((s) => ({
+      ...s,
+      makeupSubCategory: inferMakeupSubCategory(s),
+    }));
   }, [services]);
 
-  const filteredServices = useMemo(() => {
-    if (activeServiceTab === 'All') return services;
-    return services.filter((s) => s.category === activeServiceTab);
-  }, [services, activeServiceTab]);
+  // Search-filtered services
+  const searchFilteredServices = useMemo(() => {
+    if (!searchQuery.trim()) return enrichedServices;
+    const q = searchQuery.toLowerCase().trim();
+    return enrichedServices.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        (s.makeupSubCategory && s.makeupSubCategory.toLowerCase().includes(q)) ||
+        s.category.toLowerCase().includes(q) ||
+        (s.highlights && s.highlights.some((h) => h.toLowerCase().includes(q)))
+    );
+  }, [enrichedServices, searchQuery]);
+
+  // Grouped services by MakeupSubCategory
+  const groupedServices = useMemo(() => {
+    const map = new Map<MakeupSubCategory, ServiceCatalogItem[]>();
+    for (const sec of ALL_SERVICE_SECTIONS_ORDER) {
+      map.set(sec.id, []);
+    }
+    for (const srv of searchFilteredServices) {
+      const sub = srv.makeupSubCategory || 'Party Makeup';
+      const existing = map.get(sub) || [];
+      existing.push(srv);
+      map.set(sub, existing);
+    }
+    return map;
+  }, [searchFilteredServices]);
 
   const filteredGallery = useMemo(() => {
     if (activeGalleryCategory === 'All') return galleryImages;
@@ -214,14 +485,6 @@ export const CustomerWebsite: React.FC = () => {
     });
   };
 
-  const handleQuickBookPackage = (srv: ServiceCatalogItem) => {
-    if (getItemQuantity(srv.id) === 0) {
-      handleAddOrIncrement(srv);
-    }
-    setBookingStep(2);
-    scrollToSection('booking');
-  };
-
   const handleUpdateQuantity = (serviceId: string, delta: number) => {
     setCart((prev) =>
       prev
@@ -252,6 +515,33 @@ export const CustomerWebsite: React.FC = () => {
 
   const handleApplyDiscountCode = () => {
     applyCodeValue(promoCode);
+  };
+
+  // Smooth jump to a specific Makeup Sub-Category section
+  const jumpToCategorySection = (subCategory: MakeupSubCategory) => {
+    setActiveSubCategory(subCategory);
+    setFloatingMenuOpen(false);
+    setShowLandingCategoryModal(false);
+    const slug = `cat-section-${subCategory.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    setTimeout(() => {
+      const el = document.getElementById(slug) || document.getElementById('makeup-artist-page');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+  };
+
+  // Handle clicking one of the 5 "Makeup & Styling" Landing Categories
+  const handleSelectLandingCategory = (card: LandingCategoryCard) => {
+    setActiveLandingCategory(card.id);
+    setShowLandingCategoryModal(false);
+    if (card.id === 'Makeup & Styling for Women') {
+      setActiveSubCategory('All');
+      const el = document.getElementById('makeup-artist-page');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (card.targetSubCategory) {
+      jumpToCategorySection(card.targetSubCategory);
+    }
   };
 
   // Calendar Helpers
@@ -304,7 +594,6 @@ export const CustomerWebsite: React.FC = () => {
     [selectedDate, allBookings, settings]
   );
 
-  // Auto-select first available slot if current selection is booked
   useEffect(() => {
     const match = selectedDateSlots.find((s) => s.time === selectedTime);
     if (match && !match.available) {
@@ -328,7 +617,6 @@ export const CustomerWebsite: React.FC = () => {
     return customHero;
   }, [settings.heroImageUrl]);
 
-  // Subtle auto-advance for Hero bridal showcase
   useEffect(() => {
     const timer = window.setInterval(() => {
       setHeroSlideIdx((prev) => (prev + 1) % heroImages.length);
@@ -413,25 +701,32 @@ export const CustomerWebsite: React.FC = () => {
   const cleanWhatsappNumber = settings.whatsappNumber.replace(/[^0-9]/g, '');
 
   return (
-    <div className="min-h-screen bg-[#FFFDF9] text-[#2A1818] relative pb-20 lg:pb-0">
-      {/* 0. ROYAL PLUM & GOLD EDITORIAL TOP ANNOUNCEMENT RIBBON */}
+    <div className="min-h-screen bg-[#F7F7F9] text-[#1C1C1E] relative pb-28 lg:pb-0">
+      {/* 0. TOP BRAND & STUDIO ANNOUNCEMENT BAR */}
       <div className="bg-[#160824] text-[#F5E2B8] border-b border-[#D6B77A]/30 text-[11px] sm:text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-1.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 truncate">
-            <span className="text-[#D6B77A] font-semibold tracking-wider uppercase">
-              Luxury Redefined · Beauty with Soul
+            <div className="w-5 h-5 rounded-md overflow-hidden border border-[#D6B77A]/60 shrink-0">
+              <SmartImage
+                src={settings.logoUrl}
+                alt={settings.makeupBrand}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <span className="text-[#D6B77A] font-semibold tracking-wide truncate">
+              {settings.makeupBrand} · By {settings.artistName}
             </span>
             <span className="hidden md:inline text-white/40" aria-hidden="true">
-              ·
+              |
             </span>
             <span className="hidden md:inline text-white/80 truncate">
-              C V Raman Nagar Studio &amp; Venue Bridal Artistry across Bengaluru
+              On-Venue &amp; C V Raman Nagar Studio Makeup Artistry
             </span>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <a
               href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}
-              className="inline-flex items-center gap-1.5 text-[#F5E2B8] hover:text-white font-mono-num font-semibold transition-colors"
+              className="inline-flex items-center gap-1 text-[#F5E2B8] hover:text-white font-mono-num font-semibold"
             >
               <Phone className="w-3 h-3 text-[#D6B77A]" />
               <span>{settings.phonePrimary}</span>
@@ -440,1005 +735,841 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       </div>
 
-      {/* 1. LUXURY STICKY HEADER */}
-      <header className="sticky top-0 z-40 luxury-glass border-b border-[#D6B77A]/35 shadow-[0_4px_24px_-8px_rgba(22,8,36,0.08)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-3 sm:gap-6">
-          {/* Zone 1: Brand Emblem + Wordmark */}
-          <a
-            href="#home"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection('home');
-            }}
-            className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 group"
-          >
-            <div className="w-14 h-11 sm:w-16 sm:h-12 rounded-xl bg-[#160824] border border-[#D6B77A]/70 overflow-hidden flex items-center justify-center shadow-md shrink-0">
-              <SmartImage
-                src={settings.logoUrl}
-                alt={settings.makeupBrand}
-                fit="cover"
-                eager
-                className="w-full h-full object-center scale-110 transition-transform duration-300 group-hover:scale-115"
-              />
-            </div>
-            <div className="min-w-0">
-              <span className="font-display text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#160824] block truncate leading-none">
-                {settings.makeupBrand}
-              </span>
-              <span className="text-[10px] sm:text-xs text-[#B76E79] font-medium tracking-wide block truncate mt-0.5">
-                By {settings.artistName} · Bengaluru
-              </span>
-            </div>
-          </a>
+      {/* 1. MOBILE-APP STYLE STICKY HEADER (Location Selector + Search Bar + Cart Icon — Reference Video 0:00-0:05) */}
+      <header className="sticky top-0 z-40 bg-white border-b border-stone-200/90 shadow-[0_2px_14px_rgba(0,0,0,0.04)]">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 pt-2.5 pb-3 space-y-2.5">
+          {/* Top Row: Location Selector (Left) + Desktop Links (Center) + Cart & Menu (Right) */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Location Selector Button matching Reference Video */}
+            <button
+              type="button"
+              onClick={() => setLocationModalOpen(true)}
+              className="flex items-start gap-2 text-left group min-w-0 max-w-[68%] sm:max-w-xs cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#FFF4EC] border border-[#E6C6B3] flex items-center justify-center shrink-0 mt-0.5">
+                <MapPin className="w-4 h-4 text-[#160824]" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-sm sm:text-base text-stone-900 leading-tight truncate">
+                    Bangalore
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-stone-600 shrink-0 transition-transform group-hover:translate-y-0.5" />
+                </div>
+                <p className="text-[11px] sm:text-xs text-stone-500 truncate leading-tight">
+                  {locality}, Bengaluru, Karnataka, India
+                </p>
+              </div>
+            </button>
 
-          {/* Zone 2: Desktop Editorial Navigation */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-[#2A1818]/85">
-            {[
-              { label: 'Home', id: 'home' },
-              { label: 'Bridal Packages', id: 'packages' },
-              { label: 'All Services', id: 'services' },
-              { label: 'Portfolio Gallery', id: 'gallery' },
-              { label: 'About Artist', id: 'about' },
-              { label: 'Book Slot', id: 'booking' },
-              { label: 'Contact', id: 'contact' },
-            ].map((item) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection(item.id);
-                }}
-                className="hover:text-[#B76E79] transition-colors py-1 border-b-2 border-transparent hover:border-[#B76E79] whitespace-nowrap shrink-0"
+            {/* Desktop Quick Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-stone-700">
+              <button
+                type="button"
+                onClick={() => scrollToSection('makeup-styling-landing')}
+                className="hover:text-[#160824] cursor-pointer"
               >
-                {item.label}
-              </a>
-            ))}
-          </nav>
+                Makeup &amp; Styling
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('makeup-artist-page')}
+                className="hover:text-[#160824] cursor-pointer"
+              >
+                Makeup Artist
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('booking')}
+                className="hover:text-[#160824] cursor-pointer"
+              >
+                Book Slot
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('gallery')}
+                className="hover:text-[#160824] cursor-pointer"
+              >
+                Bridal Portfolio
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('about')}
+                className="hover:text-[#160824] cursor-pointer"
+              >
+                About Artist
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection('contact')}
+                className="hover:text-[#160824] cursor-pointer"
+              >
+                Studio Location
+              </button>
+            </nav>
 
-          {/* Zone 3: Mobile-Ergonomic Action Cluster */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Mobile Direct Call Action */}
-            <a
-              href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}
-              aria-label="Call Studio"
-              className="lg:hidden min-h-[44px] min-w-[44px] rounded-xl border border-[#D6B77A]/50 bg-[#FFF8EF] text-[#160824] flex items-center justify-center hover:bg-[#F6DDE2]/40 transition-colors"
-            >
-              <Phone className="w-4 h-4 text-[#B76E79]" />
-            </a>
+            {/* Right Action Cluster: Categories Sheet Trigger + Cart Icon + Menu */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowLandingCategoryModal(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-800 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <ListFilter className="w-3.5 h-3.5" />
+                <span>Categories</span>
+              </button>
 
-            {/* Cart Drawer Trigger */}
+              {/* Cart Icon Button matching Reference Video */}
+              <button
+                type="button"
+                onClick={() => setCartDrawerOpen(true)}
+                aria-label="Open Booking Cart"
+                className="relative w-10 h-10 sm:w-auto sm:px-3.5 sm:h-10 rounded-full sm:rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-900 flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4 text-stone-800" />
+                <span className="hidden sm:inline font-mono-num text-xs font-bold">
+                  ₹{itemsSubtotal.toLocaleString('en-IN')}
+                </span>
+                {totalCartItems > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#160824] text-[#D6B77A] font-mono-num text-[10px] font-bold flex items-center justify-center shadow-xs">
+                    {totalCartItems}
+                  </span>
+                )}
+              </button>
+
+              {/* Mobile Menu Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                aria-label="Open Menu"
+                className="lg:hidden w-10 h-10 rounded-full border border-stone-200 bg-white text-stone-800 flex items-center justify-center cursor-pointer"
+              >
+                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar Row: "What service do you need?" (Matches Reference Video 0:00 - 0:04) */}
+          <div className="relative flex items-center">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value.trim()) {
+                  setActiveSubCategory('All');
+                }
+              }}
+              placeholder="What service do you need?"
+              className="w-full h-11 pl-4 pr-20 rounded-xl border border-stone-300 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#160824] focus:ring-2 focus:ring-[#160824]/10 transition-all shadow-2xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+                className="absolute right-12 p-1.5 text-stone-400 hover:text-stone-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setCartDrawerOpen(true)}
-              aria-label="Open Booking Cart"
-              className="relative min-h-[44px] px-3 sm:px-3.5 py-2 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF] hover:bg-[#F6DDE2]/40 text-[#160824] flex items-center gap-2 transition-colors cursor-pointer"
+              onClick={() => {
+                const el = document.getElementById('makeup-artist-page');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              aria-label="Search Services"
+              className="absolute right-1.5 w-8 h-8 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center shadow-xs transition-colors cursor-pointer"
             >
-              <ShoppingBag className="w-4 h-4 text-[#B76E79]" />
-              <span className="font-mono-num text-xs font-bold">{totalCartItems}</span>
-              <span className="hidden md:inline text-stone-300" aria-hidden="true">
-                |
-              </span>
-              <span className="hidden md:inline font-mono-num text-xs font-semibold text-[#B76E79]">
-                ₹{itemsSubtotal}
-              </span>
-            </button>
-
-            {/* Primary Book CTA (Royal Plum & Gold) */}
-            <button
-              type="button"
-              onClick={() => scrollToSection('booking')}
-              className="hidden sm:inline-flex items-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] border border-[#D6B77A]/60 text-xs sm:text-sm font-semibold shadow-sm transition-all whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <span>Book Appointment</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#D6B77A]" />
-            </button>
-
-            {/* Mobile Menu Drawer Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              aria-label="Toggle Navigation Menu"
-              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-[#160824] text-[#D6B77A] border border-[#D6B77A]/50 cursor-pointer"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <Search className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Mobile Luxury Navigation Sheet */}
+        {/* Mobile Quick Navigation Sheet */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#160824] text-[#FFF8EF] border-b border-[#D6B77A]/40 px-4 pt-4 pb-6 space-y-4 shadow-2xl">
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-[#D6B77A]/25 flex items-center justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-wider text-[#D6B77A] font-semibold">
-                  Primary Bridal Studio
-                </p>
-                <p className="text-xs text-white/85 mt-0.5">
-                  C V Raman Nagar / Nagavarapalya, Bengaluru
-                </p>
-              </div>
-              <a
-                href={settings.googleMapsLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-[#D6B77A]/20 text-[#F5E2B8] text-xs font-semibold flex items-center gap-1 shrink-0"
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                <span>Map</span>
-              </a>
-            </div>
-
+          <div className="lg:hidden bg-white border-t border-stone-200 px-4 py-4 space-y-3 shadow-xl">
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: 'Home Showcase', id: 'home' },
-                { label: 'Bridal Packages', id: 'packages' },
-                { label: 'All Salon Services', id: 'services' },
-                { label: 'Bridal Gallery', id: 'gallery' },
+                { label: 'Makeup & Styling', id: 'makeup-styling-landing' },
+                { label: 'Makeup Artist Menu', id: 'makeup-artist-page' },
+                { label: 'Book Date & Slot', id: 'booking' },
+                { label: 'Bridal Portfolio (40+)', id: 'gallery' },
                 { label: 'Meet Subba Lakshmi', id: 'about' },
-                { label: 'Slot Calendar', id: 'booking' },
-                { label: 'Studio Contact', id: 'contact' },
+                { label: 'Studio Address', id: 'contact' },
               ].map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => scrollToSection(item.id)}
-                  className="text-left px-3.5 py-3 rounded-xl text-xs sm:text-sm font-medium text-white/90 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                  className="text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-800 bg-stone-100 hover:bg-stone-200/70 transition-colors cursor-pointer"
                 >
                   {item.label}
                 </button>
               ))}
             </div>
-
-            <div className="pt-1 grid grid-cols-2 gap-2.5">
-              <a
-                href={`https://wa.me/${cleanWhatsappNumber}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-3 rounded-xl bg-[#25D366] text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-sm"
-              >
-                <MessageCircle className="w-4 h-4 fill-current" />
-                <span>WhatsApp Us</span>
-              </a>
-              <button
-                type="button"
-                onClick={() => scrollToSection('booking')}
-                className="py-3 rounded-xl bg-gradient-to-r from-[#D6B77A] to-[#B8924A] text-[#160824] text-xs sm:text-sm font-bold text-center shadow-sm"
-              >
-                Book Appointment
-              </button>
-            </div>
           </div>
         )}
       </header>
 
-      {/* 2. EDITORIAL HERO SECTION (Mobile-First Luxury Layout) */}
+      {/* =====================================================================
+          2. MAKEUP & STYLING LANDING PAGE SECTION (Matches Reference Video 0:03 - 0:10)
+          Shows ONLY the 5 required Makeup & Styling categories:
+          1. Makeup & Styling for Women
+          2. Saree Draping
+          3. Hair Styling for Women
+          4. Salon for Women
+          5. Salon for Men
+      ===================================================================== */}
       <section
-        id="home"
-        className="relative overflow-hidden pt-6 pb-14 sm:pt-10 sm:pb-20 lg:pt-14 lg:pb-24 bg-gradient-to-b from-[#F6DDE2]/40 via-[#FFF8EF] to-[#FFFDF9]"
+        id="makeup-styling-landing"
+        className="bg-white border-b border-stone-200/80 py-5 sm:py-7"
       >
-        {/* Subtle decorative background glow */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-24 right-0 w-96 h-96 rounded-full bg-[#D6B77A]/15 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-40 -left-24 w-80 h-80 rounded-full bg-[#B76E79]/10 blur-3xl"
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left Editorial Column (Order 2 on Mobile so Portrait & Headline work harmoniously, Order 1 on Desktop) */}
-            <div className="lg:col-span-7 flex flex-col justify-center space-y-5 sm:space-y-6">
-              <div className="inline-flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wide text-[#B76E79]">
-                <span className="text-[#160824]">By {settings.artistName}</span>
-                <span aria-hidden="true">·</span>
-                <span>C V Raman Nagar &amp; Nagavarapalya, Bengaluru</span>
-                <span aria-hidden="true">·</span>
-                <span>Bridal &amp; Unisex Luxury Salon</span>
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 p-4 sm:p-6 shadow-2xs space-y-5">
+            {/* Section Title Row */}
+            <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-3.5">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-stone-900 tracking-tight">
+                  Makeup &amp; Styling
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Select a category to explore packages &amp; book your artist in{' '}
+                  <span className="font-semibold text-stone-700">{locality}</span>
+                </p>
               </div>
-
-              <h1
-                className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-[#160824] leading-[1.06] tracking-tight"
-                style={{ textWrap: 'balance' }}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubCategory('All');
+                  scrollToSection('makeup-artist-page');
+                }}
+                className="text-xs font-semibold text-[#2563EB] hover:underline flex items-center gap-0.5 shrink-0 cursor-pointer"
               >
-                Your Beauty, Our Artistry —{' '}
-                <span className="text-[#B76E79] italic font-semibold">
-                  Luxury Redefined
-                </span>
-              </h1>
-
-              <p className="text-sm sm:text-base lg:text-lg text-[#2A1818]/80 leading-relaxed max-w-2xl">
-                Experience the magic of signature South Indian &amp; contemporary bridal
-                transformations with{' '}
-                <strong className="font-semibold text-[#160824]">
-                  Eden Roses Makeover by Subba Lakshmi
-                </strong>
-                . Precision HD &amp; Silicone Airbrush makeup, intricate floral poola jada
-                hairstyling, and flawless Kanjeevaram saree draping at our studio or your
-                venue.
-              </p>
-
-              {/* Quick-Tap Service Highlights (Interactive Jump Buttons) */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                {[
-                  { label: 'Luxury Bridal ₹8,999', target: 'packages' },
-                  { label: 'Engagement Look ₹4,999', target: 'packages' },
-                  { label: 'Party Makeup ₹1,599', target: 'packages' },
-                  { label: 'Advance Hair ₹999', target: 'packages' },
-                  { label: 'Saree Draping ₹599', target: 'packages' },
-                ].map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => scrollToSection(chip.target)}
-                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#FFF8EF] text-[#160824] border border-[#D6B77A]/50 text-xs font-semibold whitespace-nowrap shrink-0 shadow-2xs transition-colors cursor-pointer"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Primary & Secondary Hero CTAs */}
-              <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-4 pt-1">
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('booking')}
-                  className="min-h-[50px] px-7 py-3.5 rounded-2xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] border border-[#D6B77A]/70 font-semibold text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  <span>Book Makeover Appointment</span>
-                  <ArrowRight className="w-4 h-4 text-[#D6B77A]" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('packages')}
-                  className="min-h-[50px] px-6 py-3.5 rounded-2xl bg-white hover:bg-[#F6DDE2]/40 text-[#160824] border border-[#B76E79]/40 font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Explore 7 Signature Packages</span>
-                </button>
-              </div>
-
-              {/* Studio Trust & Credentials Bar */}
-              <div className="pt-5 border-t border-[#D6B77A]/35 grid grid-cols-3 gap-3 sm:gap-6">
-                <div className="bg-white/80 p-3 sm:p-4 rounded-2xl border border-[#D6B77A]/30">
-                  <p className="font-display text-xl sm:text-3xl font-bold text-[#160824] tabular-nums">
-                    100%
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-[#2A1818]/75 mt-0.5 leading-snug">
-                    HD &amp; Silicone Airbrush Studio Products
-                  </p>
-                </div>
-                <div className="bg-white/80 p-3 sm:p-4 rounded-2xl border border-[#D6B77A]/30">
-                  <p className="font-display text-xl sm:text-3xl font-bold text-[#B76E79] tabular-nums">
-                    ₹599+
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-[#2A1818]/75 mt-0.5 leading-snug">
-                    Transparent Hairstyling &amp; Bridal Packages
-                  </p>
-                </div>
-                <div className="bg-white/80 p-3 sm:p-4 rounded-2xl border border-[#D6B77A]/30">
-                  <p className="font-display text-xl sm:text-3xl font-bold text-[#160824] tabular-nums">
-                    5.0 ★
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-[#2A1818]/75 mt-0.5 leading-snug">
-                    Trusted by Bengaluru Brides &amp; Families
-                  </p>
-                </div>
-              </div>
+                <span>View All ({services.length})</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {/* Right Original Eden Roses Photography Frame with Touch Controls */}
-            <div className="lg:col-span-5 flex flex-col">
-              <div className="relative rounded-3xl overflow-hidden bg-[#160824] p-2.5 sm:p-3.5 shadow-2xl border-2 border-[#D6B77A]/60">
-                <div className="relative aspect-[4/5] w-full rounded-2xl overflow-hidden">
-                  <SmartImage
-                    src={currentHeroImg.url}
-                    alt={currentHeroImg.alt}
-                    eager
-                    className="w-full h-full object-cover transition-all duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#160824]/90 via-[#160824]/20 to-transparent" />
-
-                  {/* Prev / Next Touch Controls on Portrait */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setHeroSlideIdx(
-                        (prev) => (prev - 1 + heroImages.length) % heroImages.length
-                      )
-                    }
-                    aria-label="Previous Bridal Portrait"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/45 hover:bg-black/70 text-white border border-white/25 flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setHeroSlideIdx((prev) => (prev + 1) % heroImages.length)
-                    }
-                    aria-label="Next Bridal Portrait"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/45 hover:bg-black/70 text-white border border-white/25 flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-
-                  {/* Bottom Portrait Caption & Quick Book Action */}
-                  <div className="absolute bottom-3.5 left-3.5 right-3.5 p-3.5 rounded-2xl bg-[#160824]/85 border border-[#D6B77A]/40 backdrop-blur-md text-white flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider text-[#D6B77A] font-semibold">
-                        Original Eden Roses Portfolio
-                      </p>
-                      <p className="font-display text-lg sm:text-xl font-bold truncate">
-                        {currentHeroImg.alt}
-                      </p>
-                    </div>
+            {/* Group 1: MAKEUP (4 Categories) */}
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                MAKEUP &amp; WOMEN STYLING
+              </p>
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-4">
+                {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
+                  (c) => c.group === 'MAKEUP'
+                ).map((cat) => {
+                  const isSelected = activeLandingCategory === cat.id;
+                  return (
                     <button
+                      key={cat.id}
                       type="button"
-                      onClick={() => scrollToSection('booking')}
-                      className="px-3.5 py-2 rounded-xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] text-xs font-bold shrink-0 cursor-pointer"
+                      onClick={() => handleSelectLandingCategory(cat)}
+                      className="group flex flex-col items-center text-center cursor-pointer focus:outline-none"
                     >
-                      Book Look
-                    </button>
-                  </div>
-                </div>
-
-                {/* Slide Indicator Dots */}
-                <div className="pt-2.5 pb-1 flex items-center justify-between px-2 text-xs text-[#F5E2B8]/80">
-                  <span>
-                    Look {(heroSlideIdx % heroImages.length) + 1} of {heroImages.length}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {heroImages.map((img, i) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        onClick={() => setHeroSlideIdx(i)}
-                        aria-label={`Show slide ${i + 1}`}
-                        className={`h-2 rounded-full transition-all cursor-pointer ${
-                          heroSlideIdx % heroImages.length === i
-                            ? 'w-7 bg-[#D6B77A]'
-                            : 'w-2 bg-white/30'
+                      <div
+                        className={`relative w-full aspect-square max-w-[92px] rounded-2xl overflow-hidden bg-[#F3F4F6] border transition-all p-1 ${
+                          isSelected
+                            ? 'border-[#160824] ring-2 ring-[#160824]/15 shadow-sm'
+                            : 'border-stone-200/80 group-hover:border-stone-400'
                         }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. SIGNATURE BRIDAL & MAKEUP PACKAGES SECTION (Moved Up for Mobile Conversion) */}
-      <section id="packages" className="py-14 sm:py-20 lg:py-24 bg-[#FFF8EF] border-t border-[#D6B77A]/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-10">
-            <div>
-              <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-                Transparent Luxury Pricing · Studio &amp; Venue
-              </p>
-              <h2
-                className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-[#160824] mt-1"
-                style={{ textWrap: 'balance' }}
-              >
-                Curated Bridal, Party &amp; Hairstyling Packages
-              </h2>
-              <p className="text-sm sm:text-base text-[#2A1818]/75 mt-2 max-w-2xl">
-                Select one or multiple packages to customize your booking. Silicone
-                Airbrush upgrades are available for any party, engagement, or bridal
-                makeover.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCartDrawerOpen(true)}
-              className="self-start md:self-auto min-h-[46px] px-5 py-3 rounded-2xl bg-[#160824] text-[#F5E2B8] border border-[#D6B77A]/60 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-md hover:bg-[#27103d] transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <ShoppingBag className="w-4 h-4 text-[#D6B77A]" />
-              <span>Selected ({totalCartItems})</span>
-              <span aria-hidden="true">·</span>
-              <span className="font-mono-num text-[#D6B77A] font-bold">
-                ₹{itemsSubtotal}
-              </span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
-            {packagesList.map((pkg) => {
-              const qty = getItemQuantity(pkg.id);
-              return (
-                <div
-                  key={pkg.id}
-                  className={`luxury-card-3d rounded-3xl bg-white overflow-hidden border transition-all flex flex-col ${
-                    qty > 0
-                      ? 'border-[#160824] ring-2 ring-[#D6B77A]/60 shadow-lg'
-                      : 'border-[#D6B77A]/45 shadow-sm'
-                  }`}
-                >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#160824]">
-                    <SmartImage
-                      src={pkg.image}
-                      alt={pkg.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-
-                    {/* Price Tag Overlay on Image */}
-                    <div className="absolute bottom-3 left-3 px-3.5 py-1.5 rounded-xl bg-[#160824]/90 border border-[#D6B77A]/60 text-[#F5E2B8] backdrop-blur-xs">
-                      <span className="text-[10px] uppercase tracking-wider text-[#D6B77A] block leading-none">
-                        Package Rate
-                      </span>
-                      <span className="font-mono-num text-lg font-bold">
-                        ₹{pkg.price}
-                      </span>
-                    </div>
-
-                    {qty > 0 && (
-                      <div className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-[#D6B77A] text-[#160824] text-xs font-bold flex items-center gap-1 shadow-md">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Selected × {qty}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-5">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2 text-xs text-[#B76E79] font-medium">
-                        <span>{pkg.category}</span>
-                        {pkg.duration && (
-                          <span className="text-[#2A1818]/60 font-mono-num">
-                            {pkg.duration}
+                      >
+                        <SmartImage
+                          src={cat.image}
+                          alt={cat.title}
+                          eager
+                          className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                        />
+                        {cat.badge && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-[#160824]/90 text-[#D6B77A] text-[9px] font-bold">
+                            {cat.badge}
                           </span>
                         )}
                       </div>
-                      <h3 className="font-display text-2xl font-bold text-[#160824] leading-snug">
-                        {pkg.name}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-[#2A1818]/75 leading-relaxed">
-                        {pkg.description}
-                      </p>
-                    </div>
-
-                    <div className="pt-4 border-t border-[#D6B77A]/25 flex items-center justify-between gap-2.5">
-                      {qty === 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => handleAddOrIncrement(pkg)}
-                          className="flex-1 min-h-[44px] px-4 py-2.5 rounded-xl bg-[#FFF8EF] hover:bg-[#F6DDE2]/50 text-[#160824] border border-[#D6B77A] text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4 text-[#B76E79]" />
-                          <span>Add to Cart</span>
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-1.5 bg-[#FFF8EF] border border-[#160824]/30 rounded-xl p-1">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateQuantity(pkg.id, -1)}
-                            aria-label="Decrease quantity"
-                            className="w-9 h-9 rounded-lg bg-white hover:bg-[#F6DDE2] text-[#160824] flex items-center justify-center transition-colors cursor-pointer"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="font-mono-num text-sm font-bold px-2.5 text-[#160824]">
-                            {qty}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateQuantity(pkg.id, 1)}
-                            aria-label="Increase quantity"
-                            className="w-9 h-9 rounded-lg bg-[#160824] text-[#D6B77A] flex items-center justify-center transition-colors cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleQuickBookPackage(pkg)}
-                        className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#B76E79] hover:bg-[#9f5964] text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                      >
-                        <span>Book Slot</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. COMPLETE SALON & MAKEUP SERVICES CATALOG */}
-      <section id="services" className="py-14 sm:py-20 lg:py-24 bg-white border-t border-[#D6B77A]/25">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
-            <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-              Complete Unisex Salon &amp; Bridal Menu
-            </p>
-            <h2
-              className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-[#160824] mt-1"
-              style={{ textWrap: 'balance' }}
-            >
-              Makeup Artistry, Hair, Skin &amp; Permanent Beauty
-            </h2>
-            <p className="text-sm sm:text-base text-[#2A1818]/75 mt-2">
-              Swipe categories below to explore all official services at Eden Roses
-              Unisex Salon in C V Raman Nagar, Bengaluru.
-            </p>
-          </div>
-
-          {/* Mobile-Friendly Horizontal Scroll-Snap Category Tabs */}
-          <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-8">
-            {serviceCategories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setActiveServiceTab(cat)}
-                className={`min-h-[42px] px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                  activeServiceTab === cat
-                    ? 'bg-[#160824] text-[#D6B77A] border border-[#D6B77A]/60 shadow-sm'
-                    : 'bg-[#FFF8EF] text-[#2A1818]/80 hover:bg-[#F6DDE2]/50 border border-[#D6B77A]/35'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Services Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            {filteredServices.map((srv) => {
-              const qty = getItemQuantity(srv.id);
-              return (
-                <div
-                  key={srv.id}
-                  className="luxury-card-3d rounded-2xl bg-[#FFFDF9] border border-[#D6B77A]/40 overflow-hidden flex flex-col shadow-2xs"
-                >
-                  <div className="aspect-[4/3] w-full overflow-hidden bg-[#160824] relative">
-                    <SmartImage
-                      src={srv.image}
-                      alt={srv.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {srv.airbrushAvailable && (
-                      <span className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-md bg-[#160824]/85 text-[#D6B77A] text-[10px] font-semibold backdrop-blur-xs">
-                        Airbrush Option Available
+                      <span className="text-[11px] sm:text-xs font-medium text-stone-800 mt-2 leading-tight line-clamp-2 max-w-[96px]">
+                        {cat.title}
                       </span>
-                    )}
-                  </div>
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <p className="text-[11px] font-medium text-[#B76E79]">
-                        {srv.category}
-                      </p>
-                      <h3 className="font-display text-xl font-bold text-[#160824] mt-0.5">
-                        {srv.name}
-                      </h3>
-                      <p className="text-xs text-[#2A1818]/75 mt-1.5 leading-relaxed line-clamp-3">
-                        {srv.description}
-                      </p>
-                    </div>
+                    </button>
+                  );
+                })}
 
-                    <div className="pt-3 border-t border-[#D6B77A]/25 flex items-center justify-between gap-2">
-                      {srv.price !== null ? (
-                        <span className="font-mono-num text-base font-bold text-[#160824]">
-                          ₹{srv.price}
-                        </span>
-                      ) : (
-                        <span className="text-xs font-semibold text-[#B76E79]">
-                          Custom Consultation
-                        </span>
-                      )}
-
-                      {srv.price !== null ? (
-                        <button
-                          type="button"
-                          onClick={() => handleAddOrIncrement(srv)}
-                          className={`min-h-[38px] px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                            qty > 0
-                              ? 'bg-[#160824] text-[#D6B77A]'
-                              : 'bg-[#B76E79] hover:bg-[#9f5964] text-white'
+                {/* Group 2 on Desktop same row, or separate sub-section on mobile matching video */}
+                <div className="hidden sm:flex flex-col items-center text-center">
+                  {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
+                    (c) => c.group === 'MEN SALON'
+                  ).map((cat) => {
+                    const isSelected = activeLandingCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleSelectLandingCategory(cat)}
+                        className="group flex flex-col items-center text-center w-full cursor-pointer focus:outline-none"
+                      >
+                        <div
+                          className={`relative w-full aspect-square max-w-[92px] rounded-2xl overflow-hidden bg-[#F3F4F6] border transition-all p-1 ${
+                            isSelected
+                              ? 'border-[#160824] ring-2 ring-[#160824]/15 shadow-sm'
+                              : 'border-stone-200/80 group-hover:border-stone-400'
                           }`}
                         >
-                          {qty > 0 ? `Added (${qty})` : '+ Add Service'}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSpecialNotes((prev) =>
-                              prev.includes(srv.name)
-                                ? prev
-                                : `${prev ? prev + ' | ' : ''}Consultation for: ${srv.name}`
-                            );
-                            scrollToSection('booking');
-                          }}
-                          className="min-h-[38px] px-3.5 py-2 rounded-xl border border-[#160824]/30 hover:bg-[#160824] hover:text-[#D6B77A] text-[#160824] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
-                        >
-                          Inquire &amp; Book
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                          <SmartImage
+                            src={cat.image}
+                            alt={cat.title}
+                            className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
+                        <span className="text-[11px] sm:text-xs font-medium text-stone-800 mt-2 leading-tight line-clamp-2 max-w-[96px]">
+                          {cat.title}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            </div>
+
+            {/* Group 2: MEN SALON (Shown on Mobile exactly like Reference Video 0:06) */}
+            <div className="sm:hidden space-y-2.5 pt-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                MEN SALON
+              </p>
+              <div className="grid grid-cols-4 gap-2.5">
+                {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
+                  (c) => c.group === 'MEN SALON'
+                ).map((cat) => {
+                  const isSelected = activeLandingCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => handleSelectLandingCategory(cat)}
+                      className="group flex flex-col items-center text-center cursor-pointer focus:outline-none"
+                    >
+                      <div
+                        className={`relative w-full aspect-square max-w-[92px] rounded-2xl overflow-hidden bg-[#F3F4F6] border transition-all p-1 ${
+                          isSelected
+                            ? 'border-[#160824] ring-2 ring-[#160824]/15 shadow-sm'
+                            : 'border-stone-200/80 group-hover:border-stone-400'
+                        }`}
+                      >
+                        <SmartImage
+                          src={cat.image}
+                          alt={cat.title}
+                          className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                      <span className="text-[11px] font-medium text-stone-800 mt-2 leading-tight line-clamp-2">
+                        {cat.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 5. ORIGINAL EDEN ROSES PORTFOLIO & GALLERY */}
-      <section
-        id="gallery"
-        className="py-14 sm:py-20 lg:py-24 bg-gradient-to-b from-[#FFF8EF] to-[#F6DDE2]/35 border-t border-[#D6B77A]/25"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-10">
-            <div>
-              <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-                100% Authentic Client &amp; Bridal Captures
-              </p>
-              <h2
-                className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-[#160824] mt-1"
-                style={{ textWrap: 'balance' }}
-              >
-                Bridal Transformations &amp; Studio Portfolio
-              </h2>
-              <p className="text-sm sm:text-base text-[#2A1818]/75 mt-2 max-w-2xl">
-                Tap any photograph to view full-screen details or book a similar bridal,
-                reception, or party makeover look.
-              </p>
-            </div>
-
-            {/* Category Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-              {(
-                [
-                  'All',
-                  'Bridal Makeup',
-                  'Party Makeup',
-                  'Engagement Makeup',
-                  'Hairstyling',
-                  'Salon',
-                  'Beauty Services',
-                ] as GalleryFilterCategory[]
-              ).map((cat) => (
+      {/* =====================================================================
+          3, 4, 5, 6, 7. MAKEUP ARTIST DEDICATED CATEGORY PAGE & SERVICE LISTINGS
+          Matches Reference Video 0:11 - 0:44:
+          - Page Header with Back Button ("←"), Title ("Makeup Artist"), Location & Search Icon
+          - Promotional Offers Strip
+          - Promotional Banner ("Professional Makeup — Beauty services for every special occasion")
+          - 8-Category Grid ("What service do you need?")
+          - Service Listing Cards grouped by Category with Rating, Price, Duration, Highlights,
+            "View details >", Service Image, and overlapping "Add" / "- qty +" button
+      ===================================================================== */}
+      <section id="makeup-artist-page" className="py-5 sm:py-8">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 space-y-6">
+          {/* 3. MAKEUP ARTIST PAGE BAR (Back button + Title "Makeup Artist" + Location + Search icon) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 p-4 sm:p-6 shadow-2xs space-y-5">
+            <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3.5">
+              <div className="flex items-center gap-3 min-w-0">
                 <button
-                  key={cat}
                   type="button"
-                  onClick={() => setActiveGalleryCategory(cat)}
-                  className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                    activeGalleryCategory === cat
-                      ? 'bg-[#160824] text-[#D6B77A] border border-[#D6B77A]/60 shadow-sm'
-                      : 'bg-white text-[#2A1818]/80 hover:bg-[#F6DDE2]/50 border border-[#D6B77A]/35'
-                  }`}
+                  onClick={() => {
+                    setActiveSubCategory('All');
+                    setSearchQuery('');
+                    scrollToSection('makeup-styling-landing');
+                  }}
+                  aria-label="Back to Makeup & Styling Categories"
+                  className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                 >
-                  {cat}
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
-              ))}
-            </div>
-          </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-lg sm:text-2xl font-bold text-stone-900 tracking-tight truncate">
+                      Makeup Artist
+                    </h1>
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      <span>4.9 (520+ Bookings)</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLocationModalOpen(true)}
+                    className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 mt-0.5 cursor-pointer"
+                  >
+                    <MapPin className="w-3 h-3 text-[#B76E79]" />
+                    <span className="truncate">
+                      Makeup Artist in {locality}, Bangalore
+                    </span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
-            {filteredGallery.map((img) => (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => searchInputRef.current?.focus(), 300);
+                  }}
+                  aria-label="Search Makeup Services"
+                  className="w-9 h-9 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 flex items-center justify-center cursor-pointer"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCartDrawerOpen(true)}
+                  className="px-3 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span className="font-mono-num">{totalCartItems}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Promotional Offers Strip (Matches Reference Video 0:12) */}
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
               <button
-                key={img.id}
                 type="button"
-                onClick={() => setLightboxImage(img)}
-                className="group relative aspect-[3/4] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#160824] shadow-md border border-[#D6B77A]/40 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B76E79]"
+                onClick={() => applyCodeValue('BRIDAL500')}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAFAFC] hover:border-[#D6B77A] text-left shrink-0 transition-colors cursor-pointer"
               >
-                <SmartImage
-                  src={img.url}
-                  alt={img.alt}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                {/* Always visible subtle gradient on mobile + rich hover on desktop */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#160824]/90 via-black/15 to-transparent flex flex-col justify-end p-3 sm:p-4">
-                  <span className="text-[10px] sm:text-[11px] text-[#D6B77A] font-semibold tracking-wide">
-                    {img.galleryCategory || img.category}
-                  </span>
-                  <p className="font-display text-sm sm:text-base font-semibold text-white leading-snug mt-0.5 line-clamp-2">
-                    {img.alt}
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Tag className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-stone-900">
+                    Flat ₹500 OFF on Bridal &amp; Engagement
+                  </p>
+                  <p className="text-[11px] text-stone-500">
+                    Tap to apply code <span className="font-mono-num font-semibold">BRIDAL500</span>
                   </p>
                 </div>
               </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* 6. ABOUT SECTION ("Meet Your Makeup Artist — Subba Lakshmi") */}
-      <section id="about" className="py-14 sm:py-20 lg:py-24 bg-white border-t border-[#D6B77A]/25">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Original Portfolio Collage */}
-            <div className="lg:col-span-6 grid grid-cols-2 gap-3.5 sm:gap-6">
-              <div className="space-y-3.5 sm:space-y-6">
-                <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg border border-[#D6B77A]/45 aspect-[3/4]">
-                  <SmartImage
-                    src={EDEN_ROSES_ABOUT_IMAGES[0].url}
-                    alt={EDEN_ROSES_ABOUT_IMAGES[0].alt}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="rounded-2xl sm:rounded-3xl bg-[#160824] text-[#FFF8EF] p-4 sm:p-5 border border-[#D6B77A]/50">
-                  <p className="font-display text-lg sm:text-xl font-bold text-[#D6B77A]">
-                    Eden Roses Unisex Salon
-                  </p>
-                  <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                    Primary Bridal Makeup Studio in C V Raman Nagar / Nagavarapalya,
-                    Bengaluru.
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-3.5 sm:space-y-6 pt-5 sm:pt-8">
-                <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg border border-[#D6B77A]/45 aspect-square">
-                  <SmartImage
-                    src={EDEN_ROSES_ABOUT_IMAGES[1].url}
-                    alt={EDEN_ROSES_ABOUT_IMAGES[1].alt}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg border border-[#D6B77A]/45 aspect-[4/3]">
-                  <SmartImage
-                    src={EDEN_ROSES_ABOUT_IMAGES[2].url}
-                    alt={EDEN_ROSES_ABOUT_IMAGES[2].alt}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Artist Story & Credentials */}
-            <div className="lg:col-span-6 space-y-6">
-              <div className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-                Meet Your Principal Makeup Artist
-              </div>
-              <h2
-                className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-[#160824]"
-                style={{ textWrap: 'balance' }}
+              <button
+                type="button"
+                onClick={() => applyCodeValue('EDEN10')}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAFAFC] hover:border-[#D6B77A] text-left shrink-0 transition-colors cursor-pointer"
               >
-                {settings.artistName}
-              </h2>
-              <div className="space-y-4 text-[#2A1818]/85 text-sm sm:text-base leading-relaxed">
-                <p>
-                  At <strong>Eden Roses Makeover</strong>, beauty is more than makeup—it
-                  is about confidence, individuality, and creating unforgettable memories
-                  on your most cherished days.
-                </p>
-                <p>
-                  <strong>Subba Lakshmi</strong> specializes in luxury South Indian and
-                  modern bridal transformations, silicone airbrush skin finishes, advance
-                  floral hairstyling, and precision saree draping tailored to your
-                  features and attire.
-                </p>
-              </div>
+                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-stone-900">
+                    Save 10% on Party Makeup &amp; Combos
+                  </p>
+                  <p className="text-[11px] text-stone-500">
+                    Tap to apply code <span className="font-mono-num font-semibold">EDEN10</span>
+                  </p>
+                </div>
+              </button>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-                <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/40">
-                  <p className="font-display text-lg font-bold text-[#160824]">
-                    Excellence
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAFAFC] shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-stone-900">
+                    On-Venue &amp; Studio Service
                   </p>
-                  <p className="text-xs text-[#2A1818]/75 mt-1">
-                    International luxury cosmetics &amp; long-wear HD techniques.
+                  <p className="text-[11px] text-stone-500">
+                    MAC, Huda Beauty, NARS &amp; Silicone Airbrush
                   </p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/40">
-                  <p className="font-display text-lg font-bold text-[#160824]">Care</p>
-                  <p className="text-xs text-[#2A1818]/75 mt-1">
-                    Skin-first prep and calm, punctual bridal hospitality.
-                  </p>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/40">
-                  <p className="font-display text-lg font-bold text-[#160824]">
-                    Innovation
-                  </p>
-                  <p className="text-xs text-[#2A1818]/75 mt-1">
-                    Flawless silicone airbrush &amp; intricate bridal hair architecture.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2 flex flex-wrap items-center gap-3.5">
-                <button
-                  type="button"
-                  onClick={() => scrollToSection('booking')}
-                  className="min-h-[46px] px-6 py-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] border border-[#D6B77A]/60 text-sm font-semibold transition-colors cursor-pointer"
-                >
-                  Schedule Bridal Appointment
-                </button>
-                <a
-                  href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}
-                  className="min-h-[46px] px-5 py-3 rounded-xl border border-[#B76E79]/40 text-[#160824] hover:bg-[#F6DDE2]/40 text-sm font-semibold flex items-center gap-2 transition-colors"
-                >
-                  <Phone className="w-4 h-4 text-[#B76E79]" />
-                  <span>{settings.phonePrimary}</span>
-                </a>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* 7. WHY CHOOSE US & CLIENT TESTIMONIALS */}
-      <section className="py-14 sm:py-20 lg:py-24 bg-[#FFF8EF] border-t border-[#D6B77A]/25">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-20">
-          {/* Why Choose Us */}
-          <div>
-            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-              <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-                The Eden Roses Standard
-              </p>
-              <h2
-                className="font-display text-3xl sm:text-4xl font-bold text-[#160824] mt-1"
-                style={{ textWrap: 'balance' }}
-              >
-                Why Bengaluru Brides Choose Subba Lakshmi
-              </h2>
+            {/* 5. PROMOTIONAL BANNER ("Professional Makeup — Beauty services for every special occasion" — Reference Video 0:15) */}
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-[#EDD8C8] via-[#F3E3D6] to-[#E8CBB6] border border-[#DFC0A8] shadow-xs">
+              <div className="grid grid-cols-12 items-center min-h-[150px] sm:min-h-[190px]">
+                <div className="col-span-7 sm:col-span-7 p-4 sm:p-7 space-y-2 z-10">
+                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#4A2511]/10 text-[#4A2511] text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                    Eden Roses Makeover · By {settings.artistName}
+                  </span>
+                  <h2 className="font-display text-2xl sm:text-4xl font-bold text-[#3A1D0E] leading-tight">
+                    Professional Makeup
+                  </h2>
+                  <p className="text-xs sm:text-sm font-medium text-[#54301D] leading-snug">
+                    Beauty services for every special occasion
+                  </p>
+                  <p className="hidden sm:block text-xs text-[#6B422B]">
+                    Flawless beauty &nbsp;|&nbsp; Effortless confidence
+                  </p>
+                </div>
+                <div className="col-span-5 sm:col-span-5 h-full relative min-h-[150px] sm:min-h-[190px]">
+                  <SmartImage
+                    src={currentHeroImg.url}
+                    alt="Professional Makeup by Subba Lakshmi"
+                    eager
+                    className="w-full h-full object-cover object-top"
+                  />
+                  <div className="absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#F3E3D6] to-transparent" />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-              {[
-                {
-                  icon: Sparkles,
-                  title: 'HD & Silicone Airbrush Mastery',
-                  desc: 'Sweat-resistant, camera-ready skin finishes customized for Indian bridal lighting and skin tones.',
-                },
-                {
-                  icon: Award,
-                  title: 'Complete Look Architecture',
-                  desc: 'From Kanjeevaram saree pleating and floral poola jada braids to precision eye makeup.',
-                },
-                {
-                  icon: ShieldCheck,
-                  title: 'Punctual Venue & Studio Visits',
-                  desc: 'Available for early 5:00 AM Muhurtham calls across C V Raman Nagar, Indiranagar, Jayanagar & Bengaluru.',
-                },
-                {
-                  icon: Heart,
-                  title: 'Tailor-Made Bridal Packages',
-                  desc: 'Flexible multi-event packages for Engagement, Haldi, Sangeet, Muhurtham, and Reception.',
-                },
-              ].map((feat) => {
-                const IconComponent = feat.icon;
-                return (
-                  <div
-                    key={feat.title}
-                    className="p-6 rounded-3xl bg-white border border-[#D6B77A]/40 shadow-2xs space-y-3"
+            {/* 4. MAKEUP SERVICE CATEGORY GRID ("What service do you need?" — 8 Categories matching Reference Video 0:16) */}
+            <div className="space-y-3.5 pt-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-bold text-stone-900">
+                  What service do you need?
+                </h3>
+                {activeSubCategory !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubCategory('All')}
+                    className="text-xs font-semibold text-[#2563EB] hover:underline cursor-pointer"
                   >
-                    <div className="w-11 h-11 rounded-2xl bg-[#160824] text-[#D6B77A] flex items-center justify-center">
-                      <IconComponent className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-display text-xl font-bold text-[#160824]">
-                      {feat.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-[#2A1818]/75 leading-relaxed">
-                      {feat.desc}
-                    </p>
-                  </div>
+                    Show All Categories
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5 sm:gap-3.5">
+                {MAKEUP_ARTIST_8_CATEGORIES.map((cat) => {
+                  const isSelected = activeSubCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => jumpToCategorySection(cat.id)}
+                      className="group flex flex-col items-center text-center cursor-pointer focus:outline-none"
+                    >
+                      <div
+                        className={`w-full aspect-square rounded-2xl overflow-hidden bg-[#F4F5F7] border transition-all p-1 ${
+                          isSelected
+                            ? 'border-[#160824] ring-2 ring-[#160824]/20 bg-[#FFF8EF] shadow-xs'
+                            : 'border-stone-200/90 group-hover:border-stone-400'
+                        }`}
+                      >
+                        <SmartImage
+                          src={cat.image}
+                          alt={cat.label}
+                          className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                      <span
+                        className={`text-[11px] sm:text-xs mt-1.5 leading-tight line-clamp-2 ${
+                          isSelected
+                            ? 'font-bold text-[#160824]'
+                            : 'font-medium text-stone-700'
+                        }`}
+                      >
+                        {cat.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Horizontal Category Filter Pills for Quick Switching */}
+          <div className="sticky top-[118px] z-30 bg-[#F7F7F9]/95 backdrop-blur-xs py-2 -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setActiveSubCategory('All')}
+                className={`px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                  activeSubCategory === 'All'
+                    ? 'bg-[#160824] text-[#D6B77A] shadow-xs'
+                    : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-300'
+                }`}
+              >
+                All Makeup &amp; Styling ({searchFilteredServices.length})
+              </button>
+              {ALL_SERVICE_SECTIONS_ORDER.map((sec) => {
+                const count = (groupedServices.get(sec.id) || []).length;
+                if (count === 0) return null;
+                const isActive = activeSubCategory === sec.id;
+                return (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => jumpToCategorySection(sec.id)}
+                    className={`px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#160824] text-[#D6B77A] shadow-xs'
+                        : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-300'
+                    }`}
+                  >
+                    {sec.title} ({count})
+                  </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Testimonials */}
-          <div>
-            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-              <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-                Verified Client Love
+          {/* 6 & 7. SERVICE LISTINGS BY CATEGORY (Exact Reference Video Card Structure) */}
+          {searchFilteredServices.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-stone-200 p-10 text-center space-y-3">
+              <p className="text-base font-bold text-stone-800">
+                No makeup or styling services matched &ldquo;{searchQuery}&rdquo;
               </p>
-              <h2
-                className="font-display text-3xl sm:text-4xl font-bold text-[#160824] mt-1"
-                style={{ textWrap: 'balance' }}
+              <p className="text-xs text-stone-500">
+                Try searching for Bridal Makeup, Party Makeup, Saree Draping, Hair Styling, or Packages.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveSubCategory('All');
+                }}
+                className="px-4 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-semibold cursor-pointer"
               >
-                Real Stories from Our Brides &amp; Clients
-              </h2>
+                Show All Services
+              </button>
             </div>
+          ) : (
+            <div className="space-y-6">
+              {ALL_SERVICE_SECTIONS_ORDER.map((sectionMeta) => {
+                if (
+                  activeSubCategory !== 'All' &&
+                  activeSubCategory !== sectionMeta.id
+                ) {
+                  return null;
+                }
+                const sectionItems = groupedServices.get(sectionMeta.id) || [];
+                if (sectionItems.length === 0) return null;
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-7">
-              {[
-                {
-                  name: 'Akshara Prasanth',
-                  role: 'Bridal & Salon Client · C V Raman Nagar',
-                  quote:
-                    'Subba Lakshmi and the Eden Roses team made me feel so confident and radiant! From facial prep and manicure to the final makeover and hairstyling, the attention to detail was unmatched.',
-                  img: EDEN_ROSES_TESTIMONIAL_IMAGES[0].url,
-                },
-                {
-                  name: 'Prarthana',
-                  role: 'Advance Hairstyling Client · Jayanagar 4th Block',
-                  quote:
-                    'Booked the Half-up & down and Braid with curls advance hairstyling packages. The curls stayed intact for over 10 hours through the entire ceremony!',
-                  img: EDEN_ROSES_TESTIMONIAL_IMAGES[1].url,
-                },
-                {
-                  name: 'Kumari Madhumita',
-                  role: 'Party Makeover & Draping · Brookefield',
-                  quote:
-                    'Flawless saree draping, messy up-do hairstyling, and natural party makeup that looked great both in person and in photographs. Highly recommend Eden Roses Makeover!',
-                  img: EDEN_ROSES_TESTIMONIAL_IMAGES[2].url,
-                },
-              ].map((item) => (
-                <div
-                  key={item.name}
-                  className="p-6 rounded-3xl bg-white border border-[#D6B77A]/40 shadow-2xs flex flex-col justify-between space-y-5"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1 text-[#D6B77A]">
-                      {[...Array(5)].map((_, idx) => (
-                        <Star key={idx} className="w-4 h-4 fill-current" />
-                      ))}
+                const sectionSlug = `cat-section-${sectionMeta.id
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, '-')}`;
+
+                return (
+                  <div
+                    key={sectionMeta.id}
+                    id={sectionSlug}
+                    className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 p-4 sm:p-6 shadow-2xs scroll-mt-36"
+                  >
+                    {/* Category Section Heading */}
+                    <div className="border-b border-stone-100 pb-3.5 mb-4 flex items-center justify-between gap-2">
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-stone-900">
+                          {sectionMeta.title}
+                        </h2>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          {sectionMeta.subtitle}
+                        </p>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-600 font-mono-num text-[11px] font-semibold shrink-0">
+                        {sectionItems.length}{' '}
+                        {sectionItems.length === 1 ? 'service' : 'services'}
+                      </span>
                     </div>
-                    <p className="text-sm text-[#2A1818]/85 leading-relaxed italic">
-                      &ldquo;{item.quote}&rdquo;
-                    </p>
+
+                    {/* Service Cards List (1-col on mobile matching video, 2-col on large desktop) */}
+                    <div className="divide-y divide-stone-200/75 lg:divide-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
+                      {sectionItems.map((srv) => {
+                        const qty = getItemQuantity(srv.id);
+                        const ratingVal = srv.rating ?? 4.9;
+                        const reviewsVal = srv.reviewCount ?? 48;
+                        const durationVal = srv.duration || '1 hr 15 mins';
+                        const bulletPoints =
+                          srv.highlights && srv.highlights.length > 0
+                            ? srv.highlights
+                            : [
+                                srv.description,
+                                'Performed by certified Eden Roses Makeover artists using luxury cosmetics',
+                              ];
+
+                        return (
+                          <div
+                            key={srv.id}
+                            className="py-5 first:pt-1 last:pb-1 lg:p-5 lg:rounded-2xl lg:border lg:border-stone-200/80 lg:hover:border-stone-300 transition-all flex items-start justify-between gap-4"
+                          >
+                            {/* Left Column: Service Name, Rating, Price + Duration, Bullets, View Details */}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              {srv.airbrushAvailable && (
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/70 text-[10px] font-bold uppercase tracking-wide">
+                                  HD / Airbrush Available
+                                </span>
+                              )}
+
+                              <h3 className="text-base sm:text-lg font-bold text-stone-900 leading-snug">
+                                {srv.name}
+                              </h3>
+
+                              {/* Rating & Review Count (Configurable Demo Data) */}
+                              <div className="flex items-center gap-1.5 text-xs text-stone-600">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                                <span className="font-bold text-stone-800 font-mono-num">
+                                  {ratingVal.toFixed(1)}
+                                </span>
+                                <span className="text-stone-400">
+                                  ({reviewsVal} reviews)
+                                </span>
+                              </div>
+
+                              {/* Price & Duration Row */}
+                              <div className="flex items-center flex-wrap gap-2 pt-0.5">
+                                {srv.price !== null ? (
+                                  <span className="font-mono-num text-sm sm:text-base font-bold text-stone-900">
+                                    ₹{srv.price.toLocaleString('en-IN')}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-bold text-[#B76E79]">
+                                    Custom Quote
+                                  </span>
+                                )}
+                                {srv.originalPrice && srv.price && (
+                                  <span className="font-mono-num text-xs text-stone-400 line-through">
+                                    ₹{srv.originalPrice.toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                                <span className="text-stone-300">•</span>
+                                <span className="text-xs text-stone-500 font-medium flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-stone-400" />
+                                  <span>{durationVal}</span>
+                                </span>
+                              </div>
+
+                              {/* Dashed Divider matching Reference Video */}
+                              <div className="border-t border-dashed border-stone-200 my-2" />
+
+                              {/* Bullet Point Description */}
+                              <ul className="space-y-1 text-xs text-stone-600 leading-relaxed">
+                                {bulletPoints.slice(0, 2).map((pt, i) => (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <span className="text-stone-400 mt-0.5">•</span>
+                                    <span className="line-clamp-2">{pt}</span>
+                                  </li>
+                                ))}
+                              </ul>
+
+                              {/* "View details >" Button (Opens Service Details Sheet) */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedServiceDetail(srv)}
+                                className="pt-1 inline-flex items-center gap-0.5 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer"
+                              >
+                                <span>View details</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Right Column: Service Image + Overlapping "Add" Button (Matches Reference Video) */}
+                            <div className=" flex flex-col items-center shrink-0 w-28 sm:w-32">
+                              <div
+                                onClick={() => setSelectedServiceDetail(srv)}
+                                className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-xs cursor-pointer"
+                              >
+                                <SmartImage
+                                  src={srv.image}
+                                  alt={srv.name}
+                                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                />
+                              </div>
+
+                              {/* Overlapping "Add" or "- qty +" Stepper Button */}
+                              <div className="-mt-4 z-10 w-24 sm:w-26">
+                                {qty === 0 ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddOrIncrement(srv)}
+                                    className="w-full h-9 rounded-xl bg-white hover:bg-stone-50 text-[#2563EB] border border-stone-300 shadow-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                  >
+                                    <span>Add</span>
+                                  </button>
+                                ) : (
+                                  <div className="w-full h-9 rounded-xl bg-[#2563EB] text-white shadow-md flex items-center justify-between px-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuantity(srv.id, -1)}
+                                      aria-label="Decrease quantity"
+                                      className="w-6 h-6 rounded-md hover:bg-white/20 flex items-center justify-center cursor-pointer"
+                                    >
+                                      <Minus className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="font-mono-num text-xs font-bold">
+                                      {qty}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuantity(srv.id, 1)}
+                                      aria-label="Increase quantity"
+                                      className="w-6 h-6 rounded-md hover:bg-white/20 flex items-center justify-center cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 pt-3 border-t border-[#D6B77A]/25">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#D6B77A] shrink-0">
-                      <SmartImage
-                        src={item.img}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-display text-lg font-bold text-[#160824]">
-                        {item.name}
-                      </p>
-                      <p className="text-xs text-[#2A1818]/65">{item.role}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* 8. INTERACTIVE BOOKING CALENDAR + MULTI-STEP BOOKING FORM */}
+      {/* =====================================================================
+          8. INTERACTIVE BOOKING CALENDAR + MULTI-STEP BOOKING FLOW (Section 9)
+      ===================================================================== */}
       <section
         id="booking"
-        className="py-14 sm:py-20 lg:py-24 bg-gradient-to-b from-[#F6DDE2]/40 via-[#FFF8EF] to-[#FFFDF9] border-t border-[#D6B77A]/35"
+        className="py-12 sm:py-16 bg-gradient-to-b from-[#FFF8EF] to-[#FFFDF9] border-t border-stone-200"
       >
-        <div id="calendar" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12">
+        <div id="calendar" className="max-w-6xl mx-auto px-3.5 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-              Instant Online Appointment Reservation
+              Instant Online Makeup &amp; Styling Reservation
             </p>
-            <h2
-              className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-[#160824] mt-1"
-              style={{ textWrap: 'balance' }}
-            >
-              Book Your Makeover Appointment
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#160824] mt-1">
+              Complete Your Booking
             </h2>
-            <p className="text-sm sm:text-base text-[#2A1818]/75 mt-2">
-              Live studio and venue availability for Subba Lakshmi. Choose your packages,
-              select your preferred date &amp; time slot, and receive instant WhatsApp
-              confirmation.
+            <p className="text-xs sm:text-sm text-stone-600 mt-1.5">
+              Review your selected services, choose your preferred date &amp; time slot in{' '}
+              <strong className="text-stone-900">{locality}, Bangalore</strong>, and confirm
+              your appointment.
             </p>
           </div>
 
-          {/* Luxury 3-Step Progress Bar */}
-          <div className="max-w-3xl mx-auto mb-8 sm:mb-10 grid grid-cols-3 gap-2 sm:gap-3">
+          {/* 3-Step Progress Bar */}
+          <div className="max-w-2xl mx-auto mb-7 grid grid-cols-3 gap-2">
             {[
-              { step: 1 as const, title: '1. Packages' },
-              { step: 2 as const, title: '2. Date & Slot' },
-              { step: 3 as const, title: '3. Your Details' },
+              { step: 1 as const, title: '1. Selected Services' },
+              { step: 2 as const, title: '2. Date & Time Slot' },
+              { step: 3 as const, title: '3. Customer Details' },
             ].map((item) => (
               <button
                 key={item.step}
                 type="button"
                 onClick={() => setBookingStep(item.step)}
-                className={`min-h-[46px] py-2.5 px-3 sm:px-4 rounded-2xl text-xs sm:text-sm font-semibold border transition-all cursor-pointer ${
+                className={`min-h-[44px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold border transition-all cursor-pointer ${
                   bookingStep === item.step
-                    ? 'bg-[#160824] text-[#D6B77A] border-[#D6B77A] shadow-md'
+                    ? 'bg-[#160824] text-[#D6B77A] border-[#D6B77A] shadow-sm'
                     : bookingStep > item.step
-                    ? 'bg-[#F6DDE2]/80 text-[#160824] border-[#B76E79]/40'
-                    : 'bg-white text-[#2A1818]/70 border-[#D6B77A]/35'
+                    ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                    : 'bg-white text-stone-600 border-stone-200'
                 }`}
               >
                 {item.title}
@@ -1459,43 +1590,46 @@ export const CustomerWebsite: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 sm:gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             {/* Left / Main Interactive Area (7 cols) */}
-            <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-8 shadow-lg border border-[#D6B77A]/45">
+            <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-stone-200">
               {/* STEP 1: SELECT SERVICES */}
               {bookingStep === 1 && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-[#D6B77A]/25 pb-4">
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-3.5">
                     <div>
-                      <h3 className="font-display text-2xl font-bold text-[#160824]">
-                        Step 1: Select Makeup &amp; Styling Packages
+                      <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+                        Step 1: Review or Add Services
                       </h3>
-                      <p className="text-xs text-[#2A1818]/70 mt-0.5">
-                        Add multiple services or adjust quantities for bridesmaids &amp;
-                        family members.
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Service Location: <strong className="text-stone-800">{locality}, Bangalore</strong>
                       </p>
                     </div>
-                    <span className="font-mono-num text-xs font-bold text-[#B76E79] shrink-0">
-                      {totalCartItems} selected
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLocationModalOpen(true)}
+                      className="text-xs font-semibold text-[#2563EB] hover:underline cursor-pointer"
+                    >
+                      Change Location
+                    </button>
                   </div>
 
-                  <div className="space-y-3 max-h-[440px] overflow-y-auto pr-1">
-                    {services
+                  <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+                    {enrichedServices
                       .filter((s) => s.price !== null)
                       .map((srv) => {
                         const qty = getItemQuantity(srv.id);
                         return (
                           <div
                             key={srv.id}
-                            className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                               qty > 0
                                 ? 'bg-[#FFF8EF] border-[#160824]'
-                                : 'bg-white border-stone-200 hover:border-[#D6B77A]'
+                                : 'bg-white border-stone-200 hover:border-stone-300'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#160824]">
+                              <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-stone-100">
                                 <SmartImage
                                   src={srv.image}
                                   alt={srv.name}
@@ -1503,11 +1637,14 @@ export const CustomerWebsite: React.FC = () => {
                                 />
                               </div>
                               <div className="min-w-0">
-                                <p className="font-display text-base sm:text-lg font-bold text-[#160824] truncate">
+                                <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider block">
+                                  {srv.makeupSubCategory}
+                                </span>
+                                <p className="text-sm font-bold text-stone-900 truncate">
                                   {srv.name}
                                 </p>
                                 <p className="font-mono-num text-xs font-bold text-[#B76E79]">
-                                  ₹{srv.price}
+                                  ₹{srv.price} · {srv.duration || '1 hr'}
                                 </p>
                               </div>
                             </div>
@@ -1516,16 +1653,16 @@ export const CustomerWebsite: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleAddOrIncrement(srv)}
-                                className="min-h-[40px] px-4 py-2 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] text-xs font-semibold shrink-0 cursor-pointer"
+                                className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-[#2563EB] border border-stone-300 text-xs font-bold shrink-0 cursor-pointer"
                               >
-                                + Select
+                                + Add
                               </button>
                             ) : (
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateQuantity(srv.id, -1)}
-                                  className="w-8 h-8 rounded-lg border border-[#160824]/30 flex items-center justify-center text-[#160824] hover:bg-[#F6DDE2] cursor-pointer"
+                                  className="w-8 h-8 rounded-lg border border-stone-300 flex items-center justify-center text-stone-800 hover:bg-stone-100 cursor-pointer"
                                 >
                                   <Minus className="w-3.5 h-3.5" />
                                 </button>
@@ -1535,7 +1672,7 @@ export const CustomerWebsite: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateQuantity(srv.id, 1)}
-                                  className="w-8 h-8 rounded-lg bg-[#160824] text-[#D6B77A] flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center cursor-pointer"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
                                 </button>
@@ -1546,13 +1683,13 @@ export const CustomerWebsite: React.FC = () => {
                       })}
                   </div>
 
-                  <div className="pt-4 flex justify-end">
+                  <div className="pt-3 flex justify-end">
                     <button
                       type="button"
                       onClick={() => setBookingStep(2)}
-                      className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] border border-[#D6B77A]/60 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>Continue to Date &amp; Time</span>
+                      <span>Select Date &amp; Time Slot</span>
                       <ArrowRight className="w-4 h-4 text-[#D6B77A]" />
                     </button>
                   </div>
@@ -1562,16 +1699,16 @@ export const CustomerWebsite: React.FC = () => {
               {/* STEP 2: INTERACTIVE MONTHLY CALENDAR & TIME SLOTS */}
               {bookingStep === 2 && (
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D6B77A]/25 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
                     <div>
-                      <h3 className="font-display text-2xl font-bold text-[#160824]">
-                        Step 2: Choose Appointment Date &amp; Time
+                      <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+                        Step 2: Choose Preferred Date &amp; Time Slot
                       </h3>
-                      <p className="text-xs text-[#2A1818]/70 mt-0.5">
-                        Real-time availability prevents duplicate slot bookings.
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Real-time slot availability synced with Eden Roses Partner Calendar.
                       </p>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-2 bg-[#FFF8EF] p-1.5 rounded-xl border border-[#D6B77A]/40">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 bg-stone-100 p-1.5 rounded-xl">
                       <button
                         type="button"
                         onClick={() =>
@@ -1588,7 +1725,7 @@ export const CustomerWebsite: React.FC = () => {
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <span className="font-display text-base sm:text-lg font-bold min-w-[130px] text-center text-[#160824]">
+                      <span className="text-sm font-bold min-w-[130px] text-center text-stone-900">
                         {calendarMonth.toLocaleDateString('en-US', {
                           month: 'long',
                           year: 'numeric',
@@ -1614,7 +1751,7 @@ export const CustomerWebsite: React.FC = () => {
                   </div>
 
                   {/* Weekday Headers */}
-                  <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center text-[11px] sm:text-xs font-semibold text-[#2A1818]/60">
+                  <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center text-[11px] font-semibold text-stone-500">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
                       <div key={d} className="py-1">
                         {d}
@@ -1641,8 +1778,8 @@ export const CustomerWebsite: React.FC = () => {
                             isDisabled
                               ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
                               : isSelected
-                              ? 'bg-[#160824] text-[#D6B77A] border border-[#D6B77A] font-bold shadow-sm cursor-pointer'
-                              : 'bg-[#FFF8EF] hover:bg-[#F6DDE2]/60 text-[#160824] border border-[#D6B77A]/35 cursor-pointer'
+                              ? 'bg-[#160824] text-[#D6B77A] font-bold shadow-sm cursor-pointer'
+                              : 'bg-stone-50 hover:bg-stone-100 text-stone-900 border border-stone-200/80 cursor-pointer'
                           }`}
                         >
                           <span className="font-mono-num text-xs sm:text-sm">
@@ -1663,15 +1800,13 @@ export const CustomerWebsite: React.FC = () => {
                   </div>
 
                   {/* Time Slots Selection */}
-                  <div className="pt-4 border-t border-[#D6B77A]/25 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-semibold text-[#160824] flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-[#B76E79]" />
-                        <span>Select Time Slot for {selectedDate}</span>
-                      </span>
-                    </div>
+                  <div className="pt-4 border-t border-stone-100 space-y-3">
+                    <span className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#B76E79]" />
+                      <span>Available Time Slots on {selectedDate}</span>
+                    </span>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {selectedDateSlots.map((slot) => {
                         const isChosen = selectedTime === slot.time && slot.available;
                         return (
@@ -1684,8 +1819,8 @@ export const CustomerWebsite: React.FC = () => {
                               !slot.available
                                 ? 'bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed'
                                 : isChosen
-                                ? 'bg-[#160824] border-[#D6B77A] text-[#D6B77A] shadow-sm cursor-pointer'
-                                : 'bg-[#FFF8EF] border-[#D6B77A]/40 hover:border-[#B76E79] text-[#160824] cursor-pointer'
+                                ? 'bg-[#160824] border-[#160824] text-[#D6B77A] shadow-sm cursor-pointer'
+                                : 'bg-white border-stone-200 hover:border-stone-400 text-stone-900 cursor-pointer'
                             }`}
                           >
                             <div className="font-mono-num text-xs sm:text-sm font-bold">
@@ -1704,16 +1839,16 @@ export const CustomerWebsite: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setBookingStep(1)}
-                      className="min-h-[46px] px-4 sm:px-5 py-2.5 rounded-xl border border-[#D6B77A]/60 text-xs sm:text-sm font-semibold text-[#160824] cursor-pointer"
+                      className="min-h-[46px] px-5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold text-stone-800 cursor-pointer"
                     >
                       Back
                     </button>
                     <button
                       type="button"
                       onClick={() => setBookingStep(3)}
-                      className="flex-1 sm:flex-initial min-h-[46px] px-6 py-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] border border-[#D6B77A]/60 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 sm:flex-initial min-h-[46px] px-6 py-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#F5E2B8] text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>Continue to Your Details</span>
+                      <span>Continue to Customer Details</span>
                       <ArrowRight className="w-4 h-4 text-[#D6B77A]" />
                     </button>
                   </div>
@@ -1722,21 +1857,20 @@ export const CustomerWebsite: React.FC = () => {
 
               {/* STEP 3: CUSTOMER DETAILS FORM */}
               {bookingStep === 3 && (
-                <form onSubmit={handleConfirmBookingSubmit} className="space-y-5">
-                  <div className="border-b border-[#D6B77A]/25 pb-4">
-                    <h3 className="font-display text-2xl font-bold text-[#160824]">
-                      Step 3: Customer &amp; Event Details
+                <form onSubmit={handleConfirmBookingSubmit} className="space-y-4">
+                  <div className="border-b border-stone-100 pb-3.5">
+                    <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+                      Step 3: Customer &amp; Service Location Details
                     </h3>
-                    <p className="text-xs text-[#2A1818]/70 mt-0.5">
-                      Enter your contact and venue details in Bengaluru to confirm your
-                      appointment.
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Enter your contact details and address in Bangalore to confirm your booking.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[#160824] mb-1.5">
-                        Full Name *
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
+                        Customer Name *
                       </label>
                       <input
                         type="text"
@@ -1744,17 +1878,17 @@ export const CustomerWebsite: React.FC = () => {
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
                         placeholder="e.g., Prarthana Rao"
-                        className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#160824] mb-1.5">
-                        Event Type *
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
+                        Event / Occasion *
                       </label>
                       <select
                         value={eventType}
                         onChange={(e) => setEventType(e.target.value as EventType)}
-                        className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                       >
                         {EVENT_TYPES.map((evt) => (
                           <option key={evt} value={evt}>
@@ -1764,8 +1898,8 @@ export const CustomerWebsite: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#160824] mb-1.5">
-                        Phone Number *
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
+                        Customer Phone Number *
                       </label>
                       <input
                         type="tel"
@@ -1776,11 +1910,11 @@ export const CustomerWebsite: React.FC = () => {
                           if (!whatsapp) setWhatsapp(e.target.value);
                         }}
                         placeholder="+91 98450 00000"
-                        className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#160824] mb-1.5">
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
                         WhatsApp Number *
                       </label>
                       <input
@@ -1789,19 +1923,19 @@ export const CustomerWebsite: React.FC = () => {
                         value={whatsapp}
                         onChange={(e) => setWhatsapp(e.target.value)}
                         placeholder="+91 98450 00000"
-                        className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#160824] mb-1.5">
-                        Bengaluru Locality *
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
+                        Service Location (Bangalore Area) *
                       </label>
                       <select
                         value={locality}
                         onChange={(e) => setLocality(e.target.value)}
-                        className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                       >
-                        {BENGALURU_LOCALITIES.map((loc) => (
+                        {availableLocalities.map((loc) => (
                           <option key={loc} value={loc}>
                             {loc}
                           </option>
@@ -1809,7 +1943,7 @@ export const CustomerWebsite: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#160824] mb-1.5">
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
                         Advance Payment to Reserve (₹)
                       </label>
                       <input
@@ -1818,113 +1952,117 @@ export const CustomerWebsite: React.FC = () => {
                         max={netPayable}
                         value={advancePayment}
                         onChange={(e) => setAdvancePayment(Number(e.target.value))}
-                        className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm font-mono-num focus:outline-none focus:border-[#160824]"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm font-mono-num focus:outline-none focus:border-[#160824]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#160824] mb-1.5">
-                      Complete Event / Home / Studio Visit Address *
+                    <label className="block text-xs font-semibold text-stone-800 mb-1.5">
+                      Complete Venue / Home / Studio Visit Address *
                     </label>
                     <textarea
                       required
                       rows={2}
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Flat / House No., Apartment / Venue Name, Street, Landmark, Bengaluru Pin Code"
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                      placeholder="Flat / House No., Apartment / Wedding Venue Name, Street, Landmark, Bengaluru"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#160824] mb-1.5">
-                      Special Notes (Skin Type, Silicone Airbrush Request, Saree Draping, etc.)
+                    <label className="block text-xs font-semibold text-stone-800 mb-1.5">
+                      Special Notes (HD / Airbrush preference, Saree Draping style, etc.)
                     </label>
                     <textarea
                       rows={2}
                       value={specialNotes}
                       onChange={(e) => setSpecialNotes(e.target.value)}
                       placeholder="Optional notes for Subba Lakshmi..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#D6B77A]/60 bg-[#FFF8EF]/60 text-sm focus:outline-none focus:border-[#160824]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm focus:outline-none focus:border-[#160824]"
                     />
                   </div>
 
-                  <div className="pt-4 flex items-center justify-between gap-3">
+                  <div className="pt-3 flex items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setBookingStep(2)}
-                      className="min-h-[48px] px-5 py-2.5 rounded-xl border border-[#D6B77A]/60 text-xs sm:text-sm font-semibold text-[#160824] cursor-pointer"
+                      className="min-h-[46px] px-5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold text-stone-800 cursor-pointer"
                     >
                       Back
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex-1 sm:flex-initial min-h-[48px] px-7 py-3.5 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] border border-[#D6B77A] text-sm font-bold shadow-lg transition-all cursor-pointer"
+                      className="flex-1 sm:flex-initial min-h-[48px] px-7 py-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] text-sm font-bold shadow-md transition-all cursor-pointer"
                     >
-                      {isSubmitting
-                        ? 'Confirming Appointment...'
-                        : 'Confirm Makeover Booking'}
+                      {isSubmitting ? 'Confirming Booking...' : 'Confirm Booking'}
                     </button>
                   </div>
                 </form>
               )}
             </div>
 
-            {/* Right: Live Booking Summary & Payment Calculator (5 cols) */}
-            <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-8 shadow-lg border border-[#D6B77A]/45 space-y-5 sticky top-24">
-              <div className="flex items-center justify-between border-b border-[#D6B77A]/25 pb-4">
+            {/* Right: Live Booking Summary Card (5 cols) */}
+            <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-stone-200 space-y-5 sticky top-28">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3.5">
                 <div>
-                  <h3 className="font-display text-2xl font-bold text-[#160824]">
-                    Booking Summary
-                  </h3>
-                  <p className="text-xs text-[#2A1818]/65">
-                    Eden Roses Makeover · By {settings.artistName}
+                  <h3 className="text-lg font-bold text-stone-900">Booking Summary</h3>
+                  <p className="text-xs text-stone-500">
+                    {locality}, Bangalore · By {settings.artistName}
                   </p>
                 </div>
                 <CalendarIcon className="w-5 h-5 text-[#B76E79]" />
               </div>
 
-              {/* Selected Date & Slot Card */}
-              <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/50 flex items-center justify-between text-xs sm:text-sm">
-                <div>
-                  <span className="text-[#2A1818]/60 block text-xs">Selected Slot</span>
-                  <span className="font-bold text-[#160824] font-mono-num">
-                    {selectedDate} · {selectedTime}
-                  </span>
+              {/* Selected Location, Date & Time Slot */}
+              <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500">Service Location</span>
+                  <button
+                    type="button"
+                    onClick={() => setLocationModalOpen(true)}
+                    className="font-bold text-stone-900 hover:text-[#2563EB] flex items-center gap-1 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <span>{locality}, Bangalore</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setBookingStep(2)}
-                  className="text-xs font-semibold text-[#B76E79] underline cursor-pointer"
-                >
-                  Change
-                </button>
+                <div className="flex items-center justify-between pt-1.5 border-t border-stone-200/60">
+                  <span className="text-stone-500">Preferred Date &amp; Slot</span>
+                  <button
+                    type="button"
+                    onClick={() => setBookingStep(2)}
+                    className="font-mono-num font-bold text-[#160824] underline cursor-pointer"
+                  >
+                    {selectedDate} · {selectedTime}
+                  </button>
+                </div>
               </div>
 
               {/* Cart Items List */}
-              <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
                 {cart.length === 0 ? (
-                  <p className="text-xs text-[#2A1818]/60 py-4 text-center">
-                    No services selected yet. Choose from packages above.
+                  <p className="text-xs text-stone-500 py-4 text-center">
+                    No services added yet. Tap &ldquo;Add&rdquo; on any service above.
                   </p>
                 ) : (
                   cart.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between gap-3 py-2 border-b border-stone-100 text-sm"
+                      className="flex items-center justify-between gap-3 py-2 border-b border-stone-100 text-xs sm:text-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-[#160824] truncate">
+                        <p className="font-semibold text-stone-900 truncate">
                           {item.name}
                         </p>
-                        <p className="font-mono-num text-xs text-[#2A1818]/65">
+                        <p className="font-mono-num text-xs text-stone-500">
                           {item.quantity} × ₹{item.price}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono-num font-bold text-[#160824]">
+                        <span className="font-mono-num font-bold text-stone-900">
                           ₹{item.price * item.quantity}
                         </span>
                         <button
@@ -1941,36 +2079,15 @@ export const CustomerWebsite: React.FC = () => {
                 )}
               </div>
 
-              {/* 1-Tap Luxury Offer Chips + Promo Input */}
-              <div className="space-y-3 pt-2 border-t border-[#D6B77A]/25">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-[#B76E79] flex items-center gap-1">
-                    <Tag className="w-3 h-3" />
-                    <span>Tap Offer:</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => applyCodeValue('BRIDAL500')}
-                    className="px-2.5 py-1 rounded-lg bg-[#FFF8EF] hover:bg-[#F6DDE2]/60 border border-[#D6B77A]/50 text-[11px] font-mono-num font-semibold text-[#160824] cursor-pointer"
-                  >
-                    BRIDAL500 (-₹500)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyCodeValue('EDEN10')}
-                    className="px-2.5 py-1 rounded-lg bg-[#FFF8EF] hover:bg-[#F6DDE2]/60 border border-[#D6B77A]/50 text-[11px] font-mono-num font-semibold text-[#160824] cursor-pointer"
-                  >
-                    EDEN10 (-10%)
-                  </button>
-                </div>
-
+              {/* Promo Code Input */}
+              <div className="space-y-2.5 pt-1 border-t border-stone-100">
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
-                    placeholder="Promo code or ₹ discount"
-                    className="flex-1 px-3 py-2 rounded-xl border border-[#D6B77A]/50 bg-[#FFF8EF] text-xs focus:outline-none"
+                    placeholder="Promo code (BRIDAL500 / EDEN10)"
+                    className="flex-1 px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs focus:outline-none"
                   />
                   <button
                     type="button"
@@ -1982,23 +2099,25 @@ export const CustomerWebsite: React.FC = () => {
                 </div>
               </div>
 
-              {/* Royal Plum & Gold Totals Breakdown */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#160824] text-white border border-[#D6B77A]/50 space-y-2 text-sm">
+              {/* Totals Breakdown */}
+              <div className="p-4 rounded-2xl bg-[#160824] text-white space-y-2 text-sm">
                 <div className="flex justify-between text-white/80 text-xs">
-                  <span>Items Subtotal</span>
+                  <span>Items Total</span>
                   <span className="font-mono-num">₹{itemsSubtotal}</span>
                 </div>
-                <div className="flex justify-between text-[#F6DDE2] text-xs">
-                  <span>Privilege Discount</span>
-                  <span className="font-mono-num">-₹{effectiveDiscount}</span>
-                </div>
+                {effectiveDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-300 text-xs">
+                    <span>Offer Discount</span>
+                    <span className="font-mono-num">-₹{effectiveDiscount}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-[#D6B77A] text-xs">
                   <span>Advance Payment</span>
                   <span className="font-mono-num">₹{effectiveAdvance}</span>
                 </div>
-                <div className="pt-2.5 border-t border-white/15 flex justify-between items-baseline font-bold text-base">
-                  <span>Balance at Appointment</span>
-                  <span className="font-mono-num text-xl text-[#D6B77A]">
+                <div className="pt-2 border-t border-white/15 flex justify-between items-baseline font-bold text-base">
+                  <span>Payable at Appointment</span>
+                  <span className="font-mono-num text-lg text-[#D6B77A]">
                     ₹{remainingAmount}
                   </span>
                 </div>
@@ -2008,118 +2127,283 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       </section>
 
-      {/* 9. STUDIO LOCATION & INSTANT CALLBACK SECTION */}
-      <section id="contact" className="py-14 sm:py-20 lg:py-24 bg-white border-t border-[#D6B77A]/25">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10">
-            <div className="lg:col-span-6 space-y-6">
+      {/* =====================================================================
+          ORIGINAL EDEN ROSES PORTFOLIO GALLERY (40+ Client Photographs)
+      ===================================================================== */}
+      <section
+        id="gallery"
+        className="py-12 sm:py-16 bg-white border-t border-stone-200"
+      >
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-7">
+            <div>
               <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
-                Visit Our Bengaluru Studio
+                Authentic Client Bridal &amp; Styling Portfolio
               </p>
-              <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#160824]">
-                {settings.makeupBrand} — {settings.businessName}
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#160824] mt-1">
+                Bridal Transformations &amp; Hair Artistry
               </h2>
-              <p className="text-sm sm:text-base text-[#2A1818]/75 leading-relaxed">
-                Conveniently located in C V Raman Nagar / Nagavarapalya, Bengaluru. Reach
-                out for bridal consultations, trial sessions, or unisex salon appointments.
+              <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl">
+                Real brides, engagement looks, saree draping, and floral Poola Jada
+                hairstyling by Subba Lakshmi.
               </p>
+            </div>
 
-              <div className="space-y-4 pt-1">
-                <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/40 flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#160824] text-[#D6B77A] flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin className="w-5 h-5" />
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {(
+                [
+                  'All',
+                  'Bridal Makeup',
+                  'Party Makeup',
+                  'Engagement Makeup',
+                  'Hairstyling',
+                  'Salon',
+                  'Beauty Services',
+                ] as GalleryFilterCategory[]
+              ).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setActiveGalleryCategory(cat)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeGalleryCategory === cat
+                      ? 'bg-[#160824] text-[#D6B77A] shadow-xs'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {filteredGallery.map((img) => (
+              <button
+                key={img.id}
+                type="button"
+                onClick={() => setLightboxImage(img)}
+                className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-stone-900 shadow-xs border border-stone-200 text-left cursor-pointer"
+              >
+                <SmartImage
+                  src={img.url}
+                  alt={img.alt}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent flex flex-col justify-end p-3">
+                  <span className="text-[10px] text-[#D6B77A] font-semibold">
+                    {img.galleryCategory || img.category}
+                  </span>
+                  <p className="text-xs sm:text-sm font-semibold text-white leading-snug mt-0.5 line-clamp-2">
+                    {img.alt}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          ABOUT SECTION ("Meet Your Makeup Artist — Subba Lakshmi") & TESTIMONIALS
+      ===================================================================== */}
+      <section
+        id="about"
+        className="py-12 sm:py-16 bg-[#FFF8EF] border-t border-stone-200"
+      >
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 space-y-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl overflow-hidden shadow-md border border-[#D6B77A]/40 aspect-[3/4]">
+                <SmartImage
+                  src={EDEN_ROSES_ABOUT_IMAGES[0].url}
+                  alt={EDEN_ROSES_ABOUT_IMAGES[0].alt}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="space-y-3 pt-4">
+                <div className="rounded-2xl overflow-hidden shadow-md border border-[#D6B77A]/40 aspect-square">
+                  <SmartImage
+                    src={EDEN_ROSES_ABOUT_IMAGES[1].url}
+                    alt={EDEN_ROSES_ABOUT_IMAGES[1].alt}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="rounded-2xl bg-[#160824] text-white p-3.5 border border-[#D6B77A]/40">
+                  <p className="font-display text-base font-bold text-[#D6B77A]">
+                    {settings.makeupBrand}
+                  </p>
+                  <p className="text-[11px] text-white/80 mt-0.5">
+                    C V Raman Nagar Studio &amp; Venue Visits Across Bangalore
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-7 space-y-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#B76E79]">
+                Principal Makeup &amp; Styling Artist
+              </span>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#160824]">
+                {settings.artistName} — {settings.makeupBrand}
+              </h2>
+              <p className="text-sm text-stone-700 leading-relaxed">
+                {settings.description}
+              </p>
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <div className="p-3.5 rounded-2xl bg-white border border-stone-200">
+                  <p className="font-bold text-sm text-[#160824]">HD &amp; Airbrush</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    Waterproof 16-hr skin finish
+                  </p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-stone-200">
+                  <p className="font-bold text-sm text-[#160824]">Venue Travel</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    5:00 AM Muhurtham slots available
+                  </p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white border border-stone-200">
+                  <p className="font-bold text-sm text-[#160824]">4.9 ★ Rated</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    Loved by Bengaluru brides
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Client Testimonials */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              {
+                name: 'Akshara Prasanth',
+                role: 'Bridal Client · C V Raman Nagar',
+                quote:
+                  'Subba Lakshmi and the Eden Roses team made me feel so confident and radiant! From facial prep to the bridal makeover and draping, every detail was perfection.',
+                img: EDEN_ROSES_TESTIMONIAL_IMAGES[0].url,
+              },
+              {
+                name: 'Prarthana',
+                role: 'Hairstyling & Engagement · Indiranagar',
+                quote:
+                  'Booked the Engagement Makeup and Advance Hairstyling package. The curls and floral braid stayed intact for over 10 hours through the entire ceremony!',
+                img: EDEN_ROSES_TESTIMONIAL_IMAGES[1].url,
+              },
+              {
+                name: 'Kumari Madhumita',
+                role: 'Party Makeover & Draping · Whitefield',
+                quote:
+                  'Flawless saree draping, messy up-do hairstyling, and natural party makeup that looked amazing in person and on camera.',
+                img: EDEN_ROSES_TESTIMONIAL_IMAGES[2].url,
+              },
+            ].map((item) => (
+              <div
+                key={item.name}
+                className="p-5 rounded-2xl bg-white border border-stone-200 shadow-2xs flex flex-col justify-between space-y-4"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 text-amber-400">
+                    {[...Array(5)].map((_, idx) => (
+                      <Star key={idx} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-xs sm:text-sm text-stone-700 leading-relaxed italic">
+                    &ldquo;{item.quote}&rdquo;
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 pt-3 border-t border-stone-100">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-[#D6B77A] shrink-0">
+                    <SmartImage
+                      src={item.img}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#B76E79]">
-                      Primary Studio Address (C V Raman Nagar / Nagavarapalya)
+                    <p className="font-bold text-sm text-stone-900">{item.name}</p>
+                    <p className="text-[11px] text-stone-500">{item.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          9. STUDIO LOCATION & INSTANT CALLBACK SECTION
+      ===================================================================== */}
+      <section
+        id="contact"
+        className="py-12 sm:py-16 bg-white border-t border-stone-200"
+      >
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-6 space-y-4">
+              <p className="text-xs font-semibold tracking-wider text-[#B76E79] uppercase">
+                Studio &amp; Home-Venue Service Across Bangalore
+              </p>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#160824]">
+                {settings.makeupBrand} — {settings.businessName}
+              </h2>
+              <div className="space-y-3">
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-[#B76E79] shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-stone-900">
+                      Studio Address (C V Raman Nagar / Nagavarapalya)
                     </p>
-                    <p className="text-sm font-medium text-[#160824] mt-0.5">
-                      {settings.address}
-                    </p>
+                    <p className="text-xs text-stone-600 mt-0.5">{settings.address}</p>
                     <a
                       href={settings.googleMapsLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#B76E79] hover:underline mt-2"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#2563EB] hover:underline mt-1.5"
                     >
-                      <span>Open Directions in Google Maps</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Open in Google Maps</span>
+                      <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/40 flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#160824] text-[#D6B77A] flex items-center justify-center shrink-0 mt-0.5">
-                    <Phone className="w-5 h-5" />
-                  </div>
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-start gap-3">
+                  <Phone className="w-5 h-5 text-[#B76E79] shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#B76E79]">
-                      Direct Studio Phone &amp; WhatsApp Lines
+                    <p className="text-xs font-bold text-stone-900">
+                      Direct Booking &amp; WhatsApp Lines
                     </p>
-                    <div className="flex flex-wrap gap-3 mt-1.5 text-sm font-bold font-mono-num text-[#160824]">
-                      <a
-                        href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}
-                        className="hover:text-[#B76E79]"
-                      >
+                    <div className="flex flex-wrap gap-3 mt-1 text-xs font-bold font-mono-num text-stone-800">
+                      <a href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}>
                         {settings.phonePrimary}
                       </a>
                       <span>·</span>
-                      <a
-                        href={`tel:${settings.phoneSecondary.replace(/\s+/g, '')}`}
-                        className="hover:text-[#B76E79]"
-                      >
+                      <a href={`tel:${settings.phoneSecondary.replace(/\s+/g, '')}`}>
                         {settings.phoneSecondary}
                       </a>
                     </div>
                   </div>
                 </div>
-
-                <div className="p-4 rounded-2xl bg-[#FFF8EF] border border-[#D6B77A]/40 flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#160824] text-[#D6B77A] flex items-center justify-center shrink-0 mt-0.5">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#B76E79]">
-                      Studio Hours &amp; Venue Travel
-                    </p>
-                    <p className="text-sm text-[#160824] font-medium mt-0.5">
-                      {settings.openingHours}
-                    </p>
-                    <p className="text-xs text-[#2A1818]/70 mt-1">
-                      Service Area: {settings.serviceArea}
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Quick Consultation Callback Card */}
-            <div className="lg:col-span-6 bg-[#FFF8EF] rounded-3xl p-6 sm:p-8 border border-[#D6B77A]/50 shadow-sm space-y-5">
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#B76E79]">
-                  Direct Bridal Desk
-                </span>
-                <h3 className="font-display text-2xl sm:text-3xl font-bold text-[#160824] mt-0.5">
-                  Request an Instant Callback or Custom Bridal Quote
-                </h3>
-              </div>
+            <div className="lg:col-span-6 bg-stone-50 rounded-3xl p-5 sm:p-7 border border-stone-200 space-y-4">
+              <h3 className="text-lg sm:text-xl font-bold text-stone-900">
+                Request a Custom Bridal Quote or Callback
+              </h3>
 
               {contactSent ? (
-                <div className="p-6 rounded-2xl bg-white border border-emerald-200 text-center space-y-3">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
-                  <p className="font-display text-2xl font-bold text-[#160824]">
-                    Thank You! Your Details Have Been Received.
-                  </p>
-                  <p className="text-xs text-[#2A1818]/75">
-                    Subba Lakshmi&apos;s team will call you shortly, or you can chat with
-                    us immediately on WhatsApp.
+                <div className="p-5 rounded-2xl bg-white border border-emerald-200 text-center space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+                  <p className="font-bold text-base text-stone-900">
+                    Inquiry Received! We will call you shortly.
                   </p>
                   <button
                     type="button"
                     onClick={() => setContactSent(false)}
-                    className="px-4 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-semibold"
+                    className="px-4 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-semibold cursor-pointer"
                   >
-                    Send Another Inquiry
+                    Send Another Request
                   </button>
                 </div>
               ) : (
@@ -2130,8 +2414,8 @@ export const CustomerWebsite: React.FC = () => {
                       customerName: inquiryName.trim(),
                       phone: inquiryPhone.trim(),
                       whatsapp: inquiryPhone.trim().replace(/[^0-9]/g, ''),
-                      address: inquiryLocality.trim() || 'Bengaluru',
-                      locality: inquiryLocality.trim() || 'C V Raman Nagar',
+                      address: inquiryLocality.trim() || locality,
+                      locality: inquiryLocality.trim() || locality,
                       eventType: 'Callback Request',
                       message: inquiryMessage.trim(),
                       source: 'Callback Form',
@@ -2142,16 +2426,16 @@ export const CustomerWebsite: React.FC = () => {
                     setInquiryMessage('');
                     setContactSent(true);
                   }}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       required
                       value={inquiryName}
                       onChange={(e) => setInquiryName(e.target.value)}
-                      placeholder="Your Full Name *"
-                      className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-white border border-[#D6B77A]/50 text-sm focus:outline-none focus:border-[#160824]"
+                      placeholder="Your Name *"
+                      className="w-full h-11 px-3.5 rounded-xl bg-white border border-stone-300 text-xs sm:text-sm focus:outline-none"
                     />
                     <input
                       type="tel"
@@ -2159,29 +2443,29 @@ export const CustomerWebsite: React.FC = () => {
                       value={inquiryPhone}
                       onChange={(e) => setInquiryPhone(e.target.value)}
                       placeholder="Phone / WhatsApp Number *"
-                      className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-white border border-[#D6B77A]/50 text-sm focus:outline-none focus:border-[#160824]"
+                      className="w-full h-11 px-3.5 rounded-xl bg-white border border-stone-300 text-xs sm:text-sm focus:outline-none"
                     />
                   </div>
                   <input
                     type="text"
                     value={inquiryLocality}
                     onChange={(e) => setInquiryLocality(e.target.value)}
-                    placeholder="Event Date & Locality in Bengaluru"
-                    className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-white border border-[#D6B77A]/50 text-sm focus:outline-none focus:border-[#160824]"
+                    placeholder="Event Date & Locality in Bangalore (e.g., Indiranagar, Varthur)"
+                    className="w-full h-11 px-3.5 rounded-xl bg-white border border-stone-300 text-xs sm:text-sm focus:outline-none"
                   />
                   <textarea
-                    rows={3}
+                    rows={2}
                     required
                     value={inquiryMessage}
                     onChange={(e) => setInquiryMessage(e.target.value)}
-                    placeholder="Tell us about your bridal, engagement, party, or salon service requirements..."
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-[#D6B77A]/50 text-sm focus:outline-none focus:border-[#160824]"
+                    placeholder="Tell us what makeup or styling services you need..."
+                    className="w-full p-3.5 rounded-xl bg-white border border-stone-300 text-xs sm:text-sm focus:outline-none"
                   />
                   <button
                     type="submit"
-                    className="w-full min-h-[48px] py-3.5 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] border border-[#D6B77A]/70 font-semibold text-sm transition-colors cursor-pointer"
+                    className="w-full h-11 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
                   >
-                    Request Instant Callback
+                    Request Callback
                   </button>
                 </form>
               )}
@@ -2190,114 +2474,40 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       </section>
 
-      {/* 10. ROYAL PLUM & GOLD LUXURY FOOTER */}
-      <footer className="bg-[#160824] text-[#FFF8EF] py-14 border-t border-[#D6B77A]/35">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-10 border-b border-white/10">
-            <div className="space-y-4 md:col-span-2">
-              <div className="flex items-center gap-3.5">
-                <div className="w-20 h-14 rounded-xl bg-[#160824] border border-[#D6B77A]/70 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
-                  <SmartImage
-                    src={settings.footerLogoUrl}
-                    alt={settings.businessName}
-                    fit="cover"
-                    className="w-full h-full object-center scale-110"
-                  />
-                </div>
-                <div>
-                  <p className="font-display text-2xl font-bold text-[#D6B77A]">
-                    {settings.makeupBrand}
-                  </p>
-                  <p className="text-xs text-[#F6DDE2]">
-                    By {settings.artistName} · {settings.businessName}
-                  </p>
-                </div>
+      {/* 10. FOOTER (With Discreet Staff Login Link at Bottom) */}
+      <footer className="bg-[#160824] text-[#FFF8EF] py-10 border-t border-[#D6B77A]/35">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-11 rounded-xl overflow-hidden border border-[#D6B77A]/60 shrink-0">
+                <SmartImage
+                  src={settings.footerLogoUrl}
+                  alt={settings.businessName}
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <p className="text-xs sm:text-sm text-white/75 max-w-md leading-relaxed">
-                {settings.description}
-              </p>
-              <p className="text-xs text-[#D6B77A]">
-                Official Website:{' '}
-                <a
-                  href={settings.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  {settings.websiteUrl}
-                </a>
-              </p>
+              <div>
+                <p className="font-display text-xl font-bold text-[#D6B77A]">
+                  {settings.makeupBrand}
+                </p>
+                <p className="text-xs text-white/75">
+                  By {settings.artistName} · {settings.businessName}
+                </p>
+              </div>
             </div>
-
-            <div className="space-y-2.5">
-              <p className="font-display text-lg font-bold text-[#D6B77A]">Explore</p>
-              <ul className="space-y-2 text-xs text-white/80">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('packages')}
-                    className="hover:text-[#D6B77A] cursor-pointer"
-                  >
-                    Bridal &amp; Styling Packages
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('services')}
-                    className="hover:text-[#D6B77A] cursor-pointer"
-                  >
-                    All Salon &amp; Makeup Services
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('gallery')}
-                    className="hover:text-[#D6B77A] cursor-pointer"
-                  >
-                    Original Bridal Portfolio
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('about')}
-                    className="hover:text-[#D6B77A] cursor-pointer"
-                  >
-                    Meet Subba Lakshmi
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('booking')}
-                    className="hover:text-[#D6B77A] cursor-pointer"
-                  >
-                    Book Online Appointment
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-2.5">
-              <p className="font-display text-lg font-bold text-[#D6B77A]">
-                C V Raman Nagar Studio
-              </p>
-              <p className="text-xs text-white/80 leading-relaxed">{settings.address}</p>
-              <p className="text-xs text-white/80 pt-1 font-mono-num">
-                Phone: {settings.phonePrimary} / {settings.phoneSecondary}
-              </p>
+            <div className="text-xs text-white/75">
+              Service Areas: Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman
+              Nagar &amp; All Bangalore
             </div>
           </div>
 
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/60">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/55">
             <p>
               © {new Date().getFullYear()} {settings.businessName} ({settings.makeupBrand}{' '}
               by {settings.artistName}). All rights reserved.
             </p>
             <div className="flex items-center gap-2">
-              <span>Nagavarapalya / C V Raman Nagar, Bengaluru 560093</span>
+              <span>Bengaluru 560093</span>
               <span aria-hidden="true">·</span>
               <button
                 type="button"
@@ -2305,7 +2515,7 @@ export const CustomerWebsite: React.FC = () => {
                   navigate('/admin');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="text-white/45 hover:text-[#D6B77A] transition-colors cursor-pointer"
+                className="text-white/40 hover:text-[#D6B77A] transition-colors cursor-pointer"
                 title="Staff Portal"
               >
                 Staff Login
@@ -2315,83 +2525,510 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       </footer>
 
-      {/* DESKTOP FLOATING WHATSAPP CTA */}
-      <a
-        href={`https://wa.me/${cleanWhatsappNumber}?text=${encodeURIComponent(
-          'Hello Subba Lakshmi! I would like to inquire about booking a makeover appointment at Eden Roses Makeover.'
-        )}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Chat on WhatsApp"
-        className="hidden lg:flex fixed bottom-6 right-6 z-40 h-13 px-5 rounded-2xl bg-[#25D366] hover:bg-[#1ebe5b] text-white shadow-xl items-center gap-2.5 text-sm font-semibold transition-transform hover:scale-105"
-      >
-        <MessageCircle className="w-5 h-5 fill-current" />
-        <span>WhatsApp Studio</span>
-      </a>
+      {/* =====================================================================
+          FLOATING "≡ Menu" CATEGORY QUICK-JUMP BUTTON (Matches Reference Video 0:18 - 0:37)
+      ===================================================================== */}
+      <div className="fixed bottom-20 lg:bottom-7 left-1/2 -translate-x-1/2 z-40">
+        <button
+          type="button"
+          onClick={() => setFloatingMenuOpen((v) => !v)}
+          className="h-10 px-4 rounded-full bg-[#1C1C1E] hover:bg-black text-white shadow-xl border border-white/15 flex items-center gap-2 text-xs font-bold tracking-wide cursor-pointer"
+        >
+          {floatingMenuOpen ? (
+            <>
+              <X className="w-3.5 h-3.5" />
+              <span>Close</span>
+            </>
+          ) : (
+            <>
+              <Menu className="w-3.5 h-3.5" />
+              <span>Menu</span>
+            </>
+          )}
+        </button>
+      </div>
 
-      {/* MOBILE STICKY BOTTOM LUXURY ACTION BAR (Native App Ergonomics on < lg) */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 royal-plum-glass border-t border-[#D6B77A]/50 px-3.5 py-2.5 shadow-[0_-8px_30px_rgba(22,8,36,0.35)]">
-        <div className="flex items-center justify-between gap-2.5 max-w-md mx-auto">
+      {/* FLOATING MENU POPOVER (Lists all Makeup & Styling Categories with Counts) */}
+      {floatingMenuOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-2xs flex items-end sm:items-center justify-center p-4 pb-24 sm:pb-4"
+          onClick={() => setFloatingMenuOpen(false)}
+        >
+          <div
+            className="w-full max-w-xs bg-white rounded-3xl shadow-2xl border border-stone-200 p-4 space-y-2 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-2 pb-2 border-b border-stone-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                Makeup &amp; Styling Menu
+              </span>
+              <button
+                type="button"
+                onClick={() => setFloatingMenuOpen(false)}
+                className="p-1 text-stone-400 hover:text-stone-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="max-h-72 overflow-y-auto divide-y divide-stone-100">
+              {ALL_SERVICE_SECTIONS_ORDER.map((sec) => {
+                const count = (groupedServices.get(sec.id) || []).length;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => jumpToCategorySection(sec.id)}
+                    className="w-full py-2.5 px-2.5 hover:bg-stone-50 rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer"
+                  >
+                    <span className="text-xs sm:text-sm font-semibold text-stone-800">
+                      {sec.title}
+                    </span>
+                    <span className="font-mono-num text-xs font-bold text-stone-500">
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MOBILE BOTTOM NAVIGATION + STICKY CART BAR (App-Like Interface)
+      ===================================================================== */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-stone-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        {/* Sticky Mini Cart Strip when items are in cart */}
+        {totalCartItems > 0 && (
+          <div className="bg-[#160824] text-white px-3.5 py-2 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setCartDrawerOpen(true)}
+              className="flex items-center gap-2 text-left min-w-0 cursor-pointer"
+            >
+              <span className="px-2 py-0.5 rounded-md bg-[#D6B77A] text-[#160824] font-mono-num text-xs font-bold">
+                {totalCartItems} {totalCartItems === 1 ? 'item' : 'items'}
+              </span>
+              <span className="font-mono-num text-sm font-bold text-[#F5E2B8] truncate">
+                ₹{netPayable.toLocaleString('en-IN')}
+              </span>
+              <span className="text-[11px] text-white/70 truncate">
+                · View Cart
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBookingStep(2);
+                scrollToSection('booking');
+              }}
+              className="px-3.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <span>Book Now</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* 4-Tab App Bottom Navigation */}
+        <div className="grid grid-cols-4 h-14 text-[11px] font-semibold text-stone-600">
+          <button
+            type="button"
+            onClick={() => scrollToSection('makeup-styling-landing')}
+            className="flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
+          >
+            <Home className="w-4 h-4" />
+            <span>Categories</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection('makeup-artist-page')}
+            className="flex flex-col items-center justify-center gap-0.5 text-[#160824] font-bold cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-[#B76E79]" />
+            <span>Makeup Artist</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection('gallery')}
+            className="flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Portfolio</span>
+          </button>
           <button
             type="button"
             onClick={() => setCartDrawerOpen(true)}
-            className="text-left min-w-0 flex-1 py-1"
+            className="flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] relative cursor-pointer"
           >
-            <span className="text-[10px] uppercase tracking-wider text-[#D6B77A] font-semibold block">
-              {totalCartItems} Service(s) Selected
-            </span>
-            <span className="font-mono-num text-base font-bold text-white block truncate">
-              ₹{netPayable}{' '}
-              <span className="text-[11px] font-normal text-white/70">
-                (Adv ₹{effectiveAdvance})
-              </span>
-            </span>
-          </button>
-
-          <a
-            href={`https://wa.me/${cleanWhatsappNumber}?text=${encodeURIComponent(
-              'Hello Subba Lakshmi! I would like to inquire about booking a makeover appointment at Eden Roses Makeover.'
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="WhatsApp Studio"
-            className="min-h-[44px] min-w-[44px] rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm"
-          >
-            <MessageCircle className="w-5 h-5 fill-current" />
-          </a>
-
-          <button
-            type="button"
-            onClick={() => {
-              setBookingStep(2);
-              scrollToSection('booking');
-            }}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#F5E2B8] to-[#D6B77A] text-[#160824] text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-md"
-          >
-            <span>Book Slot</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ShoppingBag className="w-4 h-4" />
+            <span>My Booking ({totalCartItems})</span>
           </button>
         </div>
       </div>
 
-      {/* SLIDE-OVER CART DRAWER */}
+      {/* =====================================================================
+          8. SERVICE DETAILS VIEW MODAL / BOTTOM SHEET ("View details >")
+      ===================================================================== */}
+      {selectedServiceDetail && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setSelectedServiceDetail(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl max-h-[88vh] overflow-y-auto shadow-2xl flex flex-col justify-between"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Service Hero Image */}
+            <div className="relative aspect-[16/10] w-full bg-stone-900 shrink-0">
+              <SmartImage
+                src={selectedServiceDetail.image}
+                alt={selectedServiceDetail.name}
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setSelectedServiceDetail(null)}
+                aria-label="Close service details"
+                className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-black/65 text-white flex items-center justify-center hover:bg-black cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              {selectedServiceDetail.makeupSubCategory && (
+                <span className="absolute bottom-3 left-3.5 px-3 py-1 rounded-full bg-black/70 text-[#D6B77A] text-xs font-semibold backdrop-blur-xs">
+                  {selectedServiceDetail.makeupSubCategory}
+                </span>
+              )}
+            </div>
+
+            {/* Details Content */}
+            <div className="p-5 sm:p-6 space-y-5">
+              <div className="space-y-2 border-b border-stone-100 pb-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-stone-900">
+                  {selectedServiceDetail.name}
+                </h3>
+
+                <div className="flex items-center flex-wrap gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1 font-bold text-stone-800">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{(selectedServiceDetail.rating ?? 4.9).toFixed(1)}</span>
+                    <span className="text-stone-400 font-normal">
+                      ({selectedServiceDetail.reviewCount ?? 48} reviews)
+                    </span>
+                  </span>
+                  <span>•</span>
+                  <span className="font-mono-num text-base font-bold text-stone-900">
+                    ₹{(selectedServiceDetail.price ?? 999).toLocaleString('en-IN')}
+                  </span>
+                  {selectedServiceDetail.originalPrice && (
+                    <span className="font-mono-num text-xs text-stone-400 line-through">
+                      ₹{selectedServiceDetail.originalPrice.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                  <span>•</span>
+                  <span className="text-stone-600 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{selectedServiceDetail.duration || '1 hr 15 mins'}</span>
+                  </span>
+                </div>
+
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed pt-1">
+                  {selectedServiceDetail.description}
+                </p>
+              </div>
+
+              {/* What's Included */}
+              <div className="space-y-2.5">
+                <h4 className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>What&apos;s Included</span>
+                </h4>
+                <ul className="space-y-2 text-xs sm:text-sm text-stone-700">
+                  {(
+                    selectedServiceDetail.whatsIncluded ||
+                    selectedServiceDetail.highlights || [
+                      'Complete skin preparation, primer & colour correction',
+                      'Long-wear photo-ready makeup base customized to your skin tone',
+                      'Professional eye makeup, hairstyling & outfit/saree draping',
+                    ]
+                  ).map((inc, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{inc}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Additional Information */}
+              <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-1.5">
+                <h4 className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Additional Information</span>
+                </h4>
+                <ul className="space-y-1 text-xs text-stone-600">
+                  {(
+                    selectedServiceDetail.additionalInfo || [
+                      `Available at your venue/home in ${locality} or at our C V Raman Nagar Studio`,
+                      'Performed by Subba Lakshmi & certified Eden Roses Makeover team',
+                    ]
+                  ).map((info, i) => (
+                    <li key={i}>• {info}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Sticky Bottom Action in Modal */}
+            <div className="sticky bottom-0 bg-white border-t border-stone-200 p-4 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] text-stone-500 block">Service Price</span>
+                <span className="font-mono-num text-lg font-bold text-stone-900">
+                  ₹{(selectedServiceDetail.price ?? 999).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                {getItemQuantity(selectedServiceDetail.id) === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleAddOrIncrement(selectedServiceDetail);
+                      setSelectedServiceDetail(null);
+                    }}
+                    className="px-6 py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-bold shadow-md cursor-pointer"
+                  >
+                    Add to Cart
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 bg-[#2563EB] text-white px-3 py-2 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateQuantity(selectedServiceDetail.id, -1)
+                      }
+                      className="w-6 h-6 rounded-md hover:bg-white/20 flex items-center justify-center cursor-pointer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="font-mono-num text-xs font-bold px-1">
+                      {getItemQuantity(selectedServiceDetail.id)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateQuantity(selectedServiceDetail.id, 1)
+                      }
+                      className="w-6 h-6 rounded-md hover:bg-white/20 flex items-center justify-center cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (getItemQuantity(selectedServiceDetail.id) === 0) {
+                      handleAddOrIncrement(selectedServiceDetail);
+                    }
+                    setSelectedServiceDetail(null);
+                    setBookingStep(2);
+                    scrollToSection('booking');
+                  }}
+                  className="px-5 py-3 rounded-xl bg-[#160824] text-[#D6B77A] text-xs sm:text-sm font-bold cursor-pointer"
+                >
+                  Book Slot
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          LOCATION SELECTOR MODAL (Configurable Bangalore Service Areas)
+      ===================================================================== */}
+      {locationModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setLocationModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-stone-900">
+                  Select Service Location
+                </h3>
+                <p className="text-xs text-stone-500">
+                  On-venue bridal &amp; styling service across Bangalore
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLocationModalOpen(false)}
+                className="p-1.5 rounded-full bg-stone-100 text-stone-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={locationSearchQuery}
+                onChange={(e) => setLocationSearchQuery(e.target.value)}
+                placeholder="Search Indiranagar, Varthur, Yelahanka, Kaggadasapura..."
+                className="w-full h-10 pl-9 pr-3.5 rounded-xl border border-stone-300 text-xs sm:text-sm focus:outline-none focus:border-[#160824]"
+              />
+            </div>
+
+            <div className="overflow-y-auto space-y-1.5 pr-1 flex-1">
+              {filteredLocalities.map((loc) => {
+                const isSelected = locality === loc;
+                return (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => {
+                      setLocality(loc);
+                      setLocationModalOpen(false);
+                    }}
+                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#FFF8EF] border-[#160824] text-[#160824] font-bold'
+                        : 'bg-white hover:bg-stone-50 border-stone-200 text-stone-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <MapPin className="w-4 h-4 text-[#B76E79]" />
+                      <div>
+                        <p className="text-xs sm:text-sm">{loc}</p>
+                        <p className="text-[10px] text-stone-400">
+                          Bengaluru, Karnataka, India
+                        </p>
+                      </div>
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-[#160824]" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MAKEUP & STYLING CATEGORIES QUICK MODAL (Matches Video 0:04 Sheet)
+      ===================================================================== */}
+      {showLandingCategoryModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setShowLandingCategoryModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="text-lg font-bold text-stone-900">
+                Makeup &amp; Styling
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowLandingCategoryModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                MAKEUP
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
+                  (c) => c.group === 'MAKEUP'
+                ).map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleSelectLandingCategory(cat)}
+                    className="flex flex-col items-center text-center cursor-pointer"
+                  >
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 p-1">
+                      <SmartImage
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-stone-800 mt-1.5 leading-tight">
+                      {cat.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-stone-100">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+                MEN SALON
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
+                  (c) => c.group === 'MEN SALON'
+                ).map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleSelectLandingCategory(cat)}
+                    className="flex flex-col items-center text-center cursor-pointer"
+                  >
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 p-1">
+                      <SmartImage
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-stone-800 mt-1.5 leading-tight">
+                      {cat.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          SLIDE-OVER CART & QUICK CHECKOUT DRAWER
+      ===================================================================== */}
       {cartDrawerOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-md bg-[#FFFDF9] h-full shadow-2xl flex flex-col justify-between p-5 sm:p-6 overflow-y-auto">
+          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between p-5 sm:p-6 overflow-y-auto">
             <div className="space-y-5">
-              <div className="flex items-center justify-between border-b border-[#D6B77A]/30 pb-4">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-4">
                 <div>
-                  <h3 className="font-display text-2xl font-bold text-[#160824]">
-                    Your Makeover Selection
+                  <h3 className="text-xl font-bold text-stone-900">
+                    Your Booking Cart
                   </h3>
-                  <p className="text-xs text-[#2A1818]/65">
-                    {totalCartItems} service(s) selected
+                  <p className="text-xs text-stone-500">
+                    {totalCartItems} service(s) · {locality}, Bangalore
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setCartDrawerOpen(false)}
-                  className="p-2 rounded-xl bg-white border border-stone-200 text-[#160824] cursor-pointer"
+                  className="p-2 rounded-xl bg-stone-100 text-stone-800 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2399,21 +3036,21 @@ export const CustomerWebsite: React.FC = () => {
 
               {cart.length === 0 ? (
                 <div className="py-12 text-center space-y-3">
-                  <ShoppingBag className="w-10 h-10 text-[#B76E79]/50 mx-auto" />
-                  <p className="text-sm text-[#2A1818]/75">Your booking cart is empty.</p>
+                  <ShoppingBag className="w-10 h-10 text-stone-300 mx-auto" />
+                  <p className="text-sm text-stone-600">Your booking cart is empty.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {cart.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3.5 rounded-2xl bg-white border border-[#D6B77A]/40 flex items-center justify-between gap-3"
+                      className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm text-[#160824] truncate">
+                        <p className="font-semibold text-sm text-stone-900 truncate">
                           {item.name}
                         </p>
-                        <p className="font-mono-num text-xs text-[#B76E79]">
+                        <p className="font-mono-num text-xs text-stone-500">
                           ₹{item.price} each
                         </p>
                       </div>
@@ -2421,7 +3058,7 @@ export const CustomerWebsite: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, -1)}
-                          className="w-7 h-7 rounded-lg bg-[#FFF8EF] border border-[#D6B77A]/40 flex items-center justify-center cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-white border border-stone-300 flex items-center justify-center cursor-pointer"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -2431,7 +3068,7 @@ export const CustomerWebsite: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, 1)}
-                          className="w-7 h-7 rounded-lg bg-[#160824] text-[#D6B77A] flex items-center justify-center cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-[#2563EB] text-white flex items-center justify-center cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -2449,23 +3086,21 @@ export const CustomerWebsite: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-4 border-t border-[#D6B77A]/30 space-y-4">
+            <div className="pt-4 border-t border-stone-200 space-y-4">
               <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-[#2A1818]/70">Subtotal</span>
+                  <span className="text-stone-600">Subtotal</span>
                   <span className="font-mono-num font-bold">₹{itemsSubtotal}</span>
                 </div>
-                <div className="flex justify-between text-xs text-[#B76E79]">
-                  <span>Discount</span>
-                  <span className="font-mono-num">-₹{effectiveDiscount}</span>
-                </div>
-                <div className="flex justify-between text-xs text-[#2A1818]/75">
-                  <span>Advance Payment</span>
-                  <span className="font-mono-num">₹{effectiveAdvance}</span>
-                </div>
-                <div className="flex justify-between font-bold text-base pt-2 border-t border-[#D6B77A]/25">
-                  <span>Remaining Balance</span>
-                  <span className="font-mono-num text-[#160824]">₹{remainingAmount}</span>
+                {effectiveDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-emerald-700">
+                    <span>Discount</span>
+                    <span className="font-mono-num">-₹{effectiveDiscount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-base pt-2 border-t border-stone-200">
+                  <span>Net Payable</span>
+                  <span className="font-mono-num text-[#160824]">₹{netPayable}</span>
                 </div>
               </div>
 
@@ -2476,9 +3111,9 @@ export const CustomerWebsite: React.FC = () => {
                   setBookingStep(2);
                   scrollToSection('booking');
                 }}
-                className="w-full py-3.5 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] border border-[#D6B77A]/60 font-semibold text-sm cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] font-bold text-sm cursor-pointer"
               >
-                Proceed to Date &amp; Time Selection
+                Select Date, Slot &amp; Confirm Booking
               </button>
             </div>
           </div>
@@ -2536,7 +3171,7 @@ export const CustomerWebsite: React.FC = () => {
       {/* BOOKING CONFIRMATION MODAL */}
       {confirmedBooking && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="max-w-lg w-full bg-[#FFFDF9] rounded-3xl p-6 sm:p-8 border-2 border-[#D6B77A] shadow-2xl space-y-6 my-8">
+          <div className="max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#D6B77A] shadow-2xl space-y-6 my-8">
             <div className="text-center space-y-2">
               <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8" />
@@ -2552,27 +3187,27 @@ export const CustomerWebsite: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-[#D6B77A]/45 space-y-3 text-xs sm:text-sm">
+            <div className="bg-stone-50 rounded-2xl p-5 border border-stone-200 space-y-3 text-xs sm:text-sm">
               <div className="flex justify-between">
-                <span className="text-[#2A1818]/65">Customer Name</span>
-                <span className="font-semibold text-[#160824]">
+                <span className="text-stone-500">Customer Name</span>
+                <span className="font-semibold text-stone-900">
                   {confirmedBooking.customerName}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#2A1818]/65">Date &amp; Time</span>
-                <span className="font-mono-num font-semibold text-[#160824]">
+                <span className="text-stone-500">Date &amp; Time</span>
+                <span className="font-mono-num font-semibold text-stone-900">
                   {confirmedBooking.date} · {confirmedBooking.time}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-[#2A1818]/65 shrink-0">Address</span>
-                <span className="font-medium text-[#160824] text-right">
+                <span className="text-stone-500 shrink-0">Service Location</span>
+                <span className="font-medium text-stone-900 text-right">
                   {confirmedBooking.address}
                 </span>
               </div>
 
-              <div className="pt-2 border-t border-stone-100">
+              <div className="pt-2 border-t border-stone-200">
                 <span className="text-xs font-semibold text-[#B76E79] block mb-1.5">
                   Booked Services:
                 </span>
@@ -2589,7 +3224,7 @@ export const CustomerWebsite: React.FC = () => {
               </div>
 
               {showBookingDetailsModal && (
-                <div className="pt-2 border-t border-stone-100 text-xs space-y-1 text-[#2A1818]/75">
+                <div className="pt-2 border-t border-stone-200 text-xs space-y-1 text-stone-600">
                   <p>Event Type: {confirmedBooking.eventType}</p>
                   <p>Phone: {confirmedBooking.phone}</p>
                   <p>Status: {confirmedBooking.status}</p>
@@ -2597,9 +3232,9 @@ export const CustomerWebsite: React.FC = () => {
                 </div>
               )}
 
-              <div className="pt-3 border-t border-[#D6B77A]/25 space-y-1">
+              <div className="pt-3 border-t border-stone-200 space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-[#2A1818]/70">Total Amount</span>
+                  <span className="text-stone-600">Total Amount</span>
                   <span className="font-mono-num font-bold">
                     ₹{confirmedBooking.itemsTotal - confirmedBooking.discount}
                   </span>
@@ -2610,7 +3245,7 @@ export const CustomerWebsite: React.FC = () => {
                     ₹{confirmedBooking.advancePaid}
                   </span>
                 </div>
-                <div className="flex justify-between font-bold text-base text-[#160824] pt-1">
+                <div className="flex justify-between font-bold text-base text-stone-900 pt-1">
                   <span>Remaining Amount</span>
                   <span className="font-mono-num">
                     ₹{confirmedBooking.amountToCollect}
@@ -2634,7 +3269,7 @@ export const CustomerWebsite: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowBookingDetailsModal((v) => !v)}
-                  className="py-3 rounded-xl bg-white border border-[#D6B77A] text-[#160824] text-xs font-semibold cursor-pointer"
+                  className="py-3 rounded-xl bg-white border border-stone-300 text-stone-800 text-xs font-semibold cursor-pointer"
                 >
                   {showBookingDetailsModal ? 'Hide Extra Details' : 'View Booking Details'}
                 </button>
@@ -2644,11 +3279,11 @@ export const CustomerWebsite: React.FC = () => {
                     setConfirmedBooking(null);
                     setShowBookingDetailsModal(false);
                     setBookingStep(1);
-                    scrollToSection('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="py-3 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-semibold cursor-pointer"
                 >
-                  Back to Home
+                  Done
                 </button>
               </div>
             </div>
