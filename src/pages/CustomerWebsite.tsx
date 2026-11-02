@@ -503,11 +503,14 @@ export const CustomerWebsite: React.FC = () => {
 
   const applyCodeValue = (rawCode: string) => {
     const code = rawCode.trim().toUpperCase();
+    const dynOffer1Code = (settings.offer1Code || 'BRIDAL500').trim().toUpperCase();
+    const dynOffer2Code = (settings.offer2Code || 'EDEN10').trim().toUpperCase();
     setPromoCode(code);
-    if (code === 'BRIDAL500' || code === 'EDEN500') {
-      setDiscountAmount(500);
-    } else if (code === 'EDEN10') {
-      setDiscountAmount(Math.round(itemsSubtotal * 0.1));
+    if (code === dynOffer1Code || code === 'BRIDAL500' || code === 'EDEN500') {
+      setDiscountAmount(settings.offer1DiscountAmount || 500);
+    } else if (code === dynOffer2Code || code === 'EDEN10') {
+      const pct = settings.offer2DiscountPercent || 10;
+      setDiscountAmount(Math.round(itemsSubtotal * (pct / 100)));
     } else if (!isNaN(Number(code)) && Number(code) > 0) {
       setDiscountAmount(Math.min(Number(code), itemsSubtotal));
     }
@@ -752,7 +755,7 @@ export const CustomerWebsite: React.FC = () => {
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="font-bold text-sm sm:text-base text-[#160824] leading-tight truncate">
-                    Bangalore
+                    {settings.defaultCity || 'Bangalore'}
                   </span>
                   <span className="text-[#B76E79] font-bold text-xs">·</span>
                   <span className="text-xs sm:text-sm font-semibold text-[#8C4A56] truncate">
@@ -761,7 +764,7 @@ export const CustomerWebsite: React.FC = () => {
                   <ChevronDown className="w-3.5 h-3.5 text-stone-500 shrink-0 transition-transform group-hover:translate-y-0.5" />
                 </div>
                 <p className="text-[11px] text-stone-500 truncate leading-tight">
-                  Studio &amp; On-Venue Service Across Bengaluru
+                  {settings.headerTagline || 'Studio & On-Venue Service Across Bengaluru'}
                 </p>
               </div>
             </button>
@@ -1151,8 +1154,12 @@ export const CustomerWebsite: React.FC = () => {
                     </h1>
                     <span className="text-xs font-semibold text-stone-600 flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span className="font-mono-num font-bold text-stone-900">4.9</span>
-                      <span className="text-stone-400">(520+ Brides)</span>
+                      <span className="font-mono-num font-bold text-stone-900">
+                        {settings.ratingScore || '4.9'}
+                      </span>
+                      <span className="text-stone-400">
+                        ({settings.ratingCountText || '520+ Brides'})
+                      </span>
                     </span>
                   </div>
                   <button
@@ -1162,7 +1169,7 @@ export const CustomerWebsite: React.FC = () => {
                   >
                     <MapPin className="w-3 h-3 text-[#B76E79]" />
                     <span className="truncate">
-                      Serving {locality} &amp; All Bangalore
+                      Serving {locality} &amp; All {settings.defaultCity || 'Bangalore'}
                     </span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
@@ -1184,11 +1191,11 @@ export const CustomerWebsite: React.FC = () => {
               </div>
             </div>
 
-            {/* Promotional Offers Strip (Matches Reference Video 0:12) */}
+            {/* Promotional Offers Strip (Matches Reference Video 0:12 — Editable from Admin Panel) */}
             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-0.5">
               <button
                 type="button"
-                onClick={() => applyCodeValue('BRIDAL500')}
+                onClick={() => applyCodeValue(settings.offer1Code || 'BRIDAL500')}
                 className="tap-scale flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[#E6DAC8] bg-[#FFFDF9] hover:border-[#D6B77A] text-left shrink-0 transition-all cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
@@ -1196,17 +1203,20 @@ export const CustomerWebsite: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-[#160824]">
-                    Flat ₹500 OFF on Bridal &amp; Engagement
+                    {settings.offer1Title || 'Flat ₹500 OFF on Bridal & Engagement'}
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    Tap to apply code <span className="font-mono-num font-bold text-[#8C4A56]">BRIDAL500</span>
+                    Tap to apply code{' '}
+                    <span className="font-mono-num font-bold text-[#8C4A56]">
+                      {settings.offer1Code || 'BRIDAL500'}
+                    </span>
                   </p>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => applyCodeValue('EDEN10')}
+                onClick={() => applyCodeValue(settings.offer2Code || 'EDEN10')}
                 className="tap-scale flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[#E6DAC8] bg-[#FFFDF9] hover:border-[#D6B77A] text-left shrink-0 transition-all cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
@@ -1214,10 +1224,13 @@ export const CustomerWebsite: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-[#160824]">
-                    Save 10% on Party Makeup &amp; Combos
+                    {settings.offer2Title || 'Save 10% on Party Makeup & Combos'}
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    Tap to apply code <span className="font-mono-num font-bold text-[#8C4A56]">EDEN10</span>
+                    Tap to apply code{' '}
+                    <span className="font-mono-num font-bold text-[#8C4A56]">
+                      {settings.offer2Code || 'EDEN10'}
+                    </span>
                   </p>
                 </div>
               </button>
@@ -1228,10 +1241,11 @@ export const CustomerWebsite: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-[#160824]">
-                    100% Authentic Luxury Products
+                    {settings.trustBadgeTitle || '100% Authentic Luxury Products'}
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    MAC · Huda Beauty · NARS · Silicone Airbrush
+                    {settings.trustBadgeSubtitle ||
+                      'MAC · Huda Beauty · NARS · Silicone Airbrush'}
                   </p>
                 </div>
               </div>
@@ -1245,13 +1259,15 @@ export const CustomerWebsite: React.FC = () => {
                     {settings.makeupBrand} · By {settings.artistName}
                   </p>
                   <h2 className="font-display text-2xl sm:text-4xl font-bold gold-gradient-text leading-tight">
-                    Professional Makeup
+                    {settings.heroBannerTitle || 'Professional Makeup'}
                   </h2>
                   <p className="text-xs sm:text-sm font-medium text-[#F5E2B8]/95 leading-snug">
-                    Beauty services for every special occasion
+                    {settings.heroBannerSubtitle ||
+                      'Beauty services for every special occasion'}
                   </p>
                   <p className="hidden sm:block text-xs text-white/75">
-                    Flawless HD &amp; Airbrush beauty &nbsp;·&nbsp; Effortless bridal confidence
+                    {settings.heroBannerTagline ||
+                      'Flawless HD & Airbrush beauty · Effortless bridal confidence'}
                   </p>
                   <div className="pt-1.5 flex items-center gap-2 flex-wrap">
                     <button
@@ -1259,7 +1275,7 @@ export const CustomerWebsite: React.FC = () => {
                       onClick={() => scrollToSection('booking')}
                       className="tap-scale px-3.5 py-2 rounded-xl bg-[#D6B77A] hover:bg-[#e3c78e] text-[#160824] text-xs font-bold flex items-center gap-1 shadow-sm cursor-pointer"
                     >
-                      <span>Book Appointment</span>
+                      <span>{settings.heroCtaText || 'Book Appointment'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                     <div className="hidden sm:flex items-center gap-1.5 pl-2">
@@ -2332,7 +2348,7 @@ export const CustomerWebsite: React.FC = () => {
 
             <div className="lg:col-span-7 space-y-4">
               <span className="text-xs font-semibold uppercase tracking-wider text-[#B76E79]">
-                Principal Makeup &amp; Styling Artist
+                {settings.aboutKicker || 'Principal Makeup & Styling Artist'}
               </span>
               <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#160824]">
                 {settings.artistName} — {settings.makeupBrand}
@@ -2342,21 +2358,27 @@ export const CustomerWebsite: React.FC = () => {
               </p>
               <div className="grid grid-cols-3 gap-3 pt-2">
                 <div className="p-3.5 rounded-2xl bg-white border border-stone-200">
-                  <p className="font-bold text-sm text-[#160824]">HD &amp; Airbrush</p>
+                  <p className="font-bold text-sm text-[#160824]">
+                    {settings.aboutHighlight1Title || 'HD & Airbrush'}
+                  </p>
                   <p className="text-[11px] text-stone-500 mt-0.5">
-                    Waterproof 16-hr skin finish
+                    {settings.aboutHighlight1Sub || 'Waterproof 16-hr skin finish'}
                   </p>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-stone-200">
-                  <p className="font-bold text-sm text-[#160824]">Venue Travel</p>
+                  <p className="font-bold text-sm text-[#160824]">
+                    {settings.aboutHighlight2Title || 'Venue Travel'}
+                  </p>
                   <p className="text-[11px] text-stone-500 mt-0.5">
-                    5:00 AM Muhurtham slots available
+                    {settings.aboutHighlight2Sub || '5:00 AM Muhurtham slots available'}
                   </p>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-stone-200">
-                  <p className="font-bold text-sm text-[#160824]">4.9 ★ Rated</p>
+                  <p className="font-bold text-sm text-[#160824]">
+                    {settings.aboutHighlight3Title || '4.9 ★ Rated'}
+                  </p>
                   <p className="text-[11px] text-stone-500 mt-0.5">
-                    Loved by Bengaluru brides
+                    {settings.aboutHighlight3Sub || 'Loved by Bengaluru brides'}
                   </p>
                 </div>
               </div>
@@ -2586,8 +2608,9 @@ export const CustomerWebsite: React.FC = () => {
               </div>
             </div>
             <div className="text-xs text-white/75">
-              Service Areas: Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman
-              Nagar &amp; All Bangalore
+              Service Areas:{' '}
+              {settings.serviceArea ||
+                'Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman Nagar & All Bangalore'}
             </div>
           </div>
 

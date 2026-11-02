@@ -39,12 +39,14 @@ import {
   MakeupSubCategory,
   ServiceCatalogItem,
   TeamMember,
+  deleteGalleryImage,
   deleteServiceCatalogItem,
   deleteTeamMember,
   resetDemoData,
   saveBusinessSettings,
   saveGalleryImages,
   saveServicesCatalog,
+  upsertGalleryImage,
   upsertServiceCatalogItem,
   upsertTeamMember,
 } from '../../services/bookingStorage';
@@ -150,8 +152,12 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     onSubScreenChange?.(screen);
   };
 
-  // Editable Business Settings State
+  // Editable Business Settings State (Synced with live Firebase updates)
   const [formSettings, setFormSettings] = useState<BusinessSettings>(settings);
+
+  React.useEffect(() => {
+    setFormSettings(settings);
+  }, [settings]);
 
   // New Product / Service State
   const [newServiceName, setNewServiceName] = useState('');
@@ -492,7 +498,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
   };
 
-  // Gallery Handlers
+  // Gallery Handlers (Synced in Real-Time via Firebase)
   const handleUploadNewGalleryImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -508,10 +514,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         description: `Uploaded via Partner App (${newGalleryCat})`,
         displayPosition: 'Gallery Grid',
       };
-      await saveGalleryImages([newEntry, ...gallery]);
+      await upsertGalleryImage(newEntry);
       setNewGalleryAlt('');
       onRefresh();
-      showToast('Photo uploaded to Eden Roses Gallery!');
+      showToast('Photo uploaded & synced to live Website Gallery via Firebase!');
     } finally {
       setUploadingImg(false);
     }
@@ -524,16 +530,21 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     const url = await uploadImageAsset(file);
-    const updated = gallery.map((g) => (g.id === imgId ? { ...g, url } : g));
-    await saveGalleryImages(updated);
+    const target = gallery.find((g) => g.id === imgId);
+    if (target) {
+      await upsertGalleryImage({ ...target, url });
+    } else {
+      const updated = gallery.map((g) => (g.id === imgId ? { ...g, url } : g));
+      await saveGalleryImages(updated);
+    }
     onRefresh();
-    showToast('Gallery photo replaced!');
+    showToast('Gallery photo replaced & synced to live website!');
   };
 
   const handleDeleteGalleryImage = async (imgId: string) => {
-    await saveGalleryImages(gallery.filter((g) => g.id !== imgId));
+    await deleteGalleryImage(imgId);
     onRefresh();
-    showToast('Photo removed from gallery.');
+    showToast('Photo removed from gallery & synced via Firebase.');
   };
 
   const handleSetAsHeroImage = async (url: string) => {
@@ -650,8 +661,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
       {
         id: 'business-profile' as MoreSectionId,
         icon: Building2,
-        title: 'Business Profile & Studio Settings',
-        subtitle: 'Artist name, logo, C V Raman Nagar address, hours, social links',
+        title: 'Full Website Information & CMS Control (वेबसाइट फुल कंट्रोल)',
+        subtitle:
+          'Change Brand, Hero Banner, Offers, Coupons, Ratings, Bio, Phone, Address & Hours in Real-Time',
       },
       {
         id: 'service-management' as MoreSectionId,
@@ -777,229 +789,728 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 1. BUSINESS PROFILE & SETTINGS */}
+      {/* 1. FULL WEBSITE INFORMATION & CMS CONTROL (REAL-TIME FIREBASE SYNC) */}
       {(activeSubScreen === 'business-profile' ||
         activeSubScreen === 'whatsapp-contact') && (
-        <form
-          onSubmit={handleSaveSettings}
-          className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4"
-        >
-          <h3 className="font-bold text-base text-stone-900 border-b border-stone-100 pb-2">
-            Editable Business Profile &amp; Contact Settings
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+        <form onSubmit={handleSaveSettings} className="space-y-5">
+          {/* Header Banner */}
+          <div className="rounded-2xl bg-[#160824] text-[#F3E2BA] p-4 sm:p-5 border border-[#D6B77A]/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <label className="font-bold text-stone-700 block mb-1">Business Name</label>
-              <input
-                type="text"
-                value={formSettings.businessName}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, businessName: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#D6B77A]" />
+                <h3 className="font-bold text-sm sm:text-base text-white">
+                  Full Website Information &amp; CMS Control (वेबसाइट की सारी जानकारी बदलें)
+                </h3>
+              </div>
+              <p className="text-xs text-[#F3E2BA]/85 mt-1">
+                Every change saved here syncs via Firebase Realtime Database &amp; Firestore to the live Customer Website immediately.
+              </p>
             </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">Makeup Brand</label>
-              <input
-                type="text"
-                value={formSettings.makeupBrand}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, makeupBrand: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Makeup Artist Name
-              </label>
-              <input
-                type="text"
-                value={formSettings.artistName}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, artistName: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Business Logo URL
-              </label>
-              <input
-                type="text"
-                value={formSettings.logoUrl}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, logoUrl: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Primary Phone Number
-              </label>
-              <input
-                type="text"
-                value={formSettings.phonePrimary}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, phonePrimary: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Secondary Phone Number
-              </label>
-              <input
-                type="text"
-                value={formSettings.phoneSecondary}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, phoneSecondary: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                WhatsApp Number (with country code)
-              </label>
-              <input
-                type="text"
-                value={formSettings.whatsappNumber}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, whatsappNumber: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">Email</label>
-              <input
-                type="email"
-                value={formSettings.email}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, email: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Business Location
-              </label>
-              <input
-                type="text"
-                value={formSettings.location}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, location: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">Website URL</label>
-              <input
-                type="text"
-                value={formSettings.websiteUrl}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, websiteUrl: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
+            <button
+              type="submit"
+              className="px-4 py-2.5 rounded-xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] font-bold text-xs shrink-0 cursor-pointer shadow-xs"
+            >
+              Save &amp; Sync All Changes
+            </button>
           </div>
 
-          <div className="text-xs space-y-3">
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Primary Studio Address (C V Raman Nagar / Nagavarapalya)
-              </label>
-              <textarea
-                rows={2}
-                value={formSettings.address}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, address: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Google Maps Link
-              </label>
-              <input
-                type="text"
-                value={formSettings.googleMapsLink}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, googleMapsLink: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* SECTION A: BRAND, ARTIST, LOGO & HERO BANNER IMAGE */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
+            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
+              1. Brand Name, Artist Name, Logo &amp; Hero Banner Photo
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
               <div>
                 <label className="font-bold text-stone-700 block mb-1">
-                  Opening Hours
+                  Salon / Business Name
                 </label>
                 <input
                   type="text"
-                  value={formSettings.openingHours}
+                  value={formSettings.businessName}
                   onChange={(e) =>
-                    setFormSettings({ ...formSettings, openingHours: e.target.value })
+                    setFormSettings({ ...formSettings, businessName: e.target.value })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Makeup Brand Title
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.makeupBrand}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, makeupBrand: e.target.value })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Lead Makeup Artist Name
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.artistName}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, artistName: e.target.value })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs">
+              {/* Logo Preview + Upload */}
+              <div className="p-3.5 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-stone-800">Website &amp; Admin Logo</span>
+                  <label className="px-3 py-1.5 rounded-lg bg-[#160824] text-[#F3E2BA] text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
+                    <Upload className="w-3 h-3" />
+                    <span>Upload Logo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const url = await uploadImageAsset(file);
+                        setFormSettings({
+                          ...formSettings,
+                          logoUrl: url,
+                          footerLogoUrl: url,
+                        });
+                        showToast('Logo uploaded! Click Save & Sync to publish.');
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-[#160824] border border-[#D6B77A] overflow-hidden shrink-0">
+                    <SmartImage
+                      src={formSettings.logoUrl}
+                      alt="Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={formSettings.logoUrl}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        logoUrl: e.target.value,
+                        footerLogoUrl: e.target.value,
+                      })
+                    }
+                    placeholder="Or paste Logo Image URL"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-stone-300"
+                  />
+                </div>
+              </div>
+
+              {/* Hero Promotional Banner Image Preview + Upload */}
+              <div className="p-3.5 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-stone-800">
+                    Main Promotional Banner Photo
+                  </span>
+                  <label className="px-3 py-1.5 rounded-lg bg-[#5b6324] text-white text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
+                    <Upload className="w-3 h-3" />
+                    <span>Upload Banner Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const url = await uploadImageAsset(file);
+                        setFormSettings({ ...formSettings, heroImageUrl: url });
+                        showToast('Hero Banner photo uploaded! Click Save & Sync.');
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-stone-200 border border-stone-300 overflow-hidden shrink-0">
+                    <SmartImage
+                      src={formSettings.heroImageUrl}
+                      alt="Hero Banner"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={formSettings.heroImageUrl}
+                    onChange={(e) =>
+                      setFormSettings({ ...formSettings, heroImageUrl: e.target.value })
+                    }
+                    placeholder="Or paste Hero Image URL"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-stone-300"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION B: HERO BANNER HEADINGS, RATINGS & TRUST BADGE */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
+            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
+              2. Website Header, Hero Banner Text &amp; Rating Badge
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Default City Name (Header)
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.defaultCity || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, defaultCity: e.target.value })
+                  }
+                  placeholder="Bangalore"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Header Subtitle / Tagline
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.headerTagline || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, headerTagline: e.target.value })
+                  }
+                  placeholder="Studio & On-Venue Service Across Bengaluru"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Promotional Banner Main Heading
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.heroBannerTitle || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, heroBannerTitle: e.target.value })
+                  }
+                  placeholder="Professional Makeup"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Promotional Banner Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.heroBannerSubtitle || ''}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      heroBannerSubtitle: e.target.value,
+                    })
+                  }
+                  placeholder="Beauty services for every special occasion"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Promotional Banner Tagline
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.heroBannerTagline || ''}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      heroBannerTagline: e.target.value,
+                    })
+                  }
+                  placeholder="Flawless HD & Airbrush beauty · Effortless bridal confidence"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Banner Button Text (CTA)
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.heroCtaText || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, heroCtaText: e.target.value })
+                  }
+                  placeholder="Book Appointment"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Customer Rating Score (e.g., 4.9)
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.ratingScore || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, ratingScore: e.target.value })
+                  }
+                  placeholder="4.9"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Rating Count Label (e.g., 520+ Brides)
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.ratingCountText || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, ratingCountText: e.target.value })
+                  }
+                  placeholder="520+ Brides"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Trust Badge Title
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.trustBadgeTitle || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, trustBadgeTitle: e.target.value })
+                  }
+                  placeholder="100% Authentic Luxury Products"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Trust Badge Brands Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.trustBadgeSubtitle || ''}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      trustBadgeSubtitle: e.target.value,
+                    })
+                  }
+                  placeholder="MAC · Huda Beauty · NARS · Silicone Airbrush"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION C: PROMOTIONAL OFFERS & DISCOUNT COUPON CODES */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
+            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
+              3. Live Website Offers &amp; Coupon Codes (ऑफर और कूपन कोड)
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Offer 1 Banner Title
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.offer1Title || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, offer1Title: e.target.value })
+                  }
+                  placeholder="Flat ₹500 OFF on Bridal & Engagement"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Offer 1 Coupon Code
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.offer1Code || ''}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      offer1Code: e.target.value.toUpperCase(),
+                    })
+                  }
+                  placeholder="BRIDAL500"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Offer 1 Flat Discount (₹)
+                </label>
+                <input
+                  type="number"
+                  value={formSettings.offer1DiscountAmount ?? 500}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      offer1DiscountAmount: Math.max(0, Number(e.target.value)),
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Offer 2 Banner Title
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.offer2Title || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, offer2Title: e.target.value })
+                  }
+                  placeholder="Save 10% on Party Makeup & Combos"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Offer 2 Coupon Code
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.offer2Code || ''}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      offer2Code: e.target.value.toUpperCase(),
+                    })
+                  }
+                  placeholder="EDEN10"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Offer 2 Discount (%)
+                </label>
+                <input
+                  type="number"
+                  value={formSettings.offer2DiscountPercent ?? 10}
+                  onChange={(e) =>
+                    setFormSettings({
+                      ...formSettings,
+                      offer2DiscountPercent: Math.max(0, Math.min(90, Number(e.target.value))),
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION D: ABOUT ARTIST BIO & 3 HIGHLIGHT CARDS */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
+            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
+              4. About Artist Section &amp; Highlights
+            </h4>
+
+            <div className="text-xs space-y-3">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Artist Role Kicker Title
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.aboutKicker || ''}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, aboutKicker: e.target.value })
+                  }
+                  placeholder="Principal Makeup & Styling Artist"
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  About Artist &amp; Salon Bio Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={formSettings.description}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2">
+                  <label className="font-bold text-stone-700 block">
+                    Highlight Card 1
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.aboutHighlight1Title || ''}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        aboutHighlight1Title: e.target.value,
+                      })
+                    }
+                    placeholder="HD & Airbrush"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 font-bold"
+                  />
+                  <input
+                    type="text"
+                    value={formSettings.aboutHighlight1Sub || ''}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        aboutHighlight1Sub: e.target.value,
+                      })
+                    }
+                    placeholder="Waterproof 16-hr skin finish"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300"
+                  />
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2">
+                  <label className="font-bold text-stone-700 block">
+                    Highlight Card 2
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.aboutHighlight2Title || ''}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        aboutHighlight2Title: e.target.value,
+                      })
+                    }
+                    placeholder="Venue Travel"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 font-bold"
+                  />
+                  <input
+                    type="text"
+                    value={formSettings.aboutHighlight2Sub || ''}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        aboutHighlight2Sub: e.target.value,
+                      })
+                    }
+                    placeholder="5:00 AM Muhurtham slots available"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300"
+                  />
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2">
+                  <label className="font-bold text-stone-700 block">
+                    Highlight Card 3
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.aboutHighlight3Title || ''}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        aboutHighlight3Title: e.target.value,
+                      })
+                    }
+                    placeholder="4.9 ★ Rated"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 font-bold"
+                  />
+                  <input
+                    type="text"
+                    value={formSettings.aboutHighlight3Sub || ''}
+                    onChange={(e) =>
+                      setFormSettings({
+                        ...formSettings,
+                        aboutHighlight3Sub: e.target.value,
+                      })
+                    }
+                    placeholder="Loved by Bengaluru brides"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION E: CONTACT NUMBERS, WHATSAPP, ADDRESS & SOCIAL LINKS */}
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
+            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
+              5. Phone, WhatsApp, Studio Address, Service Areas &amp; Social Links
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Primary Phone Number
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.phonePrimary}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, phonePrimary: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Secondary Phone Number
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.phoneSecondary}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, phoneSecondary: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  WhatsApp Number (with country code, e.g. 917019135530)
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.whatsappNumber}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, whatsappNumber: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formSettings.email}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, email: e.target.value })
                   }
                   className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
                 />
               </div>
               <div>
                 <label className="font-bold text-stone-700 block mb-1">
-                  Instagram Link
+                  Business Location Label
                 </label>
                 <input
                   type="text"
-                  value={formSettings.instagramUrl}
+                  value={formSettings.location}
                   onChange={(e) =>
-                    setFormSettings({ ...formSettings, instagramUrl: e.target.value })
+                    setFormSettings({ ...formSettings, location: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">Website URL</label>
+                <input
+                  type="text"
+                  value={formSettings.websiteUrl}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, websiteUrl: e.target.value })
                   }
                   className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
                 />
               </div>
             </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">Service Area</label>
-              <input
-                type="text"
-                value={formSettings.serviceArea}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, serviceArea: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Business Description
-              </label>
-              <textarea
-                rows={3}
-                value={formSettings.description}
-                onChange={(e) =>
-                  setFormSettings({ ...formSettings, description: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-              />
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold text-xs cursor-pointer"
-          >
-            Save &amp; Sync Business Profile
-          </button>
+            <div className="text-xs space-y-3">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Full Studio Address
+                </label>
+                <textarea
+                  rows={2}
+                  value={formSettings.address}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, address: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Service Areas / Localities (Shown in Footer &amp; Location Info)
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.serviceArea}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, serviceArea: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Google Maps Link
+                </label>
+                <input
+                  type="text"
+                  value={formSettings.googleMapsLink}
+                  onChange={(e) =>
+                    setFormSettings({ ...formSettings, googleMapsLink: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Opening Hours
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.openingHours}
+                    onChange={(e) =>
+                      setFormSettings({ ...formSettings, openingHours: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Instagram Link
+                  </label>
+                  <input
+                    type="text"
+                    value={formSettings.instagramUrl}
+                    onChange={(e) =>
+                      setFormSettings({ ...formSettings, instagramUrl: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold text-xs sm:text-sm cursor-pointer shadow-sm"
+            >
+              Save &amp; Sync All Website Information to Firebase
+            </button>
+          </div>
         </form>
       )}
 

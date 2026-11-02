@@ -16,6 +16,7 @@ import {
   Database,
   ref,
   set,
+  onValue,
   runTransaction,
 } from 'firebase/database';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
@@ -133,6 +134,7 @@ export {
   onSnapshot,
   ref,
   set,
+  onValue,
   runTransaction,
 };
 

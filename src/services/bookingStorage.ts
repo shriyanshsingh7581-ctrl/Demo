@@ -16,6 +16,7 @@ import {
   onSnapshot,
   ref,
   set,
+  onValue,
   runTransaction,
   handleFirestoreError,
   OperationType,
@@ -192,8 +193,32 @@ export interface BusinessSettings {
   description: string;
   serviceArea: string;
   heroImageUrl: string;
+  headerTagline?: string;
+  defaultCity?: string;
+  heroBannerTitle?: string;
+  heroBannerSubtitle?: string;
+  heroBannerTagline?: string;
+  heroCtaText?: string;
+  ratingScore?: string;
+  ratingCountText?: string;
+  trustBadgeTitle?: string;
+  trustBadgeSubtitle?: string;
+  offer1Title?: string;
+  offer1Code?: string;
+  offer1DiscountAmount?: number;
+  offer2Title?: string;
+  offer2Code?: string;
+  offer2DiscountPercent?: number;
+  aboutKicker?: string;
+  aboutHighlight1Title?: string;
+  aboutHighlight1Sub?: string;
+  aboutHighlight2Title?: string;
+  aboutHighlight2Sub?: string;
+  aboutHighlight3Title?: string;
+  aboutHighlight3Sub?: string;
   blockedDates: string[];
   timeSlots: string[];
+  updatedAt?: string;
 }
 
 export interface PartnerSelfieLog {
@@ -209,9 +234,9 @@ const STORAGE_KEYS = {
   BOOKINGS: 'eden_roses_bookings_v4',
   CUSTOMERS: 'eden_roses_customers_v4',
   SERVICES: 'eden_roses_services_v5',
-  SETTINGS: 'eden_roses_business_settings_v4',
+  SETTINGS: 'eden_roses_business_settings_v5',
   TEAM: 'eden_roses_team_members_v5',
-  GALLERY: 'eden_roses_gallery_images_v4',
+  GALLERY: 'eden_roses_gallery_images_v5',
   SELFIES: 'eden_roses_partner_selfies_v4',
 };
 
@@ -238,9 +263,32 @@ export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
   description:
     'At Eden Roses Makeover, beauty is more than makeup. It is about confidence, individuality, and creating unforgettable memories. Subba Lakshmi specializes in professional makeup artistry, bridal transformations, hairstyling, and personalized beauty services designed to complement every client’s personality and special occasion.',
   serviceArea:
-    'Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman Nagar, Nagavarapalya, Brookefield, Whitefield, Jayanagar, Koramangala & All Across Bengaluru',
+    'Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman Nagar, Nagavarapalya, Brookefield, Whitefield, Jayanagar, Koramangala, HSR Layout, Marathahalli, Domlur, Banaswadi, Hebbal, Malleswaram, Electronic City',
   heroImageUrl:
     'https://edenroses.in/wp-content/uploads/2024/12/Short-and-sweet-just-like-a-perfect-love-story.-.A-touch-of-makeup-a-touch-of-magicWe-are-here-to-doll-you-up-for.your-best-day.jpg',
+  headerTagline: 'Studio & On-Venue Service Across Bengaluru',
+  defaultCity: 'Bangalore',
+  heroBannerTitle: 'Professional Makeup',
+  heroBannerSubtitle: 'Beauty services for every special occasion',
+  heroBannerTagline: 'Flawless HD & Airbrush beauty · Effortless bridal confidence',
+  heroCtaText: 'Book Appointment',
+  ratingScore: '4.9',
+  ratingCountText: '(520+ Brides)',
+  trustBadgeTitle: '100% Authentic Luxury Products',
+  trustBadgeSubtitle: 'MAC · Huda Beauty · NARS · Silicone Airbrush',
+  offer1Title: 'Flat ₹500 OFF on Bridal & Engagement',
+  offer1Code: 'BRIDAL500',
+  offer1DiscountAmount: 500,
+  offer2Title: 'Save 10% on Party Makeup & Combos',
+  offer2Code: 'EDEN10',
+  offer2DiscountPercent: 10,
+  aboutKicker: 'Principal Makeup & Styling Artist',
+  aboutHighlight1Title: 'HD & Airbrush',
+  aboutHighlight1Sub: 'Waterproof 16-hr skin finish',
+  aboutHighlight2Title: 'Venue Travel',
+  aboutHighlight2Sub: '5:00 AM Muhurtham slots available',
+  aboutHighlight3Title: '4.9 ★ Rated',
+  aboutHighlight3Sub: 'Loved by Bengaluru brides',
   blockedDates: [],
   timeSlots: [...AVAILABLE_TIME_SLOTS],
 };
@@ -1287,6 +1335,73 @@ function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
   return cleaned;
 }
 
+function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSettings {
+  const merged = { ...INITIAL_BUSINESS_SETTINGS, ...s };
+  return {
+    businessName: String(merged.businessName || INITIAL_BUSINESS_SETTINGS.businessName).slice(0, 150),
+    makeupBrand: String(merged.makeupBrand || INITIAL_BUSINESS_SETTINGS.makeupBrand).slice(0, 150),
+    artistName: String(merged.artistName || INITIAL_BUSINESS_SETTINGS.artistName).slice(0, 120),
+    businessCategory: String(merged.businessCategory || INITIAL_BUSINESS_SETTINGS.businessCategory).slice(0, 300),
+    logoUrl: String(merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL).slice(0, 450000),
+    footerLogoUrl: String(merged.footerLogoUrl || merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL).slice(0, 450000),
+    phonePrimary: String(merged.phonePrimary || INITIAL_BUSINESS_SETTINGS.phonePrimary).slice(0, 40),
+    phoneSecondary: String(merged.phoneSecondary || '').slice(0, 40),
+    whatsappNumber: String(merged.whatsappNumber || INITIAL_BUSINESS_SETTINGS.whatsappNumber).slice(0, 40),
+    email: String(merged.email || '').slice(0, 120),
+    address: String(merged.address || INITIAL_BUSINESS_SETTINGS.address).slice(0, 500),
+    location: String(merged.location || INITIAL_BUSINESS_SETTINGS.location).slice(0, 250),
+    googleMapsLink: String(merged.googleMapsLink || INITIAL_BUSINESS_SETTINGS.googleMapsLink).slice(0, 1000),
+    openingHours: String(merged.openingHours || INITIAL_BUSINESS_SETTINGS.openingHours).slice(0, 250),
+    websiteUrl: String(merged.websiteUrl || INITIAL_BUSINESS_SETTINGS.websiteUrl).slice(0, 250),
+    instagramUrl: String(merged.instagramUrl || INITIAL_BUSINESS_SETTINGS.instagramUrl).slice(0, 250),
+    facebookUrl: String(merged.facebookUrl || INITIAL_BUSINESS_SETTINGS.facebookUrl).slice(0, 250),
+    description: String(merged.description || INITIAL_BUSINESS_SETTINGS.description).slice(0, 3000),
+    serviceArea: String(merged.serviceArea || INITIAL_BUSINESS_SETTINGS.serviceArea).slice(0, 1000),
+    heroImageUrl: String(merged.heroImageUrl || INITIAL_BUSINESS_SETTINGS.heroImageUrl).slice(0, 450000),
+    headerTagline: String(merged.headerTagline || INITIAL_BUSINESS_SETTINGS.headerTagline).slice(0, 200),
+    defaultCity: String(merged.defaultCity || INITIAL_BUSINESS_SETTINGS.defaultCity).slice(0, 80),
+    heroBannerTitle: String(merged.heroBannerTitle || INITIAL_BUSINESS_SETTINGS.heroBannerTitle).slice(0, 160),
+    heroBannerSubtitle: String(merged.heroBannerSubtitle || INITIAL_BUSINESS_SETTINGS.heroBannerSubtitle).slice(0, 250),
+    heroBannerTagline: String(merged.heroBannerTagline || INITIAL_BUSINESS_SETTINGS.heroBannerTagline).slice(0, 250),
+    heroCtaText: String(merged.heroCtaText || INITIAL_BUSINESS_SETTINGS.heroCtaText).slice(0, 80),
+    ratingScore: String(merged.ratingScore || INITIAL_BUSINESS_SETTINGS.ratingScore).slice(0, 20),
+    ratingCountText: String(merged.ratingCountText || INITIAL_BUSINESS_SETTINGS.ratingCountText).slice(0, 60),
+    trustBadgeTitle: String(merged.trustBadgeTitle || INITIAL_BUSINESS_SETTINGS.trustBadgeTitle).slice(0, 150),
+    trustBadgeSubtitle: String(merged.trustBadgeSubtitle || INITIAL_BUSINESS_SETTINGS.trustBadgeSubtitle).slice(0, 250),
+    offer1Title: String(merged.offer1Title || INITIAL_BUSINESS_SETTINGS.offer1Title).slice(0, 150),
+    offer1Code: String(merged.offer1Code || INITIAL_BUSINESS_SETTINGS.offer1Code).toUpperCase().slice(0, 40),
+    offer1DiscountAmount: Math.max(0, Number(merged.offer1DiscountAmount ?? INITIAL_BUSINESS_SETTINGS.offer1DiscountAmount ?? 500)),
+    offer2Title: String(merged.offer2Title || INITIAL_BUSINESS_SETTINGS.offer2Title).slice(0, 150),
+    offer2Code: String(merged.offer2Code || INITIAL_BUSINESS_SETTINGS.offer2Code).toUpperCase().slice(0, 40),
+    offer2DiscountPercent: Math.min(100, Math.max(0, Number(merged.offer2DiscountPercent ?? INITIAL_BUSINESS_SETTINGS.offer2DiscountPercent ?? 10))),
+    aboutKicker: String(merged.aboutKicker || INITIAL_BUSINESS_SETTINGS.aboutKicker).slice(0, 120),
+    aboutHighlight1Title: String(merged.aboutHighlight1Title || INITIAL_BUSINESS_SETTINGS.aboutHighlight1Title).slice(0, 80),
+    aboutHighlight1Sub: String(merged.aboutHighlight1Sub || INITIAL_BUSINESS_SETTINGS.aboutHighlight1Sub).slice(0, 160),
+    aboutHighlight2Title: String(merged.aboutHighlight2Title || INITIAL_BUSINESS_SETTINGS.aboutHighlight2Title).slice(0, 80),
+    aboutHighlight2Sub: String(merged.aboutHighlight2Sub || INITIAL_BUSINESS_SETTINGS.aboutHighlight2Sub).slice(0, 160),
+    aboutHighlight3Title: String(merged.aboutHighlight3Title || INITIAL_BUSINESS_SETTINGS.aboutHighlight3Title).slice(0, 80),
+    aboutHighlight3Sub: String(merged.aboutHighlight3Sub || INITIAL_BUSINESS_SETTINGS.aboutHighlight3Sub).slice(0, 160),
+    blockedDates: Array.isArray(merged.blockedDates) ? merged.blockedDates.map(String) : [],
+    timeSlots:
+      Array.isArray(merged.timeSlots) && merged.timeSlots.length > 0
+        ? merged.timeSlots.map(String)
+        : [...AVAILABLE_TIME_SLOTS],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function sanitizeGalleryItemForFirestore(img: EdenRoseImage): EdenRoseImage {
+  return {
+    id: String(img.id || `gal-${Date.now()}`).slice(0, 80).replace(/[^a-zA-Z0-9_-]/g, '-'),
+    url: String(img.url || '').slice(0, 450000),
+    alt: String(img.alt || 'Eden Roses Makeover Portfolio').slice(0, 300),
+    category: (img.category || 'Bridal Portfolio') as EdenRoseImage['category'],
+    galleryCategory: img.galleryCategory || 'Bridal Makeup',
+    description: String(img.description || '').slice(0, 500),
+    displayPosition: img.displayPosition || 'Gallery Grid',
+  };
+}
+
 function buildInitialSeedBookings(): Booking[] {
   const todayISO = getTodayISO();
   const tomorrowISO = getOffsetDateISO(1);
@@ -1825,6 +1940,128 @@ export function startFirebaseRealtimeSync(): void {
       console.warn('Team sync listener warning:', error);
     }
   );
+
+  // 5. Real-time Website Settings & CMS Content listener (/settings/businessProfile)
+  let isSeedingSettings = false;
+  onSnapshot(
+    doc(db, 'settings', 'businessProfile'),
+    async (docSnap) => {
+      isFirebaseLiveConnected = true;
+      if (isSeedingSettings) return;
+
+      const settingsSeededKey = 'eden_roses_settings_cloud_seeded_v5';
+      if (!docSnap.exists() || (!docSnap.data()?.heroBannerTitle && !localStorage.getItem(settingsSeededKey))) {
+        isSeedingSettings = true;
+        try {
+          const initialSettings = sanitizeBusinessSettingsForFirestore(getBusinessSettings());
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(initialSettings));
+          await setDoc(doc(db, 'settings', 'businessProfile'), initialSettings).catch((err) => {
+            console.warn('Initial settings seed warning:', err);
+          });
+          localStorage.setItem(settingsSeededKey, 'true');
+        } finally {
+          isSeedingSettings = false;
+          notifyDataUpdated();
+        }
+        return;
+      }
+
+      const remoteData = docSnap.data() as Partial<BusinessSettings>;
+      if (remoteData && remoteData.businessName) {
+        const merged = sanitizeBusinessSettingsForFirestore({
+          ...INITIAL_BUSINESS_SETTINGS,
+          ...remoteData,
+        });
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+        notifyDataUpdated();
+      }
+    },
+    (error) => {
+      console.warn('Settings sync listener warning:', error);
+    }
+  );
+
+  // 6. Real-time Portfolio Gallery listener (/gallery)
+  const galleryPath = 'gallery';
+  let isSeedingGallery = false;
+  onSnapshot(
+    collection(db, galleryPath),
+    async (snapshot) => {
+      isFirebaseLiveConnected = true;
+      if (isSeedingGallery) return;
+
+      const gallerySeededKey = 'eden_roses_gallery_cloud_seeded_v5';
+      if (snapshot.empty && !localStorage.getItem(gallerySeededKey)) {
+        isSeedingGallery = true;
+        try {
+          const initialGallery = getGalleryImages();
+          await Promise.all(
+            initialGallery.map((img) => {
+              const clean = sanitizeGalleryItemForFirestore(img);
+              return setDoc(doc(db, galleryPath, clean.id), clean).catch((err) => {
+                console.warn('Initial gallery seed warning:', err);
+              });
+            })
+          );
+          localStorage.setItem(gallerySeededKey, 'true');
+        } finally {
+          isSeedingGallery = false;
+          notifyDataUpdated();
+        }
+        return;
+      }
+
+      const remoteGalleryMap = new Map<string, EdenRoseImage>();
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as EdenRoseImage;
+        if (data && data.id && data.url) {
+          remoteGalleryMap.set(data.id, sanitizeGalleryItemForFirestore(data));
+        }
+      });
+
+      if (remoteGalleryMap.size > 0) {
+        const knownIds = new Set(EDEN_ROSES_PORTFOLIO_GALLERY.map((g) => g.id));
+        const customUploaded: EdenRoseImage[] = [];
+        remoteGalleryMap.forEach((img, id) => {
+          if (!knownIds.has(id)) {
+            customUploaded.push(img);
+          }
+        });
+        const orderedKnown: EdenRoseImage[] = [];
+        EDEN_ROSES_PORTFOLIO_GALLERY.forEach((seedImg) => {
+          const remoteImg = remoteGalleryMap.get(seedImg.id);
+          if (remoteImg) {
+            orderedKnown.push(remoteImg);
+          }
+        });
+        const mergedGallery = [...customUploaded, ...orderedKnown];
+        localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(mergedGallery));
+        notifyDataUpdated();
+      }
+    },
+    (error) => {
+      console.warn('Gallery sync listener warning:', error);
+    }
+  );
+
+  // Optional Realtime Database (RTDB) live listeners if configured
+  if (rtdb) {
+    try {
+      onValue(ref(rtdb, 'settings/businessProfile'), (snap) => {
+        const val = snap.val();
+        if (val && val.businessName) {
+          const merged = sanitizeBusinessSettingsForFirestore({
+            ...INITIAL_BUSINESS_SETTINGS,
+            ...val,
+          });
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+          notifyDataUpdated();
+        }
+      });
+    } catch (err) {
+      console.warn('RTDB settings listener skipped:', err);
+    }
+  }
 }
 
 export function ensureSeedDataInitialized(): void {
@@ -2317,20 +2554,24 @@ export function getBusinessSettings(): BusinessSettings {
 }
 
 export async function saveBusinessSettings(settings: BusinessSettings): Promise<void> {
-  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  const cleanSettings = sanitizeBusinessSettingsForFirestore(settings);
+  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(cleanSettings));
   notifyDataUpdated();
+
   if (isFirebaseConfigured) {
     const path = 'settings/businessProfile';
     try {
-      await setDoc(doc(db, 'settings', 'businessProfile'), {
-        businessName: String(settings.businessName).slice(0, 150),
-        makeupBrand: String(settings.makeupBrand).slice(0, 150),
-        artistName: String(settings.artistName).slice(0, 120),
-        phonePrimary: String(settings.phonePrimary).slice(0, 40),
-        address: String(settings.address).slice(0, 500),
-      });
+      await setDoc(doc(db, 'settings', 'businessProfile'), cleanSettings);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  if (rtdb) {
+    try {
+      await set(ref(rtdb, 'settings/businessProfile'), cleanSettings);
+    } catch (err) {
+      console.warn('RTDB saveBusinessSettings skipped:', err);
     }
   }
 }
@@ -2563,8 +2804,66 @@ export function getGalleryImages(): EdenRoseImage[] {
 }
 
 export async function saveGalleryImages(images: EdenRoseImage[]): Promise<void> {
-  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(images));
+  const cleaned = images.map((img) => sanitizeGalleryItemForFirestore(img));
+  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(cleaned));
   notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    try {
+      await Promise.all(
+        cleaned.map((img) => setDoc(doc(db, 'gallery', img.id), img))
+      );
+    } catch (error) {
+      console.warn('Firestore saveGalleryImages warning:', error);
+    }
+  }
+
+  if (rtdb) {
+    try {
+      await set(ref(rtdb, 'gallery'), cleaned);
+    } catch (err) {
+      console.warn('RTDB saveGalleryImages skipped:', err);
+    }
+  }
+}
+
+export async function upsertGalleryImage(image: EdenRoseImage): Promise<EdenRoseImage> {
+  const cleanImg = sanitizeGalleryItemForFirestore(image);
+  const current = getGalleryImages();
+  const exists = current.some((g) => g.id === cleanImg.id);
+  const nextList = exists
+    ? current.map((g) => (g.id === cleanImg.id ? cleanImg : g))
+    : [cleanImg, ...current];
+
+  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(nextList));
+  notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    const path = `gallery/${cleanImg.id}`;
+    try {
+      await setDoc(doc(db, 'gallery', cleanImg.id), cleanImg);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  return cleanImg;
+}
+
+export async function deleteGalleryImage(imageId: string): Promise<void> {
+  const current = getGalleryImages();
+  const nextList = current.filter((g) => g.id !== imageId);
+  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(nextList));
+  notifyDataUpdated();
+
+  if (isFirebaseConfigured) {
+    const path = `gallery/${imageId}`;
+    try {
+      await deleteDoc(doc(db, 'gallery', imageId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
 }
 
 export function getPartnerSelfies(): PartnerSelfieLog[] {

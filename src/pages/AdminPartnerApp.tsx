@@ -167,6 +167,12 @@ export const AdminPartnerApp: React.FC = () => {
     navigate('/admin');
   };
 
+  const openWebsiteControlManager = () => {
+    setMoreInitialSubScreen('business-profile');
+    setActiveTab('more');
+    navigate('/admin');
+  };
+
   useEffect(() => {
     if (location.pathname.includes('/admin/calendar')) {
       setActiveTab('calendar');
@@ -676,6 +682,15 @@ export const AdminPartnerApp: React.FC = () => {
             </a>
             <button
               type="button"
+              onClick={openWebsiteControlManager}
+              title="Full Website Content & Settings Control (Firebase Sync)"
+              className="px-2.5 py-2 rounded-xl bg-[#f8f9f0] hover:bg-[#e9ecd6] border border-[#5b6324]/30 text-[#5b6324] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Website CMS</span>
+            </button>
+            <button
+              type="button"
               onClick={openTeamAccountsManager}
               title="Create or Delete Team Login Accounts"
               className="px-2.5 py-2 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F3E2BA] border border-[#D6B77A]/40 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
@@ -768,7 +783,18 @@ export const AdminPartnerApp: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={openWebsiteControlManager}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#160824] text-[#F3E2BA] hover:bg-[#261139] border border-[#D6B77A]/40 text-left text-xs font-bold flex items-center justify-between transition-colors shadow-xs cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Database className="w-3.5 h-3.5 text-[#D6B77A] shrink-0" />
+                        <span>Full Website Control (CMS)</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 shrink-0" />
+                    </button>
                     <button
                       type="button"
                       onClick={openProductsAndPricingManager}
@@ -776,7 +802,7 @@ export const AdminPartnerApp: React.FC = () => {
                     >
                       <span className="flex items-center gap-1.5">
                         <Tag className="w-3.5 h-3.5 shrink-0" />
-                        <span>+ Add Product / Change Price ({services.length})</span>
+                        <span>+ Add Product / Price ({services.length})</span>
                       </span>
                       <ChevronRight className="w-4 h-4 shrink-0" />
                     </button>

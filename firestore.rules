@@ -179,7 +179,7 @@ service cloud.firestore {
       data.name is string && data.name.size() >= 1 && data.name.size() <= 160 &&
       data.category is string && data.category.size() <= 80 &&
       data.description is string && data.description.size() <= 1500 &&
-      data.image is string && data.image.size() <= 2000 &&
+      data.image is string && data.image.size() <= 500000 &&
       data.isPackage is bool &&
       (!('price' in data) || data.price == null || (data.price is number && data.price >= 0)) &&
       (!('originalPrice' in data) || data.originalPrice == null || (data.originalPrice is number && data.originalPrice >= 0));
@@ -201,6 +201,19 @@ service cloud.firestore {
       (!('userId' in data) || data.userId == null || (data.userId is string && data.userId.size() <= 80)) &&
       (!('password' in data) || data.password == null || (data.password is string && data.password.size() <= 120)) &&
       (!('createdAt' in data) || data.createdAt == null || (data.createdAt is string && data.createdAt.size() <= 50));
+    }
+
+    function isValidGalleryDoc(data) {
+      return data.keys().hasAll([
+        'id',
+        'url',
+        'alt',
+        'category'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 80 &&
+      data.url is string && data.url.size() >= 1 && data.url.size() <= 500000 &&
+      data.alt is string && data.alt.size() <= 300 &&
+      data.category is string && data.category.size() <= 80;
     }
 
     // 4. Collection Rules
@@ -247,6 +260,13 @@ service cloud.firestore {
       allow list: if true;
       allow create, update: if isValidId(memberId) && isValidTeamMember(incoming()) && incoming().id == memberId;
       allow delete: if isValidId(memberId);
+    }
+
+    match /gallery/{imageId} {
+      allow get: if isValidId(imageId);
+      allow list: if true;
+      allow create, update: if isValidId(imageId) && isValidGalleryDoc(incoming()) && incoming().id == imageId;
+      allow delete: if isValidId(imageId);
     }
   }
 }

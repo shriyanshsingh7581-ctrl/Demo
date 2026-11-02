@@ -243,14 +243,15 @@
     },
     "BusinessSettingsDoc": {
       "title": "BusinessSettingsDoc",
-      "description": "Global business profile and studio settings for Eden Roses Makeover.",
+      "description": "Global business profile, CMS content, promotional offers, banners, and studio settings for Eden Roses Makeover.",
       "type": "object",
       "properties": {
         "businessName": { "type": "string", "maxLength": 150 },
         "makeupBrand": { "type": "string", "maxLength": 150 },
         "artistName": { "type": "string", "maxLength": 120 },
-        "logoUrl": { "type": "string", "maxLength": 1000 },
-        "footerLogoUrl": { "type": "string", "maxLength": 1000 },
+        "businessCategory": { "type": "string", "maxLength": 300 },
+        "logoUrl": { "type": "string", "maxLength": 500000 },
+        "footerLogoUrl": { "type": "string", "maxLength": 500000 },
         "phonePrimary": { "type": "string", "maxLength": 40 },
         "phoneSecondary": { "type": "string", "maxLength": 40 },
         "whatsappNumber": { "type": "string", "maxLength": 40 },
@@ -262,11 +263,35 @@
         "websiteUrl": { "type": "string", "maxLength": 250 },
         "instagramUrl": { "type": "string", "maxLength": 250 },
         "facebookUrl": { "type": "string", "maxLength": 250 },
-        "description": { "type": "string", "maxLength": 2000 },
-        "serviceArea": { "type": "string", "maxLength": 500 },
-        "heroImageUrl": { "type": "string", "maxLength": 1000 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "serviceArea": { "type": "string", "maxLength": 1000 },
+        "heroImageUrl": { "type": "string", "maxLength": 500000 },
+        "headerTagline": { "type": "string", "maxLength": 200 },
+        "defaultCity": { "type": "string", "maxLength": 80 },
+        "heroBannerTitle": { "type": "string", "maxLength": 160 },
+        "heroBannerSubtitle": { "type": "string", "maxLength": 250 },
+        "heroBannerTagline": { "type": "string", "maxLength": 250 },
+        "heroCtaText": { "type": "string", "maxLength": 80 },
+        "ratingScore": { "type": "string", "maxLength": 20 },
+        "ratingCountText": { "type": "string", "maxLength": 60 },
+        "trustBadgeTitle": { "type": "string", "maxLength": 150 },
+        "trustBadgeSubtitle": { "type": "string", "maxLength": 250 },
+        "offer1Title": { "type": "string", "maxLength": 150 },
+        "offer1Code": { "type": "string", "maxLength": 40 },
+        "offer1DiscountAmount": { "type": "number" },
+        "offer2Title": { "type": "string", "maxLength": 150 },
+        "offer2Code": { "type": "string", "maxLength": 40 },
+        "offer2DiscountPercent": { "type": "number" },
+        "aboutKicker": { "type": "string", "maxLength": 120 },
+        "aboutHighlight1Title": { "type": "string", "maxLength": 80 },
+        "aboutHighlight1Sub": { "type": "string", "maxLength": 160 },
+        "aboutHighlight2Title": { "type": "string", "maxLength": 80 },
+        "aboutHighlight2Sub": { "type": "string", "maxLength": 160 },
+        "aboutHighlight3Title": { "type": "string", "maxLength": 80 },
+        "aboutHighlight3Sub": { "type": "string", "maxLength": 160 },
         "blockedDates": { "type": "array" },
-        "timeSlots": { "type": "array" }
+        "timeSlots": { "type": "array" },
+        "updatedAt": { "type": "string", "maxLength": 50 }
       },
       "required": ["businessName", "makeupBrand", "artistName", "phonePrimary", "address"]
     },
@@ -288,7 +313,7 @@
         "highlights": { "type": "array" },
         "whatsIncluded": { "type": "array" },
         "additionalInfo": { "type": "array" },
-        "image": { "type": "string", "maxLength": 2000 },
+        "image": { "type": "string", "maxLength": 500000 },
         "isPackage": { "type": "boolean" },
         "airbrushAvailable": { "type": "boolean" },
         "duration": { "type": "string", "maxLength": 60 }
@@ -310,6 +335,21 @@
         "createdAt": { "type": "string", "maxLength": 50 }
       },
       "required": ["id", "name", "role", "phone", "active"]
+    },
+    "GalleryItemDoc": {
+      "title": "GalleryItemDoc",
+      "description": "Portfolio gallery photograph synced in real time between Admin Panel and Customer Website.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 80 },
+        "url": { "type": "string", "maxLength": 500000 },
+        "alt": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 80 },
+        "galleryCategory": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 500 },
+        "displayPosition": { "type": "string", "maxLength": 80 }
+      },
+      "required": ["id", "url", "alt", "category"]
     }
   },
   "firestore": {
@@ -323,7 +363,7 @@
     },
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/BusinessSettingsDoc" },
-      "description": "Business settings and configuration documents."
+      "description": "Business settings, website CMS content, offers, and configuration documents."
     },
     "/services/{serviceId}": {
       "schema": { "$ref": "#/entities/ServiceItemDoc" },
@@ -332,6 +372,10 @@
     "/team/{memberId}": {
       "schema": { "$ref": "#/entities/TeamMemberDoc" },
       "description": "Real-time team member accounts and login credentials managed from the Admin Panel."
+    },
+    "/gallery/{imageId}": {
+      "schema": { "$ref": "#/entities/GalleryItemDoc" },
+      "description": "Real-time portfolio gallery images synced between Admin Panel and Customer Website."
     }
   }
 }
