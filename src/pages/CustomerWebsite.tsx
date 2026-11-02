@@ -701,32 +701,32 @@ export const CustomerWebsite: React.FC = () => {
   const cleanWhatsappNumber = settings.whatsappNumber.replace(/[^0-9]/g, '');
 
   return (
-    <div className="min-h-screen bg-[#F7F7F9] text-[#1C1C1E] relative pb-28 lg:pb-0">
-      {/* 0. TOP BRAND & STUDIO ANNOUNCEMENT BAR */}
-      <div className="bg-[#160824] text-[#F5E2B8] border-b border-[#D6B77A]/30 text-[11px] sm:text-xs">
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-1.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 truncate">
-            <div className="w-5 h-5 rounded-md overflow-hidden border border-[#D6B77A]/60 shrink-0">
+    <div className="min-h-screen bg-[#FAF7F2] text-[#1C1619] relative pb-32 lg:pb-0 selection:bg-[#160824] selection:text-[#D6B77A]">
+      {/* 0. ROYAL PLUM & CHAMPAGNE GOLD BRAND BAR */}
+      <div className="bg-[#160824] text-[#F5E2B8] border-b border-[#D6B77A]/35 text-[11px] sm:text-xs">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-full overflow-hidden border border-[#D6B77A] shrink-0 shadow-xs">
               <SmartImage
                 src={settings.logoUrl}
                 alt={settings.makeupBrand}
                 className="w-full h-full object-cover"
               />
             </div>
-            <span className="text-[#D6B77A] font-semibold tracking-wide truncate">
-              {settings.makeupBrand} · By {settings.artistName}
+            <span className="font-serif-luxury text-xs sm:text-sm font-bold tracking-wide text-[#F5E2B8] truncate">
+              {settings.makeupBrand}
             </span>
-            <span className="hidden md:inline text-white/40" aria-hidden="true">
-              |
+            <span className="text-[#D6B77A]/60" aria-hidden="true">
+              ·
             </span>
-            <span className="hidden md:inline text-white/80 truncate">
-              On-Venue &amp; C V Raman Nagar Studio Makeup Artistry
+            <span className="text-[#D6B77A] font-medium truncate">
+              By {settings.artistName}
             </span>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <a
               href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}
-              className="inline-flex items-center gap-1 text-[#F5E2B8] hover:text-white font-mono-num font-semibold"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 text-[#F5E2B8] font-mono-num text-[11px] font-semibold transition-colors"
             >
               <Phone className="w-3 h-3 text-[#D6B77A]" />
               <span>{settings.phonePrimary}</span>
@@ -735,103 +735,107 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       </div>
 
-      {/* 1. MOBILE-APP STYLE STICKY HEADER (Location Selector + Search Bar + Cart Icon — Reference Video 0:00-0:05) */}
-      <header className="sticky top-0 z-40 bg-white border-b border-stone-200/90 shadow-[0_2px_14px_rgba(0,0,0,0.04)]">
+      {/* 1. MOBILE-FIRST LUXURY STICKY HEADER (Location Selector + Search Bar + Cart Icon — Reference Video 0:00-0:05) */}
+      <header className="sticky top-0 z-40 luxury-glass border-b border-[#E6DAC8]/90 shadow-[0_6px_24px_-10px_rgba(22,8,36,0.08)]">
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 pt-2.5 pb-3 space-y-2.5">
-          {/* Top Row: Location Selector (Left) + Desktop Links (Center) + Cart & Menu (Right) */}
+          {/* Top Row: Location Selector (Left) + Desktop Navigation (Center) + Cart & Menu (Right) */}
           <div className="flex items-center justify-between gap-2">
             {/* Location Selector Button matching Reference Video */}
             <button
               type="button"
               onClick={() => setLocationModalOpen(true)}
-              className="flex items-start gap-2 text-left group min-w-0 max-w-[68%] sm:max-w-xs cursor-pointer"
+              className="tap-scale flex items-center gap-2.5 text-left group min-w-0 max-w-[68%] sm:max-w-xs cursor-pointer py-0.5"
             >
-              <div className="w-8 h-8 rounded-full bg-[#FFF4EC] border border-[#E6C6B3] flex items-center justify-center shrink-0 mt-0.5">
-                <MapPin className="w-4 h-4 text-[#160824]" />
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#160824] to-[#2D1245] border border-[#D6B77A]/60 flex items-center justify-center shrink-0 shadow-xs">
+                <MapPin className="w-4 h-4 text-[#D6B77A]" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-sm sm:text-base text-stone-900 leading-tight truncate">
+                  <span className="font-bold text-sm sm:text-base text-[#160824] leading-tight truncate">
                     Bangalore
                   </span>
-                  <ChevronDown className="w-4 h-4 text-stone-600 shrink-0 transition-transform group-hover:translate-y-0.5" />
+                  <span className="text-[#B76E79] font-bold text-xs">·</span>
+                  <span className="text-xs sm:text-sm font-semibold text-[#8C4A56] truncate">
+                    {locality}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-stone-500 shrink-0 transition-transform group-hover:translate-y-0.5" />
                 </div>
-                <p className="text-[11px] sm:text-xs text-stone-500 truncate leading-tight">
-                  {locality}, Bengaluru, Karnataka, India
+                <p className="text-[11px] text-stone-500 truncate leading-tight">
+                  Studio &amp; On-Venue Service Across Bengaluru
                 </p>
               </div>
             </button>
 
-            {/* Desktop Quick Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-stone-700">
+            {/* Desktop Clean Typography Navigation Links (Zero-Pill Discipline) */}
+            <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-stone-700">
               <button
                 type="button"
                 onClick={() => scrollToSection('makeup-styling-landing')}
-                className="hover:text-[#160824] cursor-pointer"
+                className="hover:text-[#160824] hover:underline underline-offset-4 cursor-pointer"
               >
                 Makeup &amp; Styling
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('makeup-artist-page')}
-                className="hover:text-[#160824] cursor-pointer"
+                className="hover:text-[#160824] hover:underline underline-offset-4 cursor-pointer"
               >
                 Makeup Artist
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('booking')}
-                className="hover:text-[#160824] cursor-pointer"
+                className="hover:text-[#160824] hover:underline underline-offset-4 cursor-pointer"
               >
                 Book Slot
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('gallery')}
-                className="hover:text-[#160824] cursor-pointer"
+                className="hover:text-[#160824] hover:underline underline-offset-4 cursor-pointer"
               >
                 Bridal Portfolio
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('about')}
-                className="hover:text-[#160824] cursor-pointer"
+                className="hover:text-[#160824] hover:underline underline-offset-4 cursor-pointer"
               >
                 About Artist
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection('contact')}
-                className="hover:text-[#160824] cursor-pointer"
+                className="hover:text-[#160824] hover:underline underline-offset-4 cursor-pointer"
               >
-                Studio Location
+                Studio Address
               </button>
             </nav>
 
-            {/* Right Action Cluster: Categories Sheet Trigger + Cart Icon + Menu */}
+            {/* Right Action Cluster: Categories Sheet Trigger + Cart Icon + Mobile Menu */}
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowLandingCategoryModal(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-800 text-xs font-semibold transition-colors cursor-pointer"
+                className="tap-scale hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F5EFE6] hover:bg-[#EBE1D2] text-[#160824] text-xs font-semibold transition-colors cursor-pointer"
               >
-                <ListFilter className="w-3.5 h-3.5" />
+                <ListFilter className="w-3.5 h-3.5 text-[#8C4A56]" />
                 <span>Categories</span>
               </button>
 
-              {/* Cart Icon Button matching Reference Video */}
+              {/* Cart Icon Button matching Reference Video with Luxury Accent */}
               <button
                 type="button"
                 onClick={() => setCartDrawerOpen(true)}
                 aria-label="Open Booking Cart"
-                className="relative w-10 h-10 sm:w-auto sm:px-3.5 sm:h-10 rounded-full sm:rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-900 flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+                className="tap-scale relative h-10 px-3 sm:px-3.5 rounded-xl border border-[#D6B77A]/60 bg-[#160824] text-[#F5E2B8] flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
               >
-                <ShoppingBag className="w-4 h-4 text-stone-800" />
-                <span className="hidden sm:inline font-mono-num text-xs font-bold">
+                <ShoppingBag className="w-4 h-4 text-[#D6B77A]" />
+                <span className="font-mono-num text-xs font-bold">
                   ₹{itemsSubtotal.toLocaleString('en-IN')}
                 </span>
                 {totalCartItems > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#160824] text-[#D6B77A] font-mono-num text-[10px] font-bold flex items-center justify-center shadow-xs">
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded-md bg-[#D6B77A] text-[#160824] font-mono-num text-[10px] font-extrabold">
                     {totalCartItems}
                   </span>
                 )}
@@ -842,7 +846,7 @@ export const CustomerWebsite: React.FC = () => {
                 type="button"
                 onClick={() => setMobileMenuOpen((v) => !v)}
                 aria-label="Open Menu"
-                className="lg:hidden w-10 h-10 rounded-full border border-stone-200 bg-white text-stone-800 flex items-center justify-center cursor-pointer"
+                className="tap-scale lg:hidden w-10 h-10 rounded-xl border border-[#E6DAC8] bg-white text-[#160824] flex items-center justify-center cursor-pointer"
               >
                 {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
@@ -851,6 +855,7 @@ export const CustomerWebsite: React.FC = () => {
 
           {/* Search Bar Row: "What service do you need?" (Matches Reference Video 0:00 - 0:04) */}
           <div className="relative flex items-center">
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 pointer-events-none" />
             <input
               ref={searchInputRef}
               type="text"
@@ -861,15 +866,15 @@ export const CustomerWebsite: React.FC = () => {
                   setActiveSubCategory('All');
                 }
               }}
-              placeholder="What service do you need?"
-              className="w-full h-11 pl-4 pr-20 rounded-xl border border-stone-300 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#160824] focus:ring-2 focus:ring-[#160824]/10 transition-all shadow-2xs"
+              placeholder="What service do you need? (e.g. Bridal, Party Makeup, Saree Draping)"
+              className="w-full h-11 pl-10 pr-24 rounded-2xl border border-[#DFD2BF] bg-white text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#160824] focus:ring-2 focus:ring-[#D6B77A]/25 transition-all shadow-2xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
                 aria-label="Clear search"
-                className="absolute right-12 p-1.5 text-stone-400 hover:text-stone-700 cursor-pointer"
+                className="absolute right-16 p-1.5 text-stone-400 hover:text-stone-700 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -881,16 +886,49 @@ export const CustomerWebsite: React.FC = () => {
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
               aria-label="Search Services"
-              className="absolute right-1.5 w-8 h-8 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center shadow-xs transition-colors cursor-pointer"
+              className="tap-scale absolute right-1.5 h-8 px-3 rounded-xl bg-[#160824] hover:bg-[#27103d] text-[#D6B77A] text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
             >
-              <Search className="w-4 h-4" />
+              <span>Search</span>
             </button>
+          </div>
+
+          {/* 1-Tap Mobile Quick Search Suggestions */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
+            <span className="text-[10px] font-semibold text-stone-400 shrink-0 pr-1">
+              Popular:
+            </span>
+            {(
+              [
+                { label: 'Bridal Makeup', cat: 'Bridal Makeup' as MakeupSubCategory },
+                { label: 'Party Makeup', cat: 'Party Makeup' as MakeupSubCategory },
+                { label: 'Engagement', cat: 'Engagement Makeup' as MakeupSubCategory },
+                { label: 'Saree Draping', cat: 'Saree Draping' as MakeupSubCategory },
+                { label: 'Hair Styling', cat: 'Hair Styling' as MakeupSubCategory },
+                { label: 'Value Packages', cat: 'Packages' as MakeupSubCategory },
+              ] as const
+            ).map((chip) => {
+              const isSelected = activeSubCategory === chip.cat;
+              return (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => jumpToCategorySection(chip.cat)}
+                  className={`tap-scale px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#160824] text-[#D6B77A]'
+                      : 'bg-[#F5EFE6]/80 hover:bg-[#EBE1D2] text-stone-700'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Mobile Quick Navigation Sheet */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-t border-stone-200 px-4 py-4 space-y-3 shadow-xl">
+          <div className="lg:hidden bg-[#FFFDF9] border-t border-[#E6DAC8] px-4 py-4 space-y-3 shadow-xl">
             <div className="grid grid-cols-2 gap-2">
               {[
                 { label: 'Makeup & Styling', id: 'makeup-styling-landing' },
@@ -904,7 +942,7 @@ export const CustomerWebsite: React.FC = () => {
                   key={item.id}
                   type="button"
                   onClick={() => scrollToSection(item.id)}
-                  className="text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-800 bg-stone-100 hover:bg-stone-200/70 transition-colors cursor-pointer"
+                  className="text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#160824] bg-[#F5EFE6] hover:bg-[#EBE1D2] transition-colors cursor-pointer"
                 >
                   {item.label}
                 </button>
@@ -925,20 +963,19 @@ export const CustomerWebsite: React.FC = () => {
       ===================================================================== */}
       <section
         id="makeup-styling-landing"
-        className="bg-white border-b border-stone-200/80 py-5 sm:py-7"
+        className="pt-4 pb-2 sm:py-6"
       >
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 p-4 sm:p-6 shadow-2xs space-y-5">
+          <div className="premium-surface rounded-3xl p-4 sm:p-6 space-y-5">
             {/* Section Title Row */}
-            <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-3.5">
+            <div className="flex items-center justify-between gap-2 border-b border-[#EFE6D8] pb-3.5">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-stone-900 tracking-tight">
+                <p className="text-[11px] font-semibold text-[#8C4A56] tracking-wide">
+                  Doorstep &amp; Studio Artistry · {locality}, Bangalore
+                </p>
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#160824] tracking-tight">
                   Makeup &amp; Styling
                 </h2>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Select a category to explore packages &amp; book your artist in{' '}
-                  <span className="font-semibold text-stone-700">{locality}</span>
-                </p>
               </div>
               <button
                 type="button"
@@ -946,18 +983,21 @@ export const CustomerWebsite: React.FC = () => {
                   setActiveSubCategory('All');
                   scrollToSection('makeup-artist-page');
                 }}
-                className="text-xs font-semibold text-[#2563EB] hover:underline flex items-center gap-0.5 shrink-0 cursor-pointer"
+                className="tap-scale px-3 py-1.5 rounded-xl bg-[#F5EFE6] hover:bg-[#EBE1D2] text-[#160824] text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
               >
-                <span>View All ({services.length})</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <span>All Services ({services.length})</span>
+                <ChevronRight className="w-3.5 h-3.5 text-[#8C4A56]" />
               </button>
             </div>
 
-            {/* Group 1: MAKEUP (4 Categories) */}
+            {/* Group 1: MAKEUP (4 Categories on Mobile, 5 on Desktop) */}
             <div className="space-y-3">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                MAKEUP &amp; WOMEN STYLING
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-stone-600">
+                  Makeup &amp; Women Styling
+                </p>
+                <span className="text-[11px] text-stone-400">Tap any category to explore</span>
+              </div>
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-4">
                 {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
                   (c) => c.group === 'MAKEUP'
@@ -968,35 +1008,36 @@ export const CustomerWebsite: React.FC = () => {
                       key={cat.id}
                       type="button"
                       onClick={() => handleSelectLandingCategory(cat)}
-                      className="group flex flex-col items-center text-center cursor-pointer focus:outline-none"
+                      className="tap-scale group flex flex-col items-center text-center cursor-pointer focus:outline-none"
                     >
                       <div
-                        className={`relative w-full aspect-square max-w-[92px] rounded-2xl overflow-hidden bg-[#F3F4F6] border transition-all p-1 ${
+                        className={`relative w-full aspect-square max-w-[100px] rounded-2xl overflow-hidden bg-[#F8F3EC] border transition-all p-1 ${
                           isSelected
-                            ? 'border-[#160824] ring-2 ring-[#160824]/15 shadow-sm'
-                            : 'border-stone-200/80 group-hover:border-stone-400'
+                            ? 'border-[#160824] ring-2 ring-[#D6B77A]/60 shadow-md'
+                            : 'border-[#E6DAC8] group-hover:border-[#B76E79]'
                         }`}
                       >
                         <SmartImage
                           src={cat.image}
                           alt={cat.title}
                           eager
-                          className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
                         />
-                        {cat.badge && (
-                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-[#160824]/90 text-[#D6B77A] text-[9px] font-bold">
-                            {cat.badge}
-                          </span>
-                        )}
                       </div>
-                      <span className="text-[11px] sm:text-xs font-medium text-stone-800 mt-2 leading-tight line-clamp-2 max-w-[96px]">
+                      <span
+                        className={`text-[11px] sm:text-xs mt-2 leading-tight line-clamp-2 max-w-[100px] ${
+                          isSelected
+                            ? 'font-bold text-[#160824]'
+                            : 'font-semibold text-stone-800'
+                        }`}
+                      >
                         {cat.title}
                       </span>
                     </button>
                   );
                 })}
 
-                {/* Group 2 on Desktop same row, or separate sub-section on mobile matching video */}
+                {/* Group 2 on Desktop same row */}
                 <div className="hidden sm:flex flex-col items-center text-center">
                   {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
                     (c) => c.group === 'MEN SALON'
@@ -1007,22 +1048,28 @@ export const CustomerWebsite: React.FC = () => {
                         key={cat.id}
                         type="button"
                         onClick={() => handleSelectLandingCategory(cat)}
-                        className="group flex flex-col items-center text-center w-full cursor-pointer focus:outline-none"
+                        className="tap-scale group flex flex-col items-center text-center w-full cursor-pointer focus:outline-none"
                       >
                         <div
-                          className={`relative w-full aspect-square max-w-[92px] rounded-2xl overflow-hidden bg-[#F3F4F6] border transition-all p-1 ${
+                          className={`relative w-full aspect-square max-w-[100px] rounded-2xl overflow-hidden bg-[#F8F3EC] border transition-all p-1 ${
                             isSelected
-                              ? 'border-[#160824] ring-2 ring-[#160824]/15 shadow-sm'
-                              : 'border-stone-200/80 group-hover:border-stone-400'
+                              ? 'border-[#160824] ring-2 ring-[#D6B77A]/60 shadow-md'
+                              : 'border-[#E6DAC8] group-hover:border-[#B76E79]'
                           }`}
                         >
                           <SmartImage
                             src={cat.image}
                             alt={cat.title}
-                            className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                            className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
                           />
                         </div>
-                        <span className="text-[11px] sm:text-xs font-medium text-stone-800 mt-2 leading-tight line-clamp-2 max-w-[96px]">
+                        <span
+                          className={`text-[11px] sm:text-xs mt-2 leading-tight line-clamp-2 max-w-[100px] ${
+                            isSelected
+                              ? 'font-bold text-[#160824]'
+                              : 'font-semibold text-stone-800'
+                          }`}
+                        >
                           {cat.title}
                         </span>
                       </button>
@@ -1032,10 +1079,10 @@ export const CustomerWebsite: React.FC = () => {
               </div>
             </div>
 
-            {/* Group 2: MEN SALON (Shown on Mobile exactly like Reference Video 0:06) */}
-            <div className="sm:hidden space-y-2.5 pt-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
-                MEN SALON
+            {/* Group 2: MEN SALON (Shown on Mobile matching Reference Video 0:06) */}
+            <div className="sm:hidden space-y-2.5 pt-2 border-t border-[#F2ECE1]">
+              <p className="text-xs font-bold text-stone-600">
+                Men Salon &amp; Grooming
               </p>
               <div className="grid grid-cols-4 gap-2.5">
                 {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
@@ -1047,22 +1094,22 @@ export const CustomerWebsite: React.FC = () => {
                       key={cat.id}
                       type="button"
                       onClick={() => handleSelectLandingCategory(cat)}
-                      className="group flex flex-col items-center text-center cursor-pointer focus:outline-none"
+                      className="tap-scale group flex flex-col items-center text-center cursor-pointer focus:outline-none"
                     >
                       <div
-                        className={`relative w-full aspect-square max-w-[92px] rounded-2xl overflow-hidden bg-[#F3F4F6] border transition-all p-1 ${
+                        className={`relative w-full aspect-square max-w-[100px] rounded-2xl overflow-hidden bg-[#F8F3EC] border transition-all p-1 ${
                           isSelected
-                            ? 'border-[#160824] ring-2 ring-[#160824]/15 shadow-sm'
-                            : 'border-stone-200/80 group-hover:border-stone-400'
+                            ? 'border-[#160824] ring-2 ring-[#D6B77A]/60 shadow-md'
+                            : 'border-[#E6DAC8] group-hover:border-[#B76E79]'
                         }`}
                       >
                         <SmartImage
                           src={cat.image}
                           alt={cat.title}
-                          className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
-                      <span className="text-[11px] font-medium text-stone-800 mt-2 leading-tight line-clamp-2">
+                      <span className="text-[11px] font-semibold text-stone-800 mt-1.5 leading-tight line-clamp-2">
                         {cat.title}
                       </span>
                     </button>
@@ -1076,19 +1123,14 @@ export const CustomerWebsite: React.FC = () => {
 
       {/* =====================================================================
           3, 4, 5, 6, 7. MAKEUP ARTIST DEDICATED CATEGORY PAGE & SERVICE LISTINGS
-          Matches Reference Video 0:11 - 0:44:
-          - Page Header with Back Button ("←"), Title ("Makeup Artist"), Location & Search Icon
-          - Promotional Offers Strip
-          - Promotional Banner ("Professional Makeup — Beauty services for every special occasion")
-          - 8-Category Grid ("What service do you need?")
-          - Service Listing Cards grouped by Category with Rating, Price, Duration, Highlights,
-            "View details >", Service Image, and overlapping "Add" / "- qty +" button
+          Matches Reference Video 0:11 - 0:44 with Couture Luxury Mobile Polish
       ===================================================================== */}
-      <section id="makeup-artist-page" className="py-5 sm:py-8">
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 space-y-6">
-          {/* 3. MAKEUP ARTIST PAGE BAR (Back button + Title "Makeup Artist" + Location + Search icon) */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 p-4 sm:p-6 shadow-2xs space-y-5">
-            <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3.5">
+      <section id="makeup-artist-page" className="py-3 sm:py-6">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 space-y-5">
+          {/* 3. MAKEUP ARTIST PAGE CONTAINER */}
+          <div className="premium-surface rounded-3xl p-4 sm:p-6 space-y-5">
+            {/* Top Bar: Back Button + "Makeup Artist" Title + Rating + Search/Cart */}
+            <div className="flex items-center justify-between gap-3 border-b border-[#EFE6D8] pb-3.5">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
@@ -1098,28 +1140,29 @@ export const CustomerWebsite: React.FC = () => {
                     scrollToSection('makeup-styling-landing');
                   }}
                   aria-label="Back to Makeup & Styling Categories"
-                  className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                  className="tap-scale w-10 h-10 rounded-2xl bg-[#F5EFE6] hover:bg-[#EBE1D2] text-[#160824] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-lg sm:text-2xl font-bold text-stone-900 tracking-tight truncate">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#160824] tracking-tight truncate">
                       Makeup Artist
                     </h1>
-                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                      <span>4.9 (520+ Bookings)</span>
+                    <span className="text-xs font-semibold text-stone-600 flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span className="font-mono-num font-bold text-stone-900">4.9</span>
+                      <span className="text-stone-400">(520+ Brides)</span>
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setLocationModalOpen(true)}
-                    className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 mt-0.5 cursor-pointer"
+                    className="flex items-center gap-1 text-xs text-stone-500 hover:text-[#160824] mt-0.5 cursor-pointer"
                   >
                     <MapPin className="w-3 h-3 text-[#B76E79]" />
                     <span className="truncate">
-                      Makeup Artist in {locality}, Bangalore
+                      Serving {locality} &amp; All Bangalore
                     </span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
@@ -1134,37 +1177,29 @@ export const CustomerWebsite: React.FC = () => {
                     setTimeout(() => searchInputRef.current?.focus(), 300);
                   }}
                   aria-label="Search Makeup Services"
-                  className="w-9 h-9 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 flex items-center justify-center cursor-pointer"
+                  className="tap-scale w-10 h-10 rounded-2xl border border-[#E6DAC8] bg-[#FAF7F2] hover:bg-[#F5EFE6] text-[#160824] flex items-center justify-center cursor-pointer"
                 >
                   <Search className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCartDrawerOpen(true)}
-                  className="px-3 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span className="font-mono-num">{totalCartItems}</span>
                 </button>
               </div>
             </div>
 
             {/* Promotional Offers Strip (Matches Reference Video 0:12) */}
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-0.5">
               <button
                 type="button"
                 onClick={() => applyCodeValue('BRIDAL500')}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAFAFC] hover:border-[#D6B77A] text-left shrink-0 transition-colors cursor-pointer"
+                className="tap-scale flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[#E6DAC8] bg-[#FFFDF9] hover:border-[#D6B77A] text-left shrink-0 transition-all cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Tag className="w-3.5 h-3.5" />
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                  <Tag className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-stone-900">
+                  <p className="text-xs font-bold text-[#160824]">
                     Flat ₹500 OFF on Bridal &amp; Engagement
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    Tap to apply code <span className="font-mono-num font-semibold">BRIDAL500</span>
+                    Tap to apply code <span className="font-mono-num font-bold text-[#8C4A56]">BRIDAL500</span>
                   </p>
                 </div>
               </button>
@@ -1172,61 +1207,86 @@ export const CustomerWebsite: React.FC = () => {
               <button
                 type="button"
                 onClick={() => applyCodeValue('EDEN10')}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAFAFC] hover:border-[#D6B77A] text-left shrink-0 transition-colors cursor-pointer"
+                className="tap-scale flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[#E6DAC8] bg-[#FFFDF9] hover:border-[#D6B77A] text-left shrink-0 transition-all cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-stone-900">
+                  <p className="text-xs font-bold text-[#160824]">
                     Save 10% on Party Makeup &amp; Combos
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    Tap to apply code <span className="font-mono-num font-semibold">EDEN10</span>
+                    Tap to apply code <span className="font-mono-num font-bold text-[#8C4A56]">EDEN10</span>
                   </p>
                 </div>
               </button>
 
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#FAFAFC] shrink-0">
-                <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-[#E6DAC8] bg-[#FFFDF9] shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-[#F5EFE6] text-[#160824] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-[#B76E79]" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-stone-900">
-                    On-Venue &amp; Studio Service
+                  <p className="text-xs font-bold text-[#160824]">
+                    100% Authentic Luxury Products
                   </p>
                   <p className="text-[11px] text-stone-500">
-                    MAC, Huda Beauty, NARS &amp; Silicone Airbrush
+                    MAC · Huda Beauty · NARS · Silicone Airbrush
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 5. PROMOTIONAL BANNER ("Professional Makeup — Beauty services for every special occasion" — Reference Video 0:15) */}
-            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-[#EDD8C8] via-[#F3E3D6] to-[#E8CBB6] border border-[#DFC0A8] shadow-xs">
-              <div className="grid grid-cols-12 items-center min-h-[150px] sm:min-h-[190px]">
-                <div className="col-span-7 sm:col-span-7 p-4 sm:p-7 space-y-2 z-10">
-                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#4A2511]/10 text-[#4A2511] text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-                    Eden Roses Makeover · By {settings.artistName}
-                  </span>
-                  <h2 className="font-display text-2xl sm:text-4xl font-bold text-[#3A1D0E] leading-tight">
+            {/* 5. COUTURE PROMOTIONAL BANNER ("Professional Makeup — Beauty services for every special occasion" — Reference Video 0:15) */}
+            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#160824] via-[#26103B] to-[#3B1954] border border-[#D6B77A]/45 shadow-lg text-white">
+              <div className="grid grid-cols-12 items-center min-h-[175px] sm:min-h-[220px]">
+                <div className="col-span-7 sm:col-span-7 p-4 sm:p-8 space-y-2.5 z-10">
+                  <p className="text-[11px] sm:text-xs font-semibold text-[#D6B77A] tracking-wide">
+                    {settings.makeupBrand} · By {settings.artistName}
+                  </p>
+                  <h2 className="font-display text-2xl sm:text-4xl font-bold gold-gradient-text leading-tight">
                     Professional Makeup
                   </h2>
-                  <p className="text-xs sm:text-sm font-medium text-[#54301D] leading-snug">
+                  <p className="text-xs sm:text-sm font-medium text-[#F5E2B8]/95 leading-snug">
                     Beauty services for every special occasion
                   </p>
-                  <p className="hidden sm:block text-xs text-[#6B422B]">
-                    Flawless beauty &nbsp;|&nbsp; Effortless confidence
+                  <p className="hidden sm:block text-xs text-white/75">
+                    Flawless HD &amp; Airbrush beauty &nbsp;·&nbsp; Effortless bridal confidence
                   </p>
+                  <div className="pt-1.5 flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection('booking')}
+                      className="tap-scale px-3.5 py-2 rounded-xl bg-[#D6B77A] hover:bg-[#e3c78e] text-[#160824] text-xs font-bold flex items-center gap-1 shadow-sm cursor-pointer"
+                    >
+                      <span>Book Appointment</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="hidden sm:flex items-center gap-1.5 pl-2">
+                      {EDEN_ROSES_HERO_IMAGES.slice(0, 4).map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setHeroSlideIdx(idx)}
+                          aria-label={`Show bridal look ${idx + 1}`}
+                          className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                            heroSlideIdx % 4 === idx
+                              ? 'w-5 bg-[#D6B77A]'
+                              : 'w-1.5 bg-white/35'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="col-span-5 sm:col-span-5 h-full relative min-h-[150px] sm:min-h-[190px]">
+                <div className="col-span-5 sm:col-span-5 h-full relative min-h-[175px] sm:min-h-[220px]">
                   <SmartImage
                     src={currentHeroImg.url}
                     alt="Professional Makeup by Subba Lakshmi"
                     eager
                     className="w-full h-full object-cover object-top"
                   />
-                  <div className="absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#F3E3D6] to-transparent" />
+                  <div className="absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-[#26103B] via-[#26103B]/60 to-transparent" />
                 </div>
               </div>
             </div>
@@ -1234,16 +1294,21 @@ export const CustomerWebsite: React.FC = () => {
             {/* 4. MAKEUP SERVICE CATEGORY GRID ("What service do you need?" — 8 Categories matching Reference Video 0:16) */}
             <div className="space-y-3.5 pt-1">
               <div className="flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-bold text-stone-900">
-                  What service do you need?
-                </h3>
+                <div>
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-[#160824]">
+                    What service do you need?
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-stone-500">
+                    Choose a category below to view packages, transparent pricing &amp; details
+                  </p>
+                </div>
                 {activeSubCategory !== 'All' && (
                   <button
                     type="button"
                     onClick={() => setActiveSubCategory('All')}
-                    className="text-xs font-semibold text-[#2563EB] hover:underline cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-[#F5EFE6] text-xs font-bold text-[#160824] hover:bg-[#EBE1D2] cursor-pointer"
                   >
-                    Show All Categories
+                    Show All ({services.length})
                   </button>
                 )}
               </div>
@@ -1251,31 +1316,37 @@ export const CustomerWebsite: React.FC = () => {
               <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5 sm:gap-3.5">
                 {MAKEUP_ARTIST_8_CATEGORIES.map((cat) => {
                   const isSelected = activeSubCategory === cat.id;
+                  const count = (groupedServices.get(cat.id) || []).length;
                   return (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => jumpToCategorySection(cat.id)}
-                      className="group flex flex-col items-center text-center cursor-pointer focus:outline-none"
+                      className="tap-scale group flex flex-col items-center text-center cursor-pointer focus:outline-none"
                     >
                       <div
-                        className={`w-full aspect-square rounded-2xl overflow-hidden bg-[#F4F5F7] border transition-all p-1 ${
+                        className={`relative w-full aspect-square rounded-2xl overflow-hidden bg-[#F8F3EC] border transition-all p-1 ${
                           isSelected
-                            ? 'border-[#160824] ring-2 ring-[#160824]/20 bg-[#FFF8EF] shadow-xs'
-                            : 'border-stone-200/90 group-hover:border-stone-400'
+                            ? 'border-[#160824] ring-2 ring-[#D6B77A]/70 bg-[#FFF8EF] shadow-md'
+                            : 'border-[#E6DAC8] group-hover:border-[#B76E79]'
                         }`}
                       >
                         <SmartImage
                           src={cat.image}
                           alt={cat.label}
-                          className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
                         />
+                        {count > 0 && (
+                          <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.2 rounded-md bg-black/70 text-[#F5E2B8] font-mono-num text-[9px] font-bold backdrop-blur-2xs">
+                            {count}
+                          </span>
+                        )}
                       </div>
                       <span
                         className={`text-[11px] sm:text-xs mt-1.5 leading-tight line-clamp-2 ${
                           isSelected
                             ? 'font-bold text-[#160824]'
-                            : 'font-medium text-stone-700'
+                            : 'font-semibold text-stone-800'
                         }`}
                       >
                         {cat.label}
@@ -1287,19 +1358,19 @@ export const CustomerWebsite: React.FC = () => {
             </div>
           </div>
 
-          {/* Sticky Horizontal Category Filter Pills for Quick Switching */}
-          <div className="sticky top-[118px] z-30 bg-[#F7F7F9]/95 backdrop-blur-xs py-2 -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+          {/* Sticky Horizontal Category Filter Bar for Effortless Mobile Switching */}
+          <div className="sticky top-[146px] z-30 bg-[#FAF7F2]/95 backdrop-blur-md py-2 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 border-b border-[#E6DAC8]/60">
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => setActiveSubCategory('All')}
-                className={`px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                className={`tap-scale px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                   activeSubCategory === 'All'
                     ? 'bg-[#160824] text-[#D6B77A] shadow-xs'
-                    : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-300'
+                    : 'bg-white text-stone-700 border border-[#E6DAC8] hover:border-[#B76E79]'
                 }`}
               >
-                All Makeup &amp; Styling ({searchFilteredServices.length})
+                All Services ({searchFilteredServices.length})
               </button>
               {ALL_SERVICE_SECTIONS_ORDER.map((sec) => {
                 const count = (groupedServices.get(sec.id) || []).length;
@@ -1310,10 +1381,10 @@ export const CustomerWebsite: React.FC = () => {
                     key={sec.id}
                     type="button"
                     onClick={() => jumpToCategorySection(sec.id)}
-                    className={`px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                    className={`tap-scale px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                       isActive
                         ? 'bg-[#160824] text-[#D6B77A] shadow-xs'
-                        : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-300'
+                        : 'bg-white text-stone-700 border border-[#E6DAC8] hover:border-[#B76E79]'
                     }`}
                   >
                     {sec.title} ({count})
@@ -1323,10 +1394,10 @@ export const CustomerWebsite: React.FC = () => {
             </div>
           </div>
 
-          {/* 6 & 7. SERVICE LISTINGS BY CATEGORY (Exact Reference Video Card Structure) */}
+          {/* 6 & 7. SERVICE LISTINGS BY CATEGORY (Exact Reference Video Card Structure + Couture Mobile Polish) */}
           {searchFilteredServices.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-stone-200 p-10 text-center space-y-3">
-              <p className="text-base font-bold text-stone-800">
+            <div className="premium-surface rounded-3xl p-10 text-center space-y-3">
+              <p className="text-base font-bold text-[#160824]">
                 No makeup or styling services matched &ldquo;{searchQuery}&rdquo;
               </p>
               <p className="text-xs text-stone-500">
@@ -1338,13 +1409,13 @@ export const CustomerWebsite: React.FC = () => {
                   setSearchQuery('');
                   setActiveSubCategory('All');
                 }}
-                className="px-4 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-semibold cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-bold cursor-pointer"
               >
                 Show All Services
               </button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {ALL_SERVICE_SECTIONS_ORDER.map((sectionMeta) => {
                 if (
                   activeSubCategory !== 'All' &&
@@ -1363,31 +1434,38 @@ export const CustomerWebsite: React.FC = () => {
                   <div
                     key={sectionMeta.id}
                     id={sectionSlug}
-                    className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 p-4 sm:p-6 shadow-2xs scroll-mt-36"
+                    className="premium-surface rounded-3xl p-4 sm:p-6 scroll-mt-40"
                   >
                     {/* Category Section Heading */}
-                    <div className="border-b border-stone-100 pb-3.5 mb-4 flex items-center justify-between gap-2">
+                    <div className="border-b border-[#EFE6D8] pb-3.5 mb-4 flex items-end justify-between gap-2">
                       <div>
-                        <h2 className="text-lg sm:text-xl font-bold text-stone-900">
+                        <p className="text-[11px] font-semibold text-[#8C4A56]">
+                          {settings.makeupBrand} · Verified Studio &amp; Venue Pricing
+                        </p>
+                        <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#160824]">
                           {sectionMeta.title}
                         </h2>
                         <p className="text-xs text-stone-500 mt-0.5">
                           {sectionMeta.subtitle}
                         </p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-600 font-mono-num text-[11px] font-semibold shrink-0">
+                      <span className="font-mono-num text-xs font-semibold text-stone-500 shrink-0">
                         {sectionItems.length}{' '}
-                        {sectionItems.length === 1 ? 'service' : 'services'}
+                        {sectionItems.length === 1 ? 'option' : 'options'}
                       </span>
                     </div>
 
-                    {/* Service Cards List (1-col on mobile matching video, 2-col on large desktop) */}
-                    <div className="divide-y divide-stone-200/75 lg:divide-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
+                    {/* Service Cards List (1-col on mobile matching reference video, 2-col on large desktop) */}
+                    <div className="divide-y divide-[#EFE6D8] lg:divide-y-0 lg:grid lg:grid-cols-2 lg:gap-5">
                       {sectionItems.map((srv) => {
                         const qty = getItemQuantity(srv.id);
                         const ratingVal = srv.rating ?? 4.9;
                         const reviewsVal = srv.reviewCount ?? 48;
                         const durationVal = srv.duration || '1 hr 15 mins';
+                        const savingsVal =
+                          srv.originalPrice && srv.price && srv.originalPrice > srv.price
+                            ? srv.originalPrice - srv.price
+                            : 0;
                         const bulletPoints =
                           srv.highlights && srv.highlights.length > 0
                             ? srv.highlights
@@ -1399,39 +1477,50 @@ export const CustomerWebsite: React.FC = () => {
                         return (
                           <div
                             key={srv.id}
-                            className="py-5 first:pt-1 last:pb-1 lg:p-5 lg:rounded-2xl lg:border lg:border-stone-200/80 lg:hover:border-stone-300 transition-all flex items-start justify-between gap-4"
+                            className={`py-5 first:pt-1 last:pb-1 lg:p-5 lg:rounded-2xl lg:border transition-all flex items-start justify-between gap-4 ${
+                              qty > 0
+                                ? 'lg:bg-[#FFFBF4] lg:border-[#D6B77A]'
+                                : 'lg:bg-white lg:border-[#E6DAC8]/90 lg:hover:border-[#B76E79]'
+                            }`}
                           >
-                            {/* Left Column: Service Name, Rating, Price + Duration, Bullets, View Details */}
+                            {/* Left Column: Kicker, Service Name, Rating, Price + Savings + Duration, Bullets, View Details */}
                             <div className="flex-1 min-w-0 space-y-2">
                               {srv.airbrushAvailable && (
-                                <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/70 text-[10px] font-bold uppercase tracking-wide">
-                                  HD / Airbrush Available
-                                </span>
+                                <p className="text-[11px] font-bold text-[#8C4A56] tracking-wide">
+                                  HD &amp; Silicone Airbrush Available
+                                </p>
                               )}
 
-                              <h3 className="text-base sm:text-lg font-bold text-stone-900 leading-snug">
+                              <h3 className="text-base sm:text-lg font-bold text-[#160824] leading-snug">
                                 {srv.name}
                               </h3>
 
-                              {/* Rating & Review Count (Configurable Demo Data) */}
-                              <div className="flex items-center gap-1.5 text-xs text-stone-600">
+                              {/* Unboxed Rating, Review Count & Duration */}
+                              <div className="flex items-center flex-wrap gap-1.5 text-xs text-stone-600">
                                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                                <span className="font-bold text-stone-800 font-mono-num">
+                                <span className="font-bold text-stone-900 font-mono-num">
                                   {ratingVal.toFixed(1)}
                                 </span>
                                 <span className="text-stone-400">
                                   ({reviewsVal} reviews)
                                 </span>
+                                <span className="text-stone-300" aria-hidden="true">
+                                  ·
+                                </span>
+                                <span className="text-stone-600 font-medium inline-flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-[#B76E79]" />
+                                  <span>{durationVal}</span>
+                                </span>
                               </div>
 
-                              {/* Price & Duration Row */}
-                              <div className="flex items-center flex-wrap gap-2 pt-0.5">
+                              {/* Price, Original Price & Automatic Savings Row */}
+                              <div className="flex items-baseline flex-wrap gap-2 pt-0.5">
                                 {srv.price !== null ? (
-                                  <span className="font-mono-num text-sm sm:text-base font-bold text-stone-900">
+                                  <span className="font-mono-num text-base sm:text-lg font-extrabold text-[#160824]">
                                     ₹{srv.price.toLocaleString('en-IN')}
                                   </span>
                                 ) : (
-                                  <span className="text-xs font-bold text-[#B76E79]">
+                                  <span className="text-xs font-bold text-[#8C4A56]">
                                     Custom Quote
                                   </span>
                                 )}
@@ -1440,21 +1529,21 @@ export const CustomerWebsite: React.FC = () => {
                                     ₹{srv.originalPrice.toLocaleString('en-IN')}
                                   </span>
                                 )}
-                                <span className="text-stone-300">•</span>
-                                <span className="text-xs text-stone-500 font-medium flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-stone-400" />
-                                  <span>{durationVal}</span>
-                                </span>
+                                {savingsVal > 0 && (
+                                  <span className="text-[11px] font-bold text-emerald-700">
+                                    Save ₹{savingsVal.toLocaleString('en-IN')}
+                                  </span>
+                                )}
                               </div>
 
                               {/* Dashed Divider matching Reference Video */}
-                              <div className="border-t border-dashed border-stone-200 my-2" />
+                              <div className="border-t border-dashed border-[#E6DAC8] my-2" />
 
                               {/* Bullet Point Description */}
                               <ul className="space-y-1 text-xs text-stone-600 leading-relaxed">
                                 {bulletPoints.slice(0, 2).map((pt, i) => (
                                   <li key={i} className="flex items-start gap-1.5">
-                                    <span className="text-stone-400 mt-0.5">•</span>
+                                    <span className="text-[#B76E79] font-bold mt-0.5">•</span>
                                     <span className="line-clamp-2">{pt}</span>
                                   </li>
                                 ))}
@@ -1464,23 +1553,23 @@ export const CustomerWebsite: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setSelectedServiceDetail(srv)}
-                                className="pt-1 inline-flex items-center gap-0.5 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer"
+                                className="pt-1 inline-flex items-center gap-1 text-xs font-bold text-[#8C4A56] hover:text-[#160824] cursor-pointer"
                               >
                                 <span>View details</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
 
-                            {/* Right Column: Service Image + Overlapping "Add" Button (Matches Reference Video) */}
-                            <div className=" flex flex-col items-center shrink-0 w-28 sm:w-32">
+                            {/* Right Column: High-Clarity Service Portrait + Overlapping "Add" Button (Matches Reference Video) */}
+                            <div className="flex flex-col items-center shrink-0 w-28 sm:w-32">
                               <div
                                 onClick={() => setSelectedServiceDetail(srv)}
-                                className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-xs cursor-pointer"
+                                className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-[#F8F3EC] border border-[#E6DAC8] shadow-sm cursor-pointer relative group"
                               >
                                 <SmartImage
                                   src={srv.image}
                                   alt={srv.name}
-                                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
                               </div>
 
@@ -1490,28 +1579,29 @@ export const CustomerWebsite: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleAddOrIncrement(srv)}
-                                    className="w-full h-9 rounded-xl bg-white hover:bg-stone-50 text-[#2563EB] border border-stone-300 shadow-md text-xs sm:text-sm font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                    className="tap-scale w-full h-9 rounded-xl bg-white hover:bg-[#FFF8EF] text-[#160824] border border-[#D6B77A] shadow-md text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1 transition-all cursor-pointer"
                                   >
                                     <span>Add</span>
+                                    <Plus className="w-3.5 h-3.5 text-[#8C4A56]" />
                                   </button>
                                 ) : (
-                                  <div className="w-full h-9 rounded-xl bg-[#2563EB] text-white shadow-md flex items-center justify-between px-2">
+                                  <div className="w-full h-9 rounded-xl bg-[#160824] text-[#D6B77A] border border-[#D6B77A]/60 shadow-md flex items-center justify-between px-2">
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateQuantity(srv.id, -1)}
                                       aria-label="Decrease quantity"
-                                      className="w-6 h-6 rounded-md hover:bg-white/20 flex items-center justify-center cursor-pointer"
+                                      className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
                                     >
                                       <Minus className="w-3.5 h-3.5" />
                                     </button>
-                                    <span className="font-mono-num text-xs font-bold">
+                                    <span className="font-mono-num text-xs font-extrabold text-white">
                                       {qty}
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateQuantity(srv.id, 1)}
                                       aria-label="Increase quantity"
-                                      className="w-6 h-6 rounded-md hover:bg-white/20 flex items-center justify-center cursor-pointer"
+                                      className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
                                     </button>
@@ -2528,20 +2618,24 @@ export const CustomerWebsite: React.FC = () => {
       {/* =====================================================================
           FLOATING "≡ Menu" CATEGORY QUICK-JUMP BUTTON (Matches Reference Video 0:18 - 0:37)
       ===================================================================== */}
-      <div className="fixed bottom-20 lg:bottom-7 left-1/2 -translate-x-1/2 z-40">
+      <div
+        className={`fixed left-1/2 -translate-x-1/2 z-40 transition-all ${
+          totalCartItems > 0 ? 'bottom-28 lg:bottom-8' : 'bottom-18 lg:bottom-8'
+        }`}
+      >
         <button
           type="button"
           onClick={() => setFloatingMenuOpen((v) => !v)}
-          className="h-10 px-4 rounded-full bg-[#1C1C1E] hover:bg-black text-white shadow-xl border border-white/15 flex items-center gap-2 text-xs font-bold tracking-wide cursor-pointer"
+          className="tap-scale h-10 px-5 rounded-full bg-[#160824] hover:bg-[#26103B] text-[#F5E2B8] shadow-xl border border-[#D6B77A]/60 flex items-center gap-2 text-xs font-bold tracking-wide cursor-pointer"
         >
           {floatingMenuOpen ? (
             <>
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5 text-[#D6B77A]" />
               <span>Close</span>
             </>
           ) : (
             <>
-              <Menu className="w-3.5 h-3.5" />
+              <Menu className="w-3.5 h-3.5 text-[#D6B77A]" />
               <span>Menu</span>
             </>
           )}
@@ -2551,15 +2645,15 @@ export const CustomerWebsite: React.FC = () => {
       {/* FLOATING MENU POPOVER (Lists all Makeup & Styling Categories with Counts) */}
       {floatingMenuOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-2xs flex items-end sm:items-center justify-center p-4 pb-24 sm:pb-4"
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-2xs flex items-end sm:items-center justify-center p-4 pb-28 sm:pb-4"
           onClick={() => setFloatingMenuOpen(false)}
         >
           <div
-            className="w-full max-w-xs bg-white rounded-3xl shadow-2xl border border-stone-200 p-4 space-y-2 animate-in fade-in zoom-in-95 duration-150"
+            className="w-full max-w-xs bg-[#FFFDF9] rounded-3xl shadow-2xl border border-[#D6B77A]/60 p-4 space-y-2 animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-2 pb-2 border-b border-stone-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
+            <div className="flex items-center justify-between px-2 pb-2 border-b border-[#EFE6D8]">
+              <span className="font-display text-base font-bold text-[#160824]">
                 Makeup &amp; Styling Menu
               </span>
               <button
@@ -2570,7 +2664,7 @@ export const CustomerWebsite: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="max-h-72 overflow-y-auto divide-y divide-stone-100">
+            <div className="max-h-72 overflow-y-auto divide-y divide-[#F2ECE1]">
               {ALL_SERVICE_SECTIONS_ORDER.map((sec) => {
                 const count = (groupedServices.get(sec.id) || []).length;
                 if (count === 0) return null;
@@ -2579,12 +2673,12 @@ export const CustomerWebsite: React.FC = () => {
                     key={sec.id}
                     type="button"
                     onClick={() => jumpToCategorySection(sec.id)}
-                    className="w-full py-2.5 px-2.5 hover:bg-stone-50 rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer"
+                    className="w-full py-2.5 px-3 hover:bg-[#F5EFE6] rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer"
                   >
-                    <span className="text-xs sm:text-sm font-semibold text-stone-800">
+                    <span className="text-xs sm:text-sm font-semibold text-[#160824]">
                       {sec.title}
                     </span>
-                    <span className="font-mono-num text-xs font-bold text-stone-500">
+                    <span className="font-mono-num text-xs font-bold text-[#8C4A56]">
                       {count}
                     </span>
                   </button>
@@ -2596,26 +2690,28 @@ export const CustomerWebsite: React.FC = () => {
       )}
 
       {/* =====================================================================
-          MOBILE BOTTOM NAVIGATION + STICKY CART BAR (App-Like Interface)
+          MOBILE BOTTOM NAVIGATION + STICKY LUXURY CART BAR (App-Like Interface)
       ===================================================================== */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-stone-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 luxury-glass border-t border-[#E6DAC8] shadow-[0_-8px_28px_rgba(22,8,36,0.12)]">
         {/* Sticky Mini Cart Strip when items are in cart */}
         {totalCartItems > 0 && (
-          <div className="bg-[#160824] text-white px-3.5 py-2 flex items-center justify-between gap-2">
+          <div className="bg-gradient-to-r from-[#160824] via-[#26103B] to-[#160824] text-white px-3.5 py-2.5 border-b border-[#D6B77A]/35 flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setCartDrawerOpen(true)}
-              className="flex items-center gap-2 text-left min-w-0 cursor-pointer"
+              className="flex items-center gap-2.5 text-left min-w-0 cursor-pointer"
             >
-              <span className="px-2 py-0.5 rounded-md bg-[#D6B77A] text-[#160824] font-mono-num text-xs font-bold">
-                {totalCartItems} {totalCartItems === 1 ? 'item' : 'items'}
+              <span className="px-2 py-0.5 rounded-lg bg-[#D6B77A] text-[#160824] font-mono-num text-xs font-extrabold">
+                {totalCartItems}
               </span>
-              <span className="font-mono-num text-sm font-bold text-[#F5E2B8] truncate">
-                ₹{netPayable.toLocaleString('en-IN')}
-              </span>
-              <span className="text-[11px] text-white/70 truncate">
-                · View Cart
-              </span>
+              <div className="min-w-0">
+                <p className="font-mono-num text-sm font-extrabold text-[#F5E2B8] leading-tight">
+                  ₹{netPayable.toLocaleString('en-IN')}
+                </p>
+                <p className="text-[10px] text-white/75 truncate">
+                  Tap to view selected services
+                </p>
+              </div>
             </button>
             <button
               type="button"
@@ -2623,9 +2719,9 @@ export const CustomerWebsite: React.FC = () => {
                 setBookingStep(2);
                 scrollToSection('booking');
               }}
-              className="px-3.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+              className="tap-scale px-4 py-2 rounded-xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] text-xs font-extrabold flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
             >
-              <span>Book Now</span>
+              <span>Select Slot</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -2636,15 +2732,15 @@ export const CustomerWebsite: React.FC = () => {
           <button
             type="button"
             onClick={() => scrollToSection('makeup-styling-landing')}
-            className="flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
+            className="tap-scale flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
           >
-            <Home className="w-4 h-4" />
+            <Home className="w-4 h-4 text-stone-500" />
             <span>Categories</span>
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('makeup-artist-page')}
-            className="flex flex-col items-center justify-center gap-0.5 text-[#160824] font-bold cursor-pointer"
+            className="tap-scale flex flex-col items-center justify-center gap-0.5 text-[#160824] font-bold cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-[#B76E79]" />
             <span>Makeup Artist</span>
@@ -2652,18 +2748,18 @@ export const CustomerWebsite: React.FC = () => {
           <button
             type="button"
             onClick={() => scrollToSection('gallery')}
-            className="flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
+            className="tap-scale flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
           >
-            <ImageIcon className="w-4 h-4" />
+            <ImageIcon className="w-4 h-4 text-stone-500" />
             <span>Portfolio</span>
           </button>
           <button
             type="button"
             onClick={() => setCartDrawerOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] relative cursor-pointer"
+            className="tap-scale flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] relative cursor-pointer"
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span>My Booking ({totalCartItems})</span>
+            <ShoppingBag className="w-4 h-4 text-stone-500" />
+            <span>Booking ({totalCartItems})</span>
           </button>
         </div>
       </div>
