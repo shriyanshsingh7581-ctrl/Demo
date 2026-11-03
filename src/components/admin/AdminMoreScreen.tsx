@@ -19,7 +19,6 @@ import {
   ChevronRight,
   ArrowLeft,
   Tag,
-  IndianRupee,
   Edit3,
   Search,
   Sparkles,
@@ -31,6 +30,10 @@ import {
   ShieldCheck,
   UserPlus,
   Lock,
+  Cloud,
+  Camera,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   Booking,
@@ -51,7 +54,12 @@ import {
   upsertTeamMember,
 } from '../../services/bookingStorage';
 import { EdenRoseImage, GalleryFilterCategory } from '../../config/edenRosesImages';
-import { uploadImageAsset } from '../../services/firebaseConfig';
+import {
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_UPLOAD_PRESET,
+  isCloudinaryUrl,
+  uploadImageAsset,
+} from '../../services/firebaseConfig';
 import { SmartImage } from '../SmartImage';
 
 export type MoreSectionId =
@@ -159,6 +167,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     setFormSettings(settings);
   }, [settings]);
 
+  // Collapsible Add New Product Drawer on Mobile
+  const [showAddProductForm, setShowAddProductForm] = useState<boolean>(true);
+
   // New Product / Service State
   const [newServiceName, setNewServiceName] = useState('');
   const [newServiceSubCategory, setNewServiceSubCategory] =
@@ -176,6 +187,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
   );
   const [showPhotoPickerForNew, setShowPhotoPickerForNew] = useState(false);
   const [uploadingProductImg, setUploadingProductImg] = useState(false);
+  const [uploadingInlineServiceId, setUploadingInlineServiceId] = useState<string | null>(
+    null
+  );
 
   // Filter & Search State for Product/Pricing Manager
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -214,15 +228,22 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
 
   const showToast = (msg: string) => {
     setSavedBanner(msg);
-    setTimeout(() => setSavedBanner(null), 2800);
+    setTimeout(() => setSavedBanner(null), 3200);
   };
+
+  // Prioritize Cloudinary-uploaded images at the top of the Cloud Photo Picker
+  const cloudSortedGallery = React.useMemo(() => {
+    const cloudItems = gallery.filter((g) => isCloudinaryUrl(g.url));
+    const otherItems = gallery.filter((g) => !isCloudinaryUrl(g.url));
+    return [...cloudItems, ...otherItems];
+  }, [gallery]);
 
   // Save Business Settings
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     await saveBusinessSettings(formSettings);
     onRefresh();
-    showToast('Business Settings updated and synced to Customer Website!');
+    showToast('Website settings saved & synced live via Firebase!');
   };
 
   // Service Catalog & Pricing Handlers
@@ -252,6 +273,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     showToast(`Updated "${target.name}" price to ₹${nextPrice.toLocaleString('en-IN')}`);
   };
 
+  /**
+   * Upload Product Photo to Cloudinary (dxeuzdwkz / Makeup)
+   * Also saves the uploaded photo to the Cloud Gallery so it can be reused anytime.
+   */
   const handleUploadProductPhoto = async (
     e: React.ChangeEvent<HTMLInputElement>,
     mode: 'new' | 'edit'
@@ -266,9 +291,59 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
       } else if (editingService) {
         setEditingService({ ...editingService, image: url });
       }
-      showToast('Product photo uploaded!');
+
+      // Also save to Cloud Gallery so Admin can see & reuse all uploaded Cloudinary photos
+      const cloudGalleryEntry: EdenRoseImage = {
+        id: `cloud-${Date.now()}`,
+        url,
+        alt:
+          mode === 'new' && newServiceName.trim()
+            ? newServiceName.trim()
+            : editingService?.name || 'Product Cloud Photo',
+        category: 'Bridal Portfolio',
+        galleryCategory: 'Bridal Makeup',
+        description: `Uploaded to Cloudinary (${CLOUDINARY_CLOUD_NAME})`,
+        displayPosition: 'Product & Gallery',
+      };
+      await upsertGalleryImage(cloudGalleryEntry);
+      onRefresh();
+      showToast(
+        isCloudinaryUrl(url)
+          ? 'Photo uploaded to Cloudinary CDN & attached to product!'
+          : 'Product photo uploaded & attached!'
+      );
     } finally {
       setUploadingProductImg(false);
+    }
+  };
+
+  /**
+   * Direct 1-Tap Photo Upload on any existing Product Card -> Uploads to Cloudinary & updates product live
+   */
+  const handleDirectCardPhotoUpload = async (
+    srv: ServiceCatalogItem,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingInlineServiceId(srv.id);
+    try {
+      const url = await uploadImageAsset(file);
+      await upsertServiceCatalogItem({ ...srv, image: url });
+      const cloudGalleryEntry: EdenRoseImage = {
+        id: `cloud-${Date.now()}`,
+        url,
+        alt: srv.name,
+        category: 'Bridal Portfolio',
+        galleryCategory: 'Bridal Makeup',
+        description: `Uploaded for ${srv.name} via Cloudinary`,
+        displayPosition: 'Product & Gallery',
+      };
+      await upsertGalleryImage(cloudGalleryEntry);
+      onRefresh();
+      showToast(`Uploaded new Cloudinary photo for "${srv.name}"!`);
+    } finally {
+      setUploadingInlineServiceId(null);
     }
   };
 
@@ -328,7 +403,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     setNewServiceDesc('');
     setNewServiceHighlights('');
     onRefresh();
-    showToast(`Added "${item.name}" (₹${item.price ?? 'Consult'}) to live website!`);
+    showToast(`Added "${item.name}" (₹${item.price ?? 'Consult'}) with photo to website!`);
   };
 
   const openEditServiceModal = (srv: ServiceCatalogItem) => {
@@ -391,7 +466,6 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
 
     const cleanPassword = newMemberPassword.trim() || 'eden123';
 
-    // Prevent duplicate userId
     if (
       team.some((m) => (m.userId || '').toLowerCase() === cleanUserId) ||
       ['admin', 'subbalakshmi', 'edenroses'].includes(cleanUserId)
@@ -498,7 +572,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
   };
 
-  // Gallery Handlers (Synced in Real-Time via Firebase)
+  // Gallery Handlers (Uploaded to Cloudinary & Synced in Real-Time via Firebase)
   const handleUploadNewGalleryImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -511,13 +585,13 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         alt: newGalleryAlt.trim() || 'Eden Roses Makeover Portfolio Photo',
         category: 'Bridal Portfolio',
         galleryCategory: newGalleryCat,
-        description: `Uploaded via Partner App (${newGalleryCat})`,
+        description: `Uploaded via Cloudinary (${newGalleryCat})`,
         displayPosition: 'Gallery Grid',
       };
       await upsertGalleryImage(newEntry);
       setNewGalleryAlt('');
       onRefresh();
-      showToast('Photo uploaded & synced to live Website Gallery via Firebase!');
+      showToast('Photo uploaded to Cloudinary & synced to live Website Gallery!');
     } finally {
       setUploadingImg(false);
     }
@@ -538,7 +612,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
       await saveGalleryImages(updated);
     }
     onRefresh();
-    showToast('Gallery photo replaced & synced to live website!');
+    showToast('Gallery photo replaced on Cloudinary & synced to website!');
   };
 
   const handleDeleteGalleryImage = async (imgId: string) => {
@@ -552,17 +626,22 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     setFormSettings(updated);
     await saveBusinessSettings(updated);
     onRefresh();
-    showToast('Customer Website Hero Image updated!');
+    showToast('Customer Website Hero Banner Photo updated!');
   };
 
   const handleAssignImageToService = async (url: string) => {
     if (!selectedServiceForImg) return;
-    const updated = services.map((s) =>
-      s.id === selectedServiceForImg ? { ...s, image: url } : s
-    );
-    await saveServicesCatalog(updated);
+    const target = services.find((s) => s.id === selectedServiceForImg);
+    if (target) {
+      await upsertServiceCatalogItem({ ...target, image: url });
+    } else {
+      const updated = services.map((s) =>
+        s.id === selectedServiceForImg ? { ...s, image: url } : s
+      );
+      await saveServicesCatalog(updated);
+    }
     onRefresh();
-    showToast('Assigned photo to selected service!');
+    showToast(`Photo assigned to "${target?.name || 'Product'}" on live website!`);
   };
 
   // Derived Customers List from Bookings
@@ -656,71 +735,79 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const quickNavTabs: { id: MoreSectionId; label: string; icon: React.ElementType }[] = [
+    { id: 'service-management', label: 'Products & Photos', icon: Scissors },
+    { id: 'gallery-management', label: 'Cloud Gallery', icon: Cloud },
+    { id: 'business-profile', label: 'Website CMS', icon: Building2 },
+    { id: 'team-management', label: 'Team Logins', icon: Users },
+    { id: 'booking-availability', label: 'Time Slots', icon: Clock },
+    { id: 'customer-management', label: 'Clients', icon: UserCheck },
+    { id: 'menu', label: 'All Settings', icon: Sparkles },
+  ];
+
   if (activeSubScreen === 'menu') {
     const menuItems = [
       {
-        id: 'business-profile' as MoreSectionId,
-        icon: Building2,
-        title: 'Full Website Information & CMS Control (वेबसाइट फुल कंट्रोल)',
-        subtitle:
-          'Change Brand, Hero Banner, Offers, Coupons, Ratings, Bio, Phone, Address & Hours in Real-Time',
-      },
-      {
         id: 'service-management' as MoreSectionId,
         icon: Scissors,
-        title: 'Service & Package Management',
-        subtitle: `Manage ${services.length} makeup packages & salon services`,
+        title: 'Products, Pricing & Cloudinary Photo Upload',
+        subtitle: `Add products, change prices & upload product photos (${services.length} items)`,
       },
       {
-        id: 'booking-availability' as MoreSectionId,
-        icon: Clock,
-        title: 'Booking & Availability Settings',
-        subtitle: 'Configure daily time slots and block unavailable dates',
+        id: 'gallery-management' as MoreSectionId,
+        icon: Cloud,
+        title: 'Cloudinary Photo Library & Website Gallery',
+        subtitle: `Cloud: ${CLOUDINARY_CLOUD_NAME} (Preset: ${CLOUDINARY_UPLOAD_PRESET}) · ${gallery.length} photos`,
       },
       {
-        id: 'customer-management' as MoreSectionId,
-        icon: UserCheck,
-        title: 'Customer Management',
-        subtitle: `${customersList.length} verified clients with booking history`,
+        id: 'business-profile' as MoreSectionId,
+        icon: Building2,
+        title: 'Full Website Information & CMS Control',
+        subtitle:
+          'Brand, Hero Banner, Offers, Coupons, Ratings, Bio, Phone, Address & Hours',
       },
       {
         id: 'team-management' as MoreSectionId,
         icon: Users,
-        title: 'Team Accounts & Login Management (User ID / Password)',
-        subtitle: `Create, edit or delete login IDs & passwords for ${team.length} team members`,
+        title: 'Team Accounts & Login Management',
+        subtitle: `Create, edit or delete User ID & Password for ${team.length} team members`,
       },
       {
-        id: 'gallery-management' as MoreSectionId,
-        icon: ImageIcon,
-        title: 'Gallery & Original Photos Management',
-        subtitle: `Manage ${gallery.length} original Eden Roses photos, Hero & Service images`,
+        id: 'booking-availability' as MoreSectionId,
+        icon: Clock,
+        title: 'Booking Time Slots & Holiday Dates',
+        subtitle: 'Configure daily appointment slots and block unavailable dates',
       },
       {
-        id: 'whatsapp-contact' as MoreSectionId,
-        icon: MessageCircle,
-        title: 'WhatsApp & Business Contact Settings',
-        subtitle: `Active WhatsApp: +${settings.whatsappNumber}`,
+        id: 'customer-management' as MoreSectionId,
+        icon: UserCheck,
+        title: 'Verified Client Directory',
+        subtitle: `${customersList.length} clients with phone & WhatsApp history`,
       },
       {
         id: 'data-export' as MoreSectionId,
         icon: Download,
-        title: 'Data Export & Demo Reset',
-        subtitle: 'Export CSV / JSON reports or restore initial seed bookings',
+        title: 'Data Backup & Export',
+        subtitle: 'Download Excel CSV or JSON backup of all bookings',
       },
     ];
 
     return (
       <div className="space-y-4 pb-24">
-        <div className="bg-white rounded-2xl p-5 border border-stone-200 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-stone-900">
-              Partner Settings &amp; Management
+        {/* Brand & Cloudinary Status Card */}
+        <div className="bg-gradient-to-r from-[#160824] via-[#241038] to-[#160824] text-white rounded-3xl p-5 border border-[#D6B77A]/40 shadow-md flex items-center justify-between gap-3">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[11px] font-semibold text-[#D6B77A] tracking-wide">
+              Cloud: {CLOUDINARY_CLOUD_NAME} · Preset: {CLOUDINARY_UPLOAD_PRESET}
+            </p>
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-white truncate">
+              {settings.makeupBrand}
             </h2>
-            <p className="text-xs text-stone-600">
-              {settings.makeupBrand} — By {settings.artistName}
+            <p className="text-xs text-white/75 truncate">
+              Admin Control Center · By {settings.artistName}
             </p>
           </div>
-          <div className="w-16 h-12 rounded-xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden flex items-center justify-center shrink-0">
+          <div className="w-16 h-14 rounded-2xl bg-[#160824] border border-[#D6B77A] overflow-hidden flex items-center justify-center shrink-0">
             <SmartImage
               src={settings.logoUrl}
               alt={settings.makeupBrand}
@@ -730,6 +817,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           </div>
         </div>
 
+        {/* Clean Mobile Menu List */}
         <div className="space-y-2.5">
           {menuItems.map((item) => {
             const IconComp = item.icon;
@@ -738,17 +826,19 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => setActiveSubScreen(item.id)}
-                className="w-full p-4 rounded-2xl bg-white hover:bg-[#e9ecd6]/50 border border-stone-200 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer"
+                className="w-full p-4 rounded-2xl bg-white hover:bg-[#FAF6F0] border border-[#E6DAC8] flex items-center justify-between gap-3.5 text-left transition-all shadow-2xs cursor-pointer"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-[#e9ecd6] text-[#5b6324] flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-2xl bg-[#160824] text-[#D6B77A] flex items-center justify-center shrink-0">
                     <IconComp className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-sm text-stone-900 truncate">
+                    <p className="font-bold text-sm text-[#160824] truncate">
                       {item.title}
                     </p>
-                    <p className="text-xs text-stone-500 truncate">{item.subtitle}</p>
+                    <p className="text-xs text-stone-500 truncate mt-0.5">
+                      {item.subtitle}
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-stone-400 shrink-0" />
@@ -763,7 +853,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           className="w-full p-4 rounded-2xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
-          <span>Logout Partner App</span>
+          <span>Sign Out of Admin Panel</span>
         </button>
       </div>
     );
@@ -771,53 +861,67 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
 
   return (
     <div className="space-y-4 pb-24">
-      <div className="bg-white rounded-2xl p-3.5 border border-stone-200 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => setActiveSubScreen('menu')}
-          className="flex items-center gap-2 text-sm font-bold text-stone-800 hover:text-[#5b6324] cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to More Menu</span>
-        </button>
+      {/* 1-Tap Horizontal Section Switcher for Fast Mobile Navigation */}
+      <div className="bg-white rounded-2xl p-2 border border-[#E6DAC8] shadow-2xs flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        {quickNavTabs.map((tab) => {
+          const IconComp = tab.icon;
+          const isCurrent = activeSubScreen === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSubScreen(tab.id)}
+              className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                isCurrent
+                  ? 'bg-[#160824] text-[#F5E2B8] shadow-xs'
+                  : 'text-stone-600 hover:bg-[#FAF6F0] hover:text-[#160824]'
+              }`}
+            >
+              <IconComp className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {savedBanner && (
-        <div className="p-3.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-2 shadow-sm">
+        <div className="p-3.5 rounded-2xl bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 shadow-md">
           <Check className="w-4 h-4 shrink-0" />
           <span>{savedBanner}</span>
         </div>
       )}
 
-      {/* 1. FULL WEBSITE INFORMATION & CMS CONTROL (REAL-TIME FIREBASE SYNC) */}
+      {/* =====================================================================
+          1. FULL WEBSITE INFORMATION & CMS CONTROL (REAL-TIME FIREBASE SYNC)
+      ===================================================================== */}
       {(activeSubScreen === 'business-profile' ||
         activeSubScreen === 'whatsapp-contact') && (
         <form onSubmit={handleSaveSettings} className="space-y-5">
           {/* Header Banner */}
-          <div className="rounded-2xl bg-[#160824] text-[#F3E2BA] p-4 sm:p-5 border border-[#D6B77A]/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="rounded-3xl bg-[#160824] text-[#F3E2BA] p-5 border border-[#D6B77A]/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#D6B77A]" />
-                <h3 className="font-bold text-sm sm:text-base text-white">
-                  Full Website Information &amp; CMS Control (वेबसाइट की सारी जानकारी बदलें)
-                </h3>
-              </div>
-              <p className="text-xs text-[#F3E2BA]/85 mt-1">
-                Every change saved here syncs via Firebase Realtime Database &amp; Firestore to the live Customer Website immediately.
+              <p className="text-[11px] font-semibold text-[#D6B77A]">
+                Real-Time Firebase &amp; Cloudinary Sync
+              </p>
+              <h3 className="font-display text-lg sm:text-xl font-bold text-white mt-0.5">
+                Full Website Content &amp; Settings Control
+              </h3>
+              <p className="text-xs text-[#F3E2BA]/80 mt-0.5">
+                Update brand info, banners, offers, ratings, bio, phone &amp; studio address.
               </p>
             </div>
             <button
               type="submit"
-              className="px-4 py-2.5 rounded-xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] font-bold text-xs shrink-0 cursor-pointer shadow-xs"
+              className="px-5 py-3 rounded-xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] font-bold text-xs shrink-0 cursor-pointer shadow-xs"
             >
-              Save &amp; Sync All Changes
+              Save &amp; Publish Live
             </button>
           </div>
 
           {/* SECTION A: BRAND, ARTIST, LOGO & HERO BANNER IMAGE */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
-            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
-              1. Brand Name, Artist Name, Logo &amp; Hero Banner Photo
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <h4 className="font-bold text-sm text-[#160824] border-b border-stone-100 pb-2.5">
+              01. Brand Name, Artist Name, Logo &amp; Hero Banner Photo
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
@@ -831,7 +935,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, businessName: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                 />
               </div>
               <div>
@@ -844,7 +948,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, makeupBrand: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                 />
               </div>
               <div>
@@ -857,18 +961,18 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, artistName: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs">
-              {/* Logo Preview + Upload */}
-              <div className="p-3.5 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2.5">
+              {/* Logo Preview + Cloudinary Upload */}
+              <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-stone-800">Website &amp; Admin Logo</span>
-                  <label className="px-3 py-1.5 rounded-lg bg-[#160824] text-[#F3E2BA] text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
+                  <span className="font-bold text-[#160824]">Website &amp; Admin Logo</span>
+                  <label className="px-3.5 py-2 rounded-xl bg-[#160824] text-[#F3E2BA] text-xs font-bold cursor-pointer inline-flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" />
                     <span>Upload Logo</span>
                     <input
                       type="file"
@@ -882,7 +986,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                           logoUrl: url,
                           footerLogoUrl: url,
                         });
-                        showToast('Logo uploaded! Click Save & Sync to publish.');
+                        showToast('Logo uploaded to Cloudinary! Click Save & Publish.');
                       }}
                       className="hidden"
                     />
@@ -912,15 +1016,15 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                 </div>
               </div>
 
-              {/* Hero Promotional Banner Image Preview + Upload */}
-              <div className="p-3.5 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2.5">
+              {/* Hero Promotional Banner Image Preview + Cloudinary Upload */}
+              <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-stone-800">
+                  <span className="font-bold text-[#160824]">
                     Main Promotional Banner Photo
                   </span>
-                  <label className="px-3 py-1.5 rounded-lg bg-[#5b6324] text-white text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
-                    <span>Upload Banner Photo</span>
+                  <label className="px-3.5 py-2 rounded-xl bg-[#160824] text-[#D6B77A] text-xs font-bold cursor-pointer inline-flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Banner</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -929,7 +1033,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                         if (!file) return;
                         const url = await uploadImageAsset(file);
                         setFormSettings({ ...formSettings, heroImageUrl: url });
-                        showToast('Hero Banner photo uploaded! Click Save & Sync.');
+                        showToast('Hero Banner uploaded to Cloudinary! Click Save & Publish.');
                       }}
                       className="hidden"
                     />
@@ -958,9 +1062,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           </div>
 
           {/* SECTION B: HERO BANNER HEADINGS, RATINGS & TRUST BADGE */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
-            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
-              2. Website Header, Hero Banner Text &amp; Rating Badge
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <h4 className="font-bold text-sm text-[#160824] border-b border-stone-100 pb-2.5">
+              02. Website Header, Hero Banner Text &amp; Rating Score
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -975,7 +1079,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, defaultCity: e.target.value })
                   }
                   placeholder="Bangalore"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -989,7 +1093,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, headerTagline: e.target.value })
                   }
                   placeholder="Studio & On-Venue Service Across Bengaluru"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1003,7 +1107,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, heroBannerTitle: e.target.value })
                   }
                   placeholder="Professional Makeup"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                 />
               </div>
               <div>
@@ -1020,7 +1124,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     })
                   }
                   placeholder="Beauty services for every special occasion"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1037,7 +1141,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     })
                   }
                   placeholder="Flawless HD & Airbrush beauty · Effortless bridal confidence"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1051,7 +1155,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, heroCtaText: e.target.value })
                   }
                   placeholder="Book Appointment"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1065,7 +1169,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, ratingScore: e.target.value })
                   }
                   placeholder="4.9"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
               <div>
@@ -1079,7 +1183,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, ratingCountText: e.target.value })
                   }
                   placeholder="520+ Brides"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1093,7 +1197,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, trustBadgeTitle: e.target.value })
                   }
                   placeholder="100% Authentic Luxury Products"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1110,16 +1214,16 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     })
                   }
                   placeholder="MAC · Huda Beauty · NARS · Silicone Airbrush"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
             </div>
           </div>
 
           {/* SECTION C: PROMOTIONAL OFFERS & DISCOUNT COUPON CODES */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
-            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
-              3. Live Website Offers &amp; Coupon Codes (ऑफर और कूपन कोड)
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <h4 className="font-bold text-sm text-[#160824] border-b border-stone-100 pb-2.5">
+              03. Live Website Offers &amp; Coupon Codes
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -1134,7 +1238,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, offer1Title: e.target.value })
                   }
                   placeholder="Flat ₹500 OFF on Bridal & Engagement"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1151,7 +1255,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     })
                   }
                   placeholder="BRIDAL500"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
               <div>
@@ -1167,7 +1271,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       offer1DiscountAmount: Math.max(0, Number(e.target.value)),
                     })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
 
@@ -1182,7 +1286,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, offer2Title: e.target.value })
                   }
                   placeholder="Save 10% on Party Makeup & Combos"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1199,7 +1303,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     })
                   }
                   placeholder="EDEN10"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
               <div>
@@ -1212,19 +1316,22 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({
                       ...formSettings,
-                      offer2DiscountPercent: Math.max(0, Math.min(90, Number(e.target.value))),
+                      offer2DiscountPercent: Math.max(
+                        0,
+                        Math.min(90, Number(e.target.value))
+                      ),
                     })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
             </div>
           </div>
 
           {/* SECTION D: ABOUT ARTIST BIO & 3 HIGHLIGHT CARDS */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
-            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
-              4. About Artist Section &amp; Highlights
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <h4 className="font-bold text-sm text-[#160824] border-b border-stone-100 pb-2.5">
+              04. About Artist Bio &amp; Highlights
             </h4>
 
             <div className="text-xs space-y-3">
@@ -1239,7 +1346,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     setFormSettings({ ...formSettings, aboutKicker: e.target.value })
                   }
                   placeholder="Principal Makeup & Styling Artist"
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
 
@@ -1253,13 +1360,13 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2">
-                  <label className="font-bold text-stone-700 block">
+                <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2">
+                  <label className="font-bold text-[#160824] block">
                     Highlight Card 1
                   </label>
                   <input
@@ -1272,7 +1379,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       })
                     }
                     placeholder="HD & Airbrush"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 font-bold"
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-stone-300 font-bold"
                   />
                   <input
                     type="text"
@@ -1284,12 +1391,12 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       })
                     }
                     placeholder="Waterproof 16-hr skin finish"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300"
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-stone-300"
                   />
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2">
-                  <label className="font-bold text-stone-700 block">
+                <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2">
+                  <label className="font-bold text-[#160824] block">
                     Highlight Card 2
                   </label>
                   <input
@@ -1302,7 +1409,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       })
                     }
                     placeholder="Venue Travel"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 font-bold"
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-stone-300 font-bold"
                   />
                   <input
                     type="text"
@@ -1314,12 +1421,12 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       })
                     }
                     placeholder="5:00 AM Muhurtham slots available"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300"
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-stone-300"
                   />
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#f8f9f0] border border-stone-200 space-y-2">
-                  <label className="font-bold text-stone-700 block">
+                <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2">
+                  <label className="font-bold text-[#160824] block">
                     Highlight Card 3
                   </label>
                   <input
@@ -1332,7 +1439,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       })
                     }
                     placeholder="4.9 ★ Rated"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 font-bold"
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-stone-300 font-bold"
                   />
                   <input
                     type="text"
@@ -1344,7 +1451,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       })
                     }
                     placeholder="Loved by Bengaluru brides"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-300"
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-stone-300"
                   />
                 </div>
               </div>
@@ -1352,9 +1459,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           </div>
 
           {/* SECTION E: CONTACT NUMBERS, WHATSAPP, ADDRESS & SOCIAL LINKS */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
-            <h4 className="font-bold text-sm text-stone-900 border-b border-stone-100 pb-2">
-              5. Phone, WhatsApp, Studio Address, Service Areas &amp; Social Links
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <h4 className="font-bold text-sm text-[#160824] border-b border-stone-100 pb-2.5">
+              05. Phone, WhatsApp, Studio Address, Service Areas &amp; Social Links
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -1368,7 +1475,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, phonePrimary: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
               <div>
@@ -1381,7 +1488,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, phoneSecondary: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
               <div>
@@ -1394,7 +1501,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, whatsappNumber: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                 />
               </div>
               <div>
@@ -1405,7 +1512,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1418,7 +1525,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, location: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1429,7 +1536,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, websiteUrl: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
             </div>
@@ -1445,7 +1552,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, address: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1458,7 +1565,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, serviceArea: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div>
@@ -1471,7 +1578,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) =>
                     setFormSettings({ ...formSettings, googleMapsLink: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1485,7 +1592,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     onChange={(e) =>
                       setFormSettings({ ...formSettings, openingHours: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                   />
                 </div>
                 <div>
@@ -1498,7 +1605,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     onChange={(e) =>
                       setFormSettings({ ...formSettings, instagramUrl: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                   />
                 </div>
               </div>
@@ -1506,7 +1613,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold text-xs sm:text-sm cursor-pointer shadow-sm"
+              className="w-full py-3.5 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] font-bold text-xs sm:text-sm cursor-pointer shadow-sm"
             >
               Save &amp; Sync All Website Information to Firebase
             </button>
@@ -1514,290 +1621,316 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </form>
       )}
 
-      {/* 2. PRODUCT, SERVICE & PRICING MANAGEMENT */}
+      {/* =====================================================================
+          2. PRODUCT, SERVICE, PRICING & CLOUDINARY PHOTO MANAGER
+      ===================================================================== */}
       {activeSubScreen === 'service-management' && (
-        <div className="space-y-5">
-          {/* TOP BANNER */}
-          <div className="rounded-2xl bg-[#5b6324] text-white p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-[#e9ecd6]" />
-                <h3 className="font-bold text-sm sm:text-base">
-                  Products, Services &amp; Pricing Manager (प्रोडक्ट और प्राइसिंग मैनेजर)
-                </h3>
-              </div>
-              <p className="text-xs text-[#e9ecd6] mt-1">
-                Add new makeup packages/services or change prices anytime — updates sync live to Customer Website!
+        <div className="space-y-4">
+          {/* LUXURY HEADER CARD WITH CLOUDINARY STATUS */}
+          <div className="rounded-3xl bg-gradient-to-r from-[#160824] via-[#261139] to-[#160824] text-white p-5 border border-[#D6B77A]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold text-[#D6B77A] flex items-center gap-1.5">
+                <Cloud className="w-3.5 h-3.5" />
+                <span>
+                  Cloudinary Connected: {CLOUDINARY_CLOUD_NAME} (Preset: {CLOUDINARY_UPLOAD_PRESET})
+                </span>
+              </p>
+              <h3 className="font-display text-lg sm:text-xl font-bold text-white">
+                Products, Photos &amp; Pricing Manager
+              </h3>
+              <p className="text-xs text-white/75">
+                Upload product photos to Cloudinary, add new packages, or update prices in real time.
               </p>
             </div>
-            <div className="px-3 py-1.5 rounded-xl bg-white/15 text-xs font-bold whitespace-nowrap self-start sm:self-auto">
-              Total Products: {services.length}
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddProductForm((v) => !v)}
+              className="px-4 py-2.5 rounded-xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+            >
+              {showAddProductForm ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  <span>Hide Add Form</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add New Product</span>
+                </>
+              )}
+            </button>
           </div>
 
-          {/* ADD NEW PRODUCT / SERVICE / PACKAGE FORM */}
-          <form
-            onSubmit={handleAddService}
-            className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#e9ecd6] text-[#5b6324] flex items-center justify-center font-bold">
-                  <Plus className="w-4 h-4" />
-                </div>
+          {/* ADD NEW PRODUCT / SERVICE / PACKAGE FORM WITH CLOUDINARY PHOTO UPLOAD */}
+          {showAddProductForm && (
+            <form
+              onSubmit={handleAddService}
+              className="bg-white rounded-3xl p-5 border border-[#E6DAC8] shadow-xs space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                 <div>
-                  <h3 className="font-bold text-sm text-stone-900">
-                    + Add New Product / Makeup Service / Package (नया प्रोडक्ट या सर्विस जोड़ें)
+                  <h3 className="font-bold text-sm sm:text-base text-[#160824]">
+                    + Add New Product / Makeup Service with Photo
                   </h3>
-                  <p className="text-[11px] text-stone-500">
-                    Appears immediately in the selected Makeup &amp; Styling category on the website
+                  <p className="text-xs text-stone-500">
+                    Upload a photo to Cloudinary ({CLOUDINARY_CLOUD_NAME}) and publish straight to the website
                   </p>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Product / Service Name (प्रोडक्ट / सर्विस का नाम) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newServiceName}
-                  onChange={(e) => setNewServiceName(e.target.value)}
-                  placeholder="e.g., HD Bridal Muhurtham Makeup or Saree Pre-Pleating"
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Website Category (किस कैटेगरी में दिखाना है) *
-                </label>
-                <select
-                  value={newServiceSubCategory}
-                  onChange={(e) => {
-                    const sub = e.target.value as MakeupSubCategory;
-                    setNewServiceSubCategory(sub);
-                    setNewServiceCategory(mapSubCategoryToMainCategory(sub));
-                  }}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
-                >
-                  {MAKEUP_SUB_CATEGORIES.map((sub) => (
-                    <option key={sub} value={sub}>
-                      {sub}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Selling Price ₹ (ऑफर प्राइस ₹)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-stone-500">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newServicePrice}
-                    onChange={(e) => setNewServicePrice(e.target.value)}
-                    placeholder="e.g. 1999"
-                    className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold text-stone-900"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  MRP / Original Price ₹ (डिस्काउंट से पहले)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-stone-400">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newServiceOriginalPrice}
-                    onChange={(e) => setNewServiceOriginalPrice(e.target.value)}
-                    placeholder="e.g. 2499"
-                    className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num text-stone-700"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Duration (समय)
-                </label>
-                <input
-                  type="text"
-                  value={newServiceDuration}
-                  onChange={(e) => setNewServiceDuration(e.target.value)}
-                  placeholder="e.g. 1 hr 30 mins"
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 text-stone-800"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Product / Service Description (विवरण)
-                </label>
-                <textarea
-                  rows={2}
-                  value={newServiceDesc}
-                  onChange={(e) => setNewServiceDesc(e.target.value)}
-                  placeholder="Describe what this makeup or styling service offers..."
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Key Highlights / What&apos;s Included (एक लाइन में एक पॉइंट लिखें)
-                </label>
-                <textarea
-                  rows={2}
-                  value={newServiceHighlights}
-                  onChange={(e) => setNewServiceHighlights(e.target.value)}
-                  placeholder={'Long-wear waterproof HD base\nIncludes hairstyling & saree draping'}
-                  className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-                />
-              </div>
-            </div>
-
-            {/* PRODUCT PHOTO SELECTOR */}
-            <div className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 space-y-3 text-xs">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-stone-300 shrink-0">
-                    <SmartImage
-                      src={newServiceImage}
-                      alt="Product preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-bold text-stone-900">Product Photo (फोटो चुनें या अपलोड करें)</p>
-                    <p className="text-[11px] text-stone-500">
-                      Upload from mobile/PC, choose from studio gallery, or paste image link
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  <label className="px-3 py-2 rounded-xl bg-[#5b6324] text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingProductImg ? 'Uploading...' : 'Upload Photo'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleUploadProductPhoto(e, 'new')}
-                      className="hidden"
-                    />
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPhotoPickerForNew((v) => !v)}
-                    className="px-3 py-2 rounded-xl bg-white border border-stone-300 text-stone-800 font-bold text-xs cursor-pointer"
-                  >
-                    {showPhotoPickerForNew ? 'Hide Studio Photos' : 'Pick from Studio Gallery'}
-                  </button>
-                </div>
-              </div>
-
-              <input
-                type="text"
-                value={newServiceImage}
-                onChange={(e) => setNewServiceImage(e.target.value)}
-                placeholder="Or paste image URL here..."
-                className="w-full px-3 py-2 rounded-xl bg-white border border-stone-300 text-[11px]"
-              />
-
-              {showPhotoPickerForNew && (
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 max-h-40 overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
-                  {gallery.slice(0, 24).map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => {
-                        setNewServiceImage(g.url);
-                        setShowPhotoPickerForNew(false);
-                      }}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 cursor-pointer ${
-                        newServiceImage === g.url
-                          ? 'border-[#5b6324] ring-2 ring-[#5b6324]/30'
-                          : 'border-transparent'
-                      }`}
-                    >
+              {/* STEP 1: PROMINENT MOBILE-FRIENDLY CLOUDINARY PHOTO UPLOAD BOX */}
+              <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-3 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3.5">
+                    <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white border-2 border-[#D6B77A] shrink-0 shadow-xs">
                       <SmartImage
-                        src={g.url}
-                        alt={g.alt}
+                        src={newServiceImage}
+                        alt="Product preview"
                         className="w-full h-full object-cover"
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm text-[#160824]">
+                        1. Product Photo (Cloudinary Upload)
+                      </p>
+                      <p className="text-[11px] text-stone-500">
+                        {isCloudinaryUrl(newServiceImage)
+                          ? '✓ Hosted on Cloudinary CDN (dxeuzdwkz)'
+                          : 'Upload from mobile camera/gallery or choose from Cloud Photos'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label className="px-4 py-2.5 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 shadow-xs">
+                      <Camera className="w-4 h-4 text-[#D6B77A]" />
+                      <span>
+                        {uploadingProductImg
+                          ? 'Uploading to Cloudinary...'
+                          : 'Upload Photo to Cloud'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleUploadProductPhoto(e, 'new')}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPhotoPickerForNew((v) => !v)}
+                      className="px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-800 font-bold text-xs cursor-pointer"
+                    >
+                      {showPhotoPickerForNew
+                        ? 'Hide Cloud Photos'
+                        : `Choose Uploaded Photo (${cloudSortedGallery.length})`}
                     </button>
-                  ))}
+                  </div>
                 </div>
-              )}
 
-              <label className="inline-flex items-center gap-2 cursor-pointer pt-1">
-                <input
-                  type="checkbox"
-                  checked={newServiceAirbrush}
-                  onChange={(e) => setNewServiceAirbrush(e.target.checked)}
-                  className="rounded border-stone-300 text-[#5b6324]"
-                />
-                <span className="font-semibold text-stone-700">
-                  Show &quot;HD &amp; Airbrush Available&quot; badge on this product
-                </span>
-              </label>
-            </div>
+                {showPhotoPickerForNew && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-[11px] font-bold text-stone-600">
+                      Tap any uploaded Cloud or Studio photo to attach to this product:
+                    </p>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 max-h-44 overflow-y-auto p-2 bg-white rounded-2xl border border-stone-200">
+                      {cloudSortedGallery.slice(0, 32).map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => {
+                            setNewServiceImage(g.url);
+                            setShowPhotoPickerForNew(false);
+                          }}
+                          className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer ${
+                            newServiceImage === g.url
+                              ? 'border-[#160824] ring-2 ring-[#D6B77A]'
+                              : 'border-transparent'
+                          }`}
+                        >
+                          <SmartImage
+                            src={g.url}
+                            alt={g.alt}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Product &amp; Sync Price to Website (वेबसाइट पर जोड़ें)</span>
-            </button>
-          </form>
+              {/* STEP 2: PRODUCT NAME & CATEGORY */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    2. Product / Service Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newServiceName}
+                    onChange={(e) => setNewServiceName(e.target.value)}
+                    placeholder="e.g., HD Bridal Muhurtham Makeup or Saree Draping"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold text-stone-900"
+                  />
+                </div>
 
-          {/* EXISTING PRODUCTS & INSTANT PRICE EDITOR */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Website Category *
+                  </label>
+                  <select
+                    value={newServiceSubCategory}
+                    onChange={(e) => {
+                      const sub = e.target.value as MakeupSubCategory;
+                      setNewServiceSubCategory(sub);
+                      setNewServiceCategory(mapSubCategoryToMainCategory(sub));
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold text-stone-900"
+                  >
+                    {MAKEUP_SUB_CATEGORIES.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* STEP 3: SELLING PRICE, MRP & DURATION */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    3. Selling Price (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-stone-500">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newServicePrice}
+                      onChange={(e) => setNewServicePrice(e.target.value)}
+                      placeholder="1999"
+                      className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold text-stone-900"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    MRP / Original (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-stone-400">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newServiceOriginalPrice}
+                      onChange={(e) => setNewServiceOriginalPrice(e.target.value)}
+                      placeholder="2499"
+                      className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num text-stone-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="font-bold text-stone-700 block mb-1">Duration</label>
+                  <input
+                    type="text"
+                    value={newServiceDuration}
+                    onChange={(e) => setNewServiceDuration(e.target.value)}
+                    placeholder="1 hr 30 mins"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 text-stone-800"
+                  />
+                </div>
+              </div>
+
+              {/* STEP 4: DESCRIPTION & HIGHLIGHTS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={newServiceDesc}
+                    onChange={(e) => setNewServiceDesc(e.target.value)}
+                    placeholder="Short description of this makeup or styling service..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF7F2] border border-stone-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Key Highlights (1 per line)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={newServiceHighlights}
+                    onChange={(e) => setNewServiceHighlights(e.target.value)}
+                    placeholder={'Waterproof HD base\nIncludes hairstyling & draping'}
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF7F2] border border-stone-300"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                <label className="inline-flex items-center gap-2 cursor-pointer text-xs">
+                  <input
+                    type="checkbox"
+                    checked={newServiceAirbrush}
+                    onChange={(e) => setNewServiceAirbrush(e.target.checked)}
+                    className="rounded border-stone-300 text-[#160824]"
+                  />
+                  <span className="font-semibold text-stone-700">
+                    Show &quot;HD &amp; Airbrush Available&quot; feature on card
+                  </span>
+                </label>
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-[#D6B77A]" />
+                  <span>Add Product with Photo to Website</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* EXISTING PRODUCTS LIST WITH 1-TAP INLINE PHOTO UPLOAD & PRICE EDITOR */}
+          <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E6DAC8] shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
               <div>
-                <h3 className="font-bold text-sm sm:text-base text-stone-900">
-                  Change Pricing &amp; Edit Products ({services.length} Active Items)
+                <h3 className="font-bold text-sm sm:text-base text-[#160824]">
+                  Active Website Products ({services.length})
                 </h3>
-                <p className="text-[11px] text-stone-500">
-                  Type a new Selling Price (₹) or MRP (₹) below or tap -₹100 / +₹100 / +₹500 for instant update
+                <p className="text-xs text-stone-500">
+                  Tap &quot;Change Photo&quot; on any product to upload a new photo to Cloudinary, or edit prices inline.
                 </p>
               </div>
 
               {/* Search input */}
               <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={catalogSearch}
                   onChange={(e) => setCatalogSearch(e.target.value)}
                   placeholder="Search product or price..."
-                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 text-xs"
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 text-xs"
                 />
               </div>
             </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
               {(['All', ...MAKEUP_SUB_CATEGORIES] as const).map((cat) => {
                 const active = catalogSubCategoryFilter === cat;
                 return (
@@ -1805,10 +1938,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     key={cat}
                     type="button"
                     onClick={() => setCatalogSubCategoryFilter(cat)}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                       active
-                        ? 'bg-[#5b6324] text-white'
-                        : 'bg-[#f8f9f0] text-stone-700 border border-stone-200 hover:bg-[#e9ecd6]/50'
+                        ? 'bg-[#160824] text-[#F5E2B8]'
+                        : 'bg-[#FAF7F2] text-stone-700 border border-[#E6DAC8] hover:bg-[#F3ECE0]'
                     }`}
                   >
                     {cat}
@@ -1817,8 +1950,8 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
               })}
             </div>
 
-            {/* Product List */}
-            <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
+            {/* Mobile-Friendly Product Cards */}
+            <div className="space-y-3">
               {services
                 .filter((srv) => {
                   if (
@@ -1838,150 +1971,160 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   }
                   return true;
                 })
-                .map((srv) => (
-                  <div
-                    key={srv.id}
-                    className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 text-xs hover:border-[#5b6324]/40 transition-colors"
-                  >
-                    {/* Left: Image & Info */}
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white border border-stone-200">
-                        <SmartImage
-                          src={srv.image}
-                          alt={srv.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-md bg-[#e9ecd6] text-[#5b6324] text-[10px] font-bold">
+                .map((srv) => {
+                  const isUploadingThis = uploadingInlineServiceId === srv.id;
+                  return (
+                    <div
+                      key={srv.id}
+                      className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs hover:border-[#160824]/40 transition-colors"
+                    >
+                      {/* Left: Product Photo with 1-Tap Cloudinary Upload + Title */}
+                      <div className="flex items-start gap-3.5 min-w-0">
+                        <div className="flex flex-col items-center gap-1.5 shrink-0">
+                          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white border border-[#E6DAC8] shadow-2xs relative">
+                            <SmartImage
+                              src={srv.image}
+                              alt={srv.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <label className="w-20 py-1 rounded-lg bg-[#160824] text-[#F5E2B8] text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer shadow-2xs">
+                            <Camera className="w-3 h-3 text-[#D6B77A]" />
+                            <span>{isUploadingThis ? 'Wait...' : 'Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleDirectCardPhotoUpload(srv, e)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="min-w-0 space-y-1 flex-1">
+                          <p className="text-[11px] font-semibold text-[#8C4A56]">
                             {srv.makeupSubCategory || srv.category}
+                            {srv.duration ? ` · ${srv.duration}` : ''}
+                            {isCloudinaryUrl(srv.image) ? ' · Cloud CDN ✓' : ''}
+                          </p>
+                          <p className="font-bold text-sm sm:text-base text-[#160824] leading-snug">
+                            {srv.name}
+                          </p>
+                          <p className="text-xs text-stone-500 line-clamp-2">
+                            {srv.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right: Mobile-Friendly Price Controls + Full Edit / Delete */}
+                      <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#E6DAC8]/80 shrink-0">
+                        {/* Selling Price Input */}
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-stone-500 mb-0.5">
+                            Offer Price (₹)
                           </span>
-                          {srv.duration && (
-                            <span className="text-[10px] text-stone-500 font-medium">
-                              · {srv.duration}
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-500 font-bold">
+                              ₹
                             </span>
-                          )}
+                            <input
+                              type="number"
+                              placeholder="Consult"
+                              value={srv.price ?? ''}
+                              onChange={(e) =>
+                                handleUpdateServicePrice(srv.id, e.target.value)
+                              }
+                              className="w-24 pl-6 pr-2 py-2 rounded-xl bg-white border border-stone-300 font-mono-num font-bold text-[#160824] text-right"
+                            />
+                          </div>
                         </div>
-                        <p className="font-bold text-sm text-stone-900 leading-snug">
-                          {srv.name}
-                        </p>
-                        <p className="text-[11px] text-stone-500 line-clamp-1">
-                          {srv.description}
-                        </p>
+
+                        {/* MRP Input */}
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-stone-400 mb-0.5">
+                            MRP (₹)
+                          </span>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400">
+                              ₹
+                            </span>
+                            <input
+                              type="number"
+                              placeholder="MRP"
+                              value={srv.originalPrice ?? ''}
+                              onChange={(e) =>
+                                handleUpdateServiceOriginalPrice(srv.id, e.target.value)
+                              }
+                              className="w-22 pl-6 pr-2 py-2 rounded-xl bg-white border border-stone-300 font-mono-num text-stone-600 text-right"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Quick Step Buttons */}
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-stone-500 mb-0.5">
+                            Quick Adjust
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAdjustPrice(srv.id, -100)}
+                              className="px-2.5 py-2 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 font-mono-num font-bold text-[11px] text-stone-700 cursor-pointer"
+                            >
+                              -100
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAdjustPrice(srv.id, 100)}
+                              className="px-2.5 py-2 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 font-mono-num font-bold text-[11px] text-[#160824] cursor-pointer"
+                            >
+                              +100
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickAdjustPrice(srv.id, 500)}
+                              className="px-2.5 py-2 rounded-xl bg-[#F3ECE0] hover:bg-[#E6DAC8] border border-[#D6B77A]/50 font-mono-num font-bold text-[11px] text-[#160824] cursor-pointer"
+                            >
+                              +500
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Edit & Delete */}
+                        <div className="flex items-center gap-1.5 self-end">
+                          <button
+                            type="button"
+                            onClick={() => openEditServiceModal(srv)}
+                            className="px-3.5 py-2 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] font-bold text-xs inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteService(srv.id)}
+                            className="p-2 rounded-xl bg-white hover:bg-red-50 border border-stone-200 text-stone-400 hover:text-red-600 cursor-pointer"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Right: Price Inputs + Quick Adjusters + Edit / Delete */}
-                    <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-stone-200/80 shrink-0">
-                      {/* Selling Price Input */}
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-stone-500 mb-0.5">
-                          Selling Price (₹)
-                        </span>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-500 font-bold">
-                            ₹
-                          </span>
-                          <input
-                            type="number"
-                            placeholder="Consult"
-                            value={srv.price ?? ''}
-                            onChange={(e) => handleUpdateServicePrice(srv.id, e.target.value)}
-                            className="w-24 pl-6 pr-2 py-1.5 rounded-xl bg-white border border-[#5b6324]/40 font-mono-num font-bold text-stone-900 text-right"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Original Price / MRP Input */}
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-stone-400 mb-0.5">
-                          MRP / Strike (₹)
-                        </span>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400">
-                            ₹
-                          </span>
-                          <input
-                            type="number"
-                            placeholder="MRP"
-                            value={srv.originalPrice ?? ''}
-                            onChange={(e) =>
-                              handleUpdateServiceOriginalPrice(srv.id, e.target.value)
-                            }
-                            className="w-22 pl-6 pr-2 py-1.5 rounded-xl bg-white border border-stone-300 font-mono-num text-stone-600 text-right"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Quick Adjuster Buttons */}
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-stone-500 mb-0.5">
-                          Quick Change
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleQuickAdjustPrice(srv.id, -100)}
-                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-stone-100 border border-stone-300 font-mono-num font-bold text-[11px] text-stone-700 cursor-pointer"
-                            title="Decrease price by ₹100"
-                          >
-                            -100
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickAdjustPrice(srv.id, 100)}
-                            className="px-2 py-1.5 rounded-lg bg-white hover:bg-stone-100 border border-stone-300 font-mono-num font-bold text-[11px] text-[#5b6324] cursor-pointer"
-                            title="Increase price by ₹100"
-                          >
-                            +100
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickAdjustPrice(srv.id, 500)}
-                            className="px-2 py-1.5 rounded-lg bg-[#e9ecd6] hover:bg-[#dfe4c4] border border-[#5b6324]/30 font-mono-num font-bold text-[11px] text-[#5b6324] cursor-pointer"
-                            title="Increase price by ₹500"
-                          >
-                            +500
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Full Edit & Delete */}
-                      <div className="flex items-center gap-1.5 self-end">
-                        <button
-                          type="button"
-                          onClick={() => openEditServiceModal(srv)}
-                          className="px-3 py-1.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteService(srv.id)}
-                          className="p-2 rounded-xl bg-white hover:bg-red-50 border border-stone-200 text-stone-400 hover:text-red-600 cursor-pointer"
-                          title="Delete Product"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
 
           {/* FULL EDIT PRODUCT MODAL */}
           {editingService && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
-              <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 border border-stone-200 shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 border border-[#E6DAC8] shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                   <div>
-                    <h3 className="font-bold text-base text-stone-900">
-                      Edit Product &amp; Pricing (प्रोडक्ट और प्राइस एडिट करें)
+                    <h3 className="font-bold text-base text-[#160824]">
+                      Edit Product, Photo &amp; Pricing
                     </h3>
-                    <p className="text-xs text-stone-500">{editingService.id}</p>
+                    <p className="text-xs text-stone-500">{editingService.name}</p>
                   </div>
                   <button
                     type="button"
@@ -1993,156 +2136,32 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                 </div>
 
                 <form onSubmit={handleSaveEditedService} className="space-y-3.5 text-xs">
-                  <div>
-                    <label className="font-bold text-stone-700 block mb-1">
-                      Product / Service Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editingService.name}
-                      onChange={(e) =>
-                        setEditingService({ ...editingService, name: e.target.value })
-                      }
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-bold text-stone-900"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-bold text-stone-700 block mb-1">
-                        Website Makeup Sub-Category
-                      </label>
-                      <select
-                        value={editingService.makeupSubCategory || 'Party Makeup'}
-                        onChange={(e) =>
-                          setEditingService({
-                            ...editingService,
-                            makeupSubCategory: e.target.value as MakeupSubCategory,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
-                      >
-                        {MAKEUP_SUB_CATEGORIES.map((sub) => (
-                          <option key={sub} value={sub}>
-                            {sub}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-stone-700 block mb-1">
-                        Duration
-                      </label>
-                      <input
-                        type="text"
-                        value={editingService.duration || ''}
-                        onChange={(e) =>
-                          setEditingService({ ...editingService, duration: e.target.value })
-                        }
-                        placeholder="e.g. 1 hr 30 mins"
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-bold text-stone-700 block mb-1">
-                        Selling Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editingService.price ?? ''}
-                        onChange={(e) =>
-                          setEditingService({
-                            ...editingService,
-                            price: e.target.value === '' ? null : Number(e.target.value),
-                          })
-                        }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324] font-mono-num font-bold text-sm text-stone-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-stone-700 block mb-1">
-                        Original / MRP Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editingService.originalPrice ?? ''}
-                        onChange={(e) =>
-                          setEditingService({
-                            ...editingService,
-                            originalPrice:
-                              e.target.value === '' ? undefined : Number(e.target.value),
-                          })
-                        }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num text-sm text-stone-700"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-stone-700 block mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={editingService.description}
-                      onChange={(e) =>
-                        setEditingService({
-                          ...editingService,
-                          description: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-stone-700 block mb-1">
-                      Card Bullet Highlights (1 per line)
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={editHighlightsText}
-                      onChange={(e) => setEditHighlightsText(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-stone-700 block mb-1">
-                      What&apos;s Included in View Details (1 per line)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={editIncludedText}
-                      onChange={(e) => setEditIncludedText(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
-                    />
-                  </div>
-
                   {/* Photo selector in Edit modal */}
-                  <div className="p-3 rounded-2xl bg-[#f8f9f0] border border-stone-200 space-y-2">
+                  <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-stone-300 shrink-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white border border-[#D6B77A] shrink-0">
                           <SmartImage
                             src={editingService.image}
                             alt={editingService.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <span className="font-bold text-stone-800">Product Image</span>
+                        <div>
+                          <span className="font-bold text-stone-900 block">
+                            Product Photo (Cloudinary)
+                          </span>
+                          <span className="text-[11px] text-stone-500">
+                            {isCloudinaryUrl(editingService.image)
+                              ? '✓ Hosted on Cloudinary CDN'
+                              : 'Upload a new photo or pick from Cloud Gallery'}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <label className="px-2.5 py-1.5 rounded-xl bg-[#5b6324] text-white font-bold text-[11px] cursor-pointer">
-                          <span>Upload</span>
+                        <label className="px-3 py-2 rounded-xl bg-[#160824] text-[#F5E2B8] font-bold text-xs cursor-pointer inline-flex items-center gap-1">
+                          <Camera className="w-3.5 h-3.5 text-[#D6B77A]" />
+                          <span>{uploadingProductImg ? 'Uploading...' : 'Upload'}</span>
                           <input
                             type="file"
                             accept="image/*"
@@ -2153,25 +2172,16 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowPhotoPickerForEdit((v) => !v)}
-                          className="px-2.5 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-700 font-bold text-[11px] cursor-pointer"
+                          className="px-3 py-2 rounded-xl bg-white border border-stone-300 text-stone-700 font-bold text-xs cursor-pointer"
                         >
-                          Gallery
+                          Cloud Gallery
                         </button>
                       </div>
                     </div>
 
-                    <input
-                      type="text"
-                      value={editingService.image}
-                      onChange={(e) =>
-                        setEditingService({ ...editingService, image: e.target.value })
-                      }
-                      className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-stone-300 text-[11px]"
-                    />
-
                     {showPhotoPickerForEdit && (
-                      <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
-                        {gallery.slice(0, 20).map((g) => (
+                      <div className="grid grid-cols-5 gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-white rounded-xl border border-stone-200">
+                        {cloudSortedGallery.slice(0, 25).map((g) => (
                           <button
                             key={g.id}
                             type="button"
@@ -2192,6 +2202,143 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     )}
                   </div>
 
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Product / Service Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingService.name}
+                      onChange={(e) =>
+                        setEditingService({ ...editingService, name: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-bold text-stone-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Website Makeup Sub-Category
+                      </label>
+                      <select
+                        value={editingService.makeupSubCategory || 'Party Makeup'}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            makeupSubCategory: e.target.value as MakeupSubCategory,
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
+                      >
+                        {MAKEUP_SUB_CATEGORIES.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Duration
+                      </label>
+                      <input
+                        type="text"
+                        value={editingService.duration || ''}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            duration: e.target.value,
+                          })
+                        }
+                        placeholder="1 hr 30 mins"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Selling Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingService.price ?? ''}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            price: e.target.value === '' ? null : Number(e.target.value),
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#160824] font-mono-num font-bold text-sm text-stone-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Original / MRP Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingService.originalPrice ?? ''}
+                        onChange={(e) =>
+                          setEditingService({
+                            ...editingService,
+                            originalPrice:
+                              e.target.value === '' ? undefined : Number(e.target.value),
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num text-sm text-stone-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editingService.description}
+                      onChange={(e) =>
+                        setEditingService({
+                          ...editingService,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#FAF7F2] border border-stone-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Card Bullet Highlights (1 per line)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editHighlightsText}
+                      onChange={(e) => setEditHighlightsText(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#FAF7F2] border border-stone-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      What&apos;s Included in View Details (1 per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editIncludedText}
+                      onChange={(e) => setEditIncludedText(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#FAF7F2] border border-stone-300"
+                    />
+                  </div>
+
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <button
                       type="button"
@@ -2202,7 +2349,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold cursor-pointer"
+                      className="px-5 py-2.5 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] font-bold cursor-pointer"
                     >
                       Save &amp; Sync Product
                     </button>
@@ -2214,18 +2361,20 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 3. BOOKING & AVAILABILITY SETTINGS */}
+      {/* =====================================================================
+          3. BOOKING & AVAILABILITY SETTINGS
+      ===================================================================== */}
       {activeSubScreen === 'booking-availability' && (
-        <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-6">
+        <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-6">
           <div className="space-y-3">
-            <h3 className="font-bold text-sm text-stone-900">
+            <h3 className="font-bold text-base text-[#160824]">
               Daily Appointment Time Slots
             </h3>
             <div className="flex flex-wrap gap-2">
               {settings.timeSlots.map((slot) => (
                 <div
                   key={slot}
-                  className="px-3 py-1.5 rounded-xl bg-[#e9ecd6] text-[#5b6324] font-mono-num text-xs font-bold flex items-center gap-2"
+                  className="px-3.5 py-2 rounded-xl bg-[#FAF7F2] border border-[#E6DAC8] text-[#160824] font-mono-num text-xs font-bold flex items-center gap-2"
                 >
                   <span>{slot}</span>
                   <button
@@ -2235,7 +2384,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       await saveBusinessSettings({ ...settings, timeSlots: next });
                       onRefresh();
                     }}
-                    className="text-stone-500 hover:text-red-600"
+                    className="text-stone-400 hover:text-red-600 cursor-pointer"
                   >
                     ×
                   </button>
@@ -2248,7 +2397,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                 value={newSlotInput}
                 onChange={(e) => setNewSlotInput(e.target.value)}
                 placeholder="e.g., 09:30 AM"
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 text-xs font-mono-num"
+                className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 text-xs font-mono-num"
               />
               <button
                 type="button"
@@ -2261,7 +2410,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   setNewSlotInput('');
                   onRefresh();
                 }}
-                className="px-4 py-2 rounded-xl bg-[#5b6324] text-white text-xs font-bold cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#160824] text-[#F5E2B8] text-xs font-bold cursor-pointer"
               >
                 + Add Slot
               </button>
@@ -2269,7 +2418,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           </div>
 
           <div className="space-y-3 pt-4 border-t border-stone-200">
-            <h3 className="font-bold text-sm text-stone-900 flex items-center gap-2">
+            <h3 className="font-bold text-base text-[#160824] flex items-center gap-2">
               <CalendarOff className="w-4 h-4 text-red-600" />
               <span>Blocked / Holiday Dates</span>
             </h3>
@@ -2278,7 +2427,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                 type="date"
                 value={newBlockedDate}
                 onChange={(e) => setNewBlockedDate(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300 text-xs font-mono-num"
+                className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 text-xs font-mono-num"
               />
               <button
                 type="button"
@@ -2292,7 +2441,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onRefresh();
                   showToast(`Blocked ${newBlockedDate} from customer bookings.`);
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold cursor-pointer"
               >
                 Block Date
               </button>
@@ -2326,20 +2475,22 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 4. CUSTOMER MANAGEMENT */}
+      {/* =====================================================================
+          4. CUSTOMER MANAGEMENT
+      ===================================================================== */}
       {activeSubScreen === 'customer-management' && (
-        <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3">
-          <h3 className="font-bold text-sm text-stone-900">
-            Client Directory ({customersList.length})
+        <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-3">
+          <h3 className="font-bold text-base text-[#160824]">
+            Verified Client Directory ({customersList.length})
           </h3>
           <div className="space-y-2.5">
             {customersList.map((c) => (
               <div
                 key={c.phone}
-                className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
                 <div>
-                  <p className="font-bold text-sm text-stone-900">{c.name}</p>
+                  <p className="font-bold text-sm text-[#160824]">{c.name}</p>
                   <p className="font-mono-num text-stone-600">{c.phone}</p>
                   <p className="text-stone-500 mt-0.5 line-clamp-1">{c.address}</p>
                 </div>
@@ -2348,13 +2499,13 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     <span className="block text-[11px] text-stone-500">
                       {c.bookingsCount} booking(s)
                     </span>
-                    <span className="font-mono-num font-bold text-[#5b6324]">
-                      ₹{c.totalSpent}
+                    <span className="font-mono-num font-bold text-[#160824]">
+                      ₹{c.totalSpent.toLocaleString('en-IN')}
                     </span>
                   </div>
                   <a
                     href={`tel:${c.phone.replace(/\s+/g, '')}`}
-                    className="p-2 rounded-xl bg-[#5b6324] text-white"
+                    className="p-2.5 rounded-xl bg-[#160824] text-[#F5E2B8]"
                   >
                     <PhoneCall className="w-4 h-4" />
                   </a>
@@ -2362,7 +2513,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     href={`https://wa.me/${c.whatsapp.replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-xl bg-[#25D366] text-white"
+                    className="p-2.5 rounded-xl bg-[#25D366] text-white"
                   >
                     <MessageCircle className="w-4 h-4" />
                   </a>
@@ -2373,33 +2524,30 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 5. TEAM MANAGEMENT & LOGIN ACCOUNTS */}
+      {/* =====================================================================
+          5. TEAM MANAGEMENT & LOGIN ACCOUNTS
+      ===================================================================== */}
       {activeSubScreen === 'team-management' && (
         <div className="space-y-4">
           {/* Top Banner: Admin & Team Login Overview */}
-          <div className="rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#160824] via-[#261139] to-[#160824] text-white border border-[#D6B77A]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="rounded-3xl p-5 bg-gradient-to-r from-[#160824] via-[#261139] to-[#160824] text-white border border-[#D6B77A]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#D6B77A]/20 border border-[#D6B77A]/40 text-[#F3E2BA] text-[10px] font-extrabold uppercase tracking-wider">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Team Login &amp; Access Control</span>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-white">
-                Create &amp; Manage Team User ID + Password Accounts
+              <p className="text-[11px] font-semibold text-[#D6B77A]">
+                Team Login &amp; Access Control
+              </p>
+              <h3 className="font-display text-lg sm:text-xl font-bold text-white">
+                Team User ID + Password Accounts
               </h3>
               <p className="text-xs text-white/75">
-                Create individual login accounts for your makeup artists, hairstylists, and saree drapists. Deleting or disabling an account immediately revokes their Admin Panel access.
+                Create or revoke login credentials for your makeup artists, hairstylists &amp; saree drapists.
               </p>
             </div>
-            <div className="shrink-0 bg-white/10 border border-white/15 rounded-xl p-3 text-xs space-y-1">
+            <div className="shrink-0 bg-white/10 border border-white/15 rounded-2xl p-3 text-xs space-y-1">
               <p className="text-[10px] uppercase tracking-wider text-[#F3E2BA] font-bold">
                 Master Admin Login
               </p>
               <p className="font-mono-num text-white">
-                ID: <strong className="text-[#F3E2BA]">admin</strong> or{' '}
-                <strong className="text-[#F3E2BA]">subbalakshmi</strong>
-              </p>
-              <p className="font-mono-num text-white">
-                Pass: <strong className="text-[#F3E2BA]">7777</strong> / PIN:{' '}
+                ID: <strong className="text-[#F3E2BA]">admin</strong> · Pass:{' '}
                 <strong className="text-[#F3E2BA]">7777</strong>
               </p>
             </div>
@@ -2408,19 +2556,19 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           {/* Create New Team Member Login Account Form */}
           <form
             onSubmit={handleAddTeamMember}
-            className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4"
+            className="bg-white rounded-3xl p-5 border border-[#E6DAC8] shadow-xs space-y-4"
           >
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#e9ecd6] text-[#5b6324] flex items-center justify-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#160824] text-[#D6B77A] flex items-center justify-center">
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-stone-900">
+                  <h3 className="font-bold text-sm text-[#160824]">
                     + Create New Team Member Login Account
                   </h3>
                   <p className="text-[11px] text-stone-500">
-                    Team member can log in at /admin using this User ID &amp; Password
+                    Team member can sign in at /admin with this User ID &amp; Password
                   </p>
                 </div>
               </div>
@@ -2429,7 +2577,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
                 <label className="font-bold text-stone-700 block mb-1">
-                  Team Member Full Name *
+                  Full Name *
                 </label>
                 <input
                   type="text"
@@ -2438,7 +2586,11 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) => {
                     const val = e.target.value;
                     setNewMemberName(val);
-                    if (!newMemberUserId || newMemberUserId === newMemberName.toLowerCase().replace(/[^a-z0-9]/g, '')) {
+                    if (
+                      !newMemberUserId ||
+                      newMemberUserId ===
+                        newMemberName.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    ) {
                       setNewMemberUserId(
                         val
                           .toLowerCase()
@@ -2448,20 +2600,18 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     }
                   }}
                   placeholder="e.g., Priya Sharma"
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold text-stone-900"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-stone-700 block mb-1">
-                  Role / Designation *
-                </label>
+                <label className="font-bold text-stone-700 block mb-1">Role *</label>
                 <select
                   value={newMemberRole}
                   onChange={(e) =>
                     setNewMemberRole(e.target.value as TeamMember['role'])
                   }
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold text-stone-900"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold text-stone-900"
                 >
                   <option value="Assistant Makeup Artist">Assistant Makeup Artist</option>
                   <option value="Hairstylist">Hairstylist</option>
@@ -2480,7 +2630,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   value={newMemberPhone}
                   onChange={(e) => setNewMemberPhone(e.target.value)}
                   placeholder="+91 98450XXXXX"
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num text-stone-900"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num text-stone-900"
                 />
               </div>
             </div>
@@ -2488,7 +2638,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
               <div>
                 <label className="font-bold text-stone-700 flex items-center gap-1.5 mb-1">
-                  <KeyRound className="w-3.5 h-3.5 text-[#5b6324]" />
+                  <KeyRound className="w-3.5 h-3.5 text-[#160824]" />
                   <span>Login User ID (Username) *</span>
                 </label>
                 <input
@@ -2501,17 +2651,14 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     )
                   }
                   placeholder="e.g., priya"
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold text-stone-900"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold text-stone-900"
                 />
-                <span className="text-[10px] text-stone-500 mt-0.5 block">
-                  Lowercase letters or numbers (used by team member to sign in)
-                </span>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-bold text-stone-700 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-[#5b6324]" />
+                    <Lock className="w-3.5 h-3.5 text-[#160824]" />
                     <span>Login Password *</span>
                   </label>
                   <button
@@ -2520,9 +2667,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       const randomDigits = Math.floor(1000 + Math.random() * 9000);
                       setNewMemberPassword(`eden${randomDigits}`);
                     }}
-                    className="text-[10px] font-bold text-[#5b6324] hover:underline cursor-pointer"
+                    className="text-[10px] font-bold text-[#8C4A56] hover:underline cursor-pointer"
                   >
-                    Generate Random Password
+                    Generate Password
                   </button>
                 </div>
                 <input
@@ -2531,44 +2678,29 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   value={newMemberPassword}
                   onChange={(e) => setNewMemberPassword(e.target.value)}
                   placeholder="e.g., eden123"
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold text-stone-900"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold text-stone-900"
                 />
-                <span className="text-[10px] text-stone-500 mt-0.5 block">
-                  You can share or change this password anytime
-                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-[11px] text-stone-500">
-                Account syncs immediately to Firebase Cloud &amp; live Admin Panel.
-              </p>
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Team Login Account</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-[#D6B77A]" />
+              <span>Create Team Login Account</span>
+            </button>
           </form>
 
           {/* Active & Disabled Team Accounts List */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-stone-900">
-                  Team Login Accounts ({team.length})
-                </h3>
-                <p className="text-xs text-stone-500">
-                  Manage credentials, share login on WhatsApp, or delete accounts to revoke access
-                </p>
-              </div>
-            </div>
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-3">
+            <h3 className="font-bold text-sm text-[#160824]">
+              Team Login Accounts ({team.length})
+            </h3>
 
             {team.length === 0 ? (
               <p className="text-xs text-stone-500 py-6 text-center">
-                No team accounts created yet. Use the form above to create a team login.
+                No team accounts created yet.
               </p>
             ) : (
               <div className="space-y-3">
@@ -2583,27 +2715,19 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       key={m.id}
                       className={`p-4 rounded-2xl border transition-all ${
                         m.active !== false
-                          ? 'bg-[#f8f9f0] border-stone-200'
+                          ? 'bg-[#FAF7F2] border-[#E6DAC8]'
                           : 'bg-stone-100/80 border-stone-200 opacity-75'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-bold text-sm text-stone-900">{m.name}</p>
-                            <span className="px-2 py-0.5 rounded-md bg-[#e9ecd6] text-[#5b6324] text-[10px] font-bold">
-                              {m.role}
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-sm text-[#160824]">
+                            {m.name}{' '}
+                            <span className="font-normal text-xs text-stone-500">
+                              · {m.role} ·{' '}
+                              {m.active !== false ? 'Active' : 'Login Disabled'}
                             </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                m.active !== false
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-red-100 text-red-700'
-                              }`}
-                            >
-                              {m.active !== false ? '● Login Active' : '○ Login Disabled'}
-                            </span>
-                          </div>
+                          </p>
                           <p className="font-mono-num text-xs text-stone-600">
                             Phone: {m.phone}
                           </p>
@@ -2614,27 +2738,26 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => handleCopyTeamCredentials(m)}
-                            title="Copy Login ID & Password"
-                            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 text-stone-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 text-stone-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <Copy className="w-3.5 h-3.5" />
-                            <span>Copy ID</span>
+                            <span>Copy</span>
                           </button>
 
                           <a
                             href={buildTeamWhatsAppShareUrl(m)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5a] text-white text-[11px] font-bold flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5a] text-white text-[11px] font-bold flex items-center gap-1"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
-                            <span>Send Login</span>
+                            <span>WhatsApp</span>
                           </a>
 
                           <button
                             type="button"
                             onClick={() => setEditingTeamMember({ ...m })}
-                            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#e9ecd6] border border-stone-300 text-stone-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Edit</span>
@@ -2643,11 +2766,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => handleToggleTeamMemberActive(m)}
-                            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer ${
-                              m.active !== false
-                                ? 'bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800'
-                                : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800'
-                            }`}
+                            className="px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-700 text-[11px] font-bold cursor-pointer"
                           >
                             {m.active !== false ? 'Disable' : 'Enable'}
                           </button>
@@ -2655,8 +2774,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveTeamMember(m)}
-                            title="Delete Account & Revoke Login"
-                            className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Delete</span>
@@ -2665,10 +2783,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       </div>
 
                       {/* Credentials Box */}
-                      <div className="mt-3 pt-2.5 border-t border-stone-200/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="mt-3 pt-2.5 border-t border-[#E6DAC8]/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         <div className="px-3 py-2 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
                           <span className="text-stone-500 font-medium">User ID:</span>
-                          <span className="font-mono-num font-bold text-stone-900">
+                          <span className="font-mono-num font-bold text-[#160824]">
                             {userIdDisplay}
                           </span>
                         </div>
@@ -2676,7 +2794,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                         <div className="px-3 py-2 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
                           <span className="text-stone-500 font-medium">Password:</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono-num font-bold text-[#5b6324]">
+                            <span className="font-mono-num font-bold text-[#160824]">
                               {isPassVisible ? passDisplay : '••••••••'}
                             </span>
                             <button
@@ -2708,10 +2826,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
           {/* Edit Team Member Credentials Modal */}
           {editingTeamMember && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-stone-200 shadow-2xl space-y-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E6DAC8] shadow-2xl space-y-4">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                   <div>
-                    <h3 className="font-bold text-base text-stone-900">
+                    <h3 className="font-bold text-base text-[#160824]">
                       Edit Team Account &amp; Password
                     </h3>
                     <p className="text-xs text-stone-500">{editingTeamMember.name}</p>
@@ -2719,7 +2837,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingTeamMember(null)}
-                    className="p-1.5 rounded-xl bg-stone-100 text-stone-600 hover:text-stone-900 cursor-pointer"
+                    className="p-1.5 rounded-xl bg-stone-100 text-stone-600 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -2740,7 +2858,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                           name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                     />
                   </div>
 
@@ -2755,7 +2873,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                             role: e.target.value as TeamMember['role'],
                           })
                         }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-semibold"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                       >
                         <option value="Assistant Makeup Artist">
                           Assistant Makeup Artist
@@ -2780,7 +2898,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                             phone: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num"
                       />
                     </div>
                   </div>
@@ -2802,7 +2920,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                               .replace(/[^a-z0-9_.-]/g, ''),
                           })
                         }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                       />
                     </div>
 
@@ -2820,7 +2938,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                             password: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2.5 rounded-xl bg-[#f8f9f0] border border-[#5b6324]/40 font-mono-num font-bold"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold"
                       />
                     </div>
                   </div>
@@ -2835,7 +2953,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white font-bold cursor-pointer"
+                      className="px-5 py-2.5 rounded-xl bg-[#160824] text-[#F5E2B8] font-bold cursor-pointer"
                     >
                       Save Credentials
                     </button>
@@ -2847,20 +2965,30 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 6. GALLERY & ORIGINAL PHOTOS MANAGEMENT */}
+      {/* =====================================================================
+          6. CLOUDINARY PHOTO LIBRARY & GALLERY MANAGEMENT
+      ===================================================================== */}
       {activeSubScreen === 'gallery-management' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3">
-            <h3 className="font-bold text-sm text-stone-900">
-              Upload New Photo to Gallery (Cloudinary / Local)
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-[#8C4A56]">
+                  Cloudinary Cloud Name: {CLOUDINARY_CLOUD_NAME} · Preset: {CLOUDINARY_UPLOAD_PRESET}
+                </p>
+                <h3 className="font-bold text-base text-[#160824]">
+                  Upload New Photo to Cloudinary &amp; Website Gallery
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <input
                 type="text"
                 value={newGalleryAlt}
                 onChange={(e) => setNewGalleryAlt(e.target.value)}
-                placeholder="Photo caption / Alt text"
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                placeholder="Photo title / caption (e.g. HD South Indian Bridal Look)"
+                className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
               />
               <select
                 value={newGalleryCat}
@@ -2869,7 +2997,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     e.target.value as Exclude<GalleryFilterCategory, 'All'>
                   )
                 }
-                className="px-3 py-2 rounded-xl bg-[#f8f9f0] border border-stone-300"
+                className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
               >
                 {[
                   'Bridal Makeup',
@@ -2886,10 +3014,12 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
               </select>
             </div>
 
-            <label className="w-full py-3 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer">
-              <Upload className="w-4 h-4" />
+            <label className="w-full py-3.5 rounded-2xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm">
+              <Upload className="w-4 h-4 text-[#D6B77A]" />
               <span>
-                {uploadingImg ? 'Uploading Image...' : 'Upload New Portfolio Image'}
+                {uploadingImg
+                  ? 'Uploading Photo to Cloudinary...'
+                  : 'Select & Upload Photo to Cloudinary'}
               </span>
               <input
                 type="file"
@@ -2900,17 +3030,24 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
             </label>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="font-bold text-sm text-stone-900">
-                Original Eden Roses Website Photos ({gallery.length})
-              </h3>
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-[#160824]">
+                  Uploaded Cloud &amp; Studio Photos ({cloudSortedGallery.length})
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Assign any uploaded photo to a specific product or set it as the Hero Banner
+                </p>
+              </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-stone-500">Target Service:</span>
+                <span className="text-stone-600 font-semibold shrink-0">
+                  Link to Product:
+                </span>
                 <select
                   value={selectedServiceForImg}
                   onChange={(e) => setSelectedServiceForImg(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-stone-300 text-xs"
+                  className="px-3 py-2 rounded-xl bg-[#FAF7F2] border border-stone-300 text-xs font-semibold max-w-[210px]"
                 >
                   {services.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -2921,11 +3058,11 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[540px] overflow-y-auto pr-1">
-              {gallery.map((img) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1">
+              {cloudSortedGallery.map((img) => (
                 <div
                   key={img.id}
-                  className="p-3 rounded-2xl bg-[#f8f9f0] border border-stone-200 flex gap-3 items-start"
+                  className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] flex gap-3.5 items-start"
                 >
                   <div className="w-20 h-24 rounded-xl overflow-hidden shrink-0 bg-white border border-stone-200">
                     <SmartImage
@@ -2935,26 +3072,27 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     />
                   </div>
                   <div className="flex-1 min-w-0 space-y-1.5 text-xs">
-                    <p className="font-bold text-stone-900 truncate">{img.alt}</p>
+                    <p className="font-bold text-[#160824] truncate">{img.alt}</p>
                     <p className="text-[11px] text-stone-500">
                       {img.galleryCategory || img.category}
+                      {isCloudinaryUrl(img.url) ? ' · Cloudinary CDN ✓' : ''}
                     </p>
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       <button
                         type="button"
-                        onClick={() => handleSetAsHeroImage(img.url)}
-                        className="px-2 py-1 rounded-md bg-[#5b6324] text-white text-[10px] font-bold cursor-pointer"
+                        onClick={() => handleAssignImageToService(img.url)}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#160824] text-[#F5E2B8] text-[10px] font-bold cursor-pointer"
                       >
-                        Set Hero
+                        Use on Product
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAssignImageToService(img.url)}
-                        className="px-2 py-1 rounded-md bg-stone-800 text-white text-[10px] font-bold cursor-pointer"
+                        onClick={() => handleSetAsHeroImage(img.url)}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#F3ECE0] border border-[#D6B77A]/50 text-[#160824] text-[10px] font-bold cursor-pointer"
                       >
-                        Assign to Service
+                        Set Hero Banner
                       </button>
-                      <label className="px-2 py-1 rounded-md bg-white border border-stone-300 text-stone-700 text-[10px] font-bold cursor-pointer">
+                      <label className="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 text-[10px] font-bold cursor-pointer">
                         Replace
                         <input
                           type="file"
@@ -2966,7 +3104,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDeleteGalleryImage(img.id)}
-                        className="px-2 py-1 rounded-md bg-red-50 text-red-700 text-[10px] font-bold cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 text-[10px] font-bold cursor-pointer"
                       >
                         Delete
                       </button>
@@ -2979,10 +3117,12 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
         </div>
       )}
 
-      {/* 7. DATA EXPORT & DEMO RESET */}
+      {/* =====================================================================
+          7. DATA EXPORT & DEMO RESET
+      ===================================================================== */}
       {activeSubScreen === 'data-export' && (
-        <div className="bg-white rounded-2xl p-5 border border-stone-200 space-y-4">
-          <h3 className="font-bold text-base text-stone-900">
+        <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+          <h3 className="font-bold text-base text-[#160824]">
             Data Export &amp; Synchronization Tools
           </h3>
           <p className="text-xs text-stone-600">
@@ -2994,7 +3134,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
             <button
               type="button"
               onClick={handleExportCSV}
-              className="p-4 rounded-2xl bg-[#e9ecd6] hover:bg-[#dde2c2] text-[#5b6324] font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="p-4 rounded-2xl bg-[#FAF7F2] hover:bg-[#F3ECE0] border border-[#E6DAC8] text-[#160824] font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Export Bookings CSV (Excel)</span>
@@ -3002,9 +3142,9 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
             <button
               type="button"
               onClick={handleExportJSON}
-              className="p-4 rounded-2xl bg-stone-900 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="p-4 rounded-2xl bg-[#160824] text-[#F5E2B8] font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 text-[#D6B77A]" />
               <span>Export Full Backup (JSON)</span>
             </button>
           </div>
@@ -3017,10 +3157,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                 onRefresh();
                 showToast('Initial demo bookings & settings restored!');
               }}
-              className="w-full py-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Reset Initial Seed Bookings (Prarthana, Kumari Madhumita, etc.)</span>
+              <span>Restore Initial Demo Bookings</span>
             </button>
           </div>
         </div>

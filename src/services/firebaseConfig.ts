@@ -138,28 +138,62 @@ export {
   runTransaction,
 };
 
+export const CLOUDINARY_CLOUD_NAME =
+  import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dxeuzdwkz';
+export const CLOUDINARY_UPLOAD_PRESET =
+  import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'Makeup';
+
+export function isCloudinaryUrl(url?: string | null): boolean {
+  return Boolean(url && url.includes('res.cloudinary.com'));
+}
+
 /**
  * Cloudinary Production Image Upload Helper
- * Falls back to local DataURL when VITE_CLOUDINARY_CLOUD_NAME is not configured.
+ * Configured with Cloud Name: dxeuzdwkz and Upload Preset: Makeup
+ * Uploads directly to Cloudinary CDN and returns the HTTPS secure_url.
  */
 export async function uploadImageAsset(file: File): Promise<string> {
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  const cloudName = CLOUDINARY_CLOUD_NAME.trim();
+  const primaryPreset = CLOUDINARY_UPLOAD_PRESET.trim();
+  // Try configured preset ('Makeup') first, then lowercase ('makeup') in case preset casing differs in Cloudinary console
+  const presetsToTry = Array.from(
+    new Set([primaryPreset, primaryPreset.toLowerCase(), 'Makeup', 'makeup'])
+  ).filter(Boolean);
 
-  if (cloudName && uploadPreset) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.secure_url) return data.secure_url;
+  if (cloudName) {
+    for (const preset of presetsToTry) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', preset);
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.secure_url) {
+            return data.secure_url as string;
+          }
+        } else {
+          const errText = await res.text().catch(() => '');
+          console.warn(
+            `Cloudinary upload attempt with preset "${preset}" returned ${res.status}:`,
+            errText
+          );
+        }
+      } catch (err) {
+        console.warn(`Cloudinary network error with preset "${preset}":`, err);
+      }
     }
   }
 
+  // Fallback to compressed DataURL only if offline or Cloudinary preset is unreachable
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));

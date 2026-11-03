@@ -26,6 +26,9 @@ import {
   EyeOff,
   ShieldCheck,
   LogOut,
+  Cloud,
+  Camera,
+  Building2,
 } from 'lucide-react';
 import {
   Booking,
@@ -59,6 +62,10 @@ import {
 import { JobDetailsView } from '../components/admin/JobDetailsView';
 import { AdminMoreScreen, MoreSectionId } from '../components/admin/AdminMoreScreen';
 import { SmartImage } from '../components/SmartImage';
+import {
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_UPLOAD_PRESET,
+} from '../services/firebaseConfig';
 
 type AdminTab = 'dashboard' | 'calendar' | 'wallet' | 'earnings' | 'more';
 type JobFilterPill = 'All' | 'Jobs' | 'Visits' | 'Call' | 'Followup' | 'Customers';
@@ -155,20 +162,8 @@ export const AdminPartnerApp: React.FC = () => {
   const [moreInitialSubScreen, setMoreInitialSubScreen] =
     useState<MoreSectionId>('menu');
 
-  const openProductsAndPricingManager = () => {
-    setMoreInitialSubScreen('service-management');
-    setActiveTab('more');
-    navigate('/admin');
-  };
-
-  const openTeamAccountsManager = () => {
-    setMoreInitialSubScreen('team-management');
-    setActiveTab('more');
-    navigate('/admin');
-  };
-
-  const openWebsiteControlManager = () => {
-    setMoreInitialSubScreen('business-profile');
+  const openMoreSubSection = (section: MoreSectionId) => {
+    setMoreInitialSubScreen(section);
     setActiveTab('more');
     navigate('/admin');
   };
@@ -355,16 +350,16 @@ export const AdminPartnerApp: React.FC = () => {
     });
   };
 
-  // ==================== PART 11: ADMIN & TEAM LOGIN SCREEN ====================
+  // ==================== ADMIN & TEAM LOGIN SCREEN ====================
   if (!isAuthenticated) {
     const activeTeamPreview = team.filter((m) => m.active !== false).slice(0, 4);
 
     return (
-      <div className="min-h-screen bg-[#f8f9f0] text-stone-900 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 border border-[#5b6324]/25 shadow-xl space-y-5">
+      <div className="min-h-screen bg-[#FAF7F2] text-[#1C1619] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 border border-[#E6DAC8] shadow-xl space-y-5">
           {/* Brand Header */}
-          <div className="text-center space-y-2">
-            <div className="w-28 h-20 rounded-2xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden mx-auto flex items-center justify-center shadow-md">
+          <div className="text-center space-y-2.5">
+            <div className="w-24 h-20 rounded-2xl bg-[#160824] border border-[#D6B77A] overflow-hidden mx-auto flex items-center justify-center shadow-md">
               <SmartImage
                 src={settings.logoUrl}
                 alt="Eden Roses Partner App"
@@ -374,17 +369,17 @@ export const AdminPartnerApp: React.FC = () => {
             </div>
 
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
-                Eden Roses Partner App
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#160824] tracking-tight">
+                {settings.makeupBrand}
               </h1>
-              <p className="text-xs sm:text-sm font-semibold text-[#5b6324]">
-                Admin &amp; Team Login Portal · Subba Lakshmi Makeup
+              <p className="text-xs sm:text-sm font-medium text-[#8C4A56]">
+                Admin &amp; Team Login · By {settings.artistName}
               </p>
             </div>
           </div>
 
           {/* Login Mode Switcher: User ID & Password vs 4-Digit PIN */}
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-[#f8f9f0] border border-stone-200 text-xs font-bold">
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] text-xs font-bold">
             <button
               type="button"
               onClick={() => {
@@ -393,7 +388,7 @@ export const AdminPartnerApp: React.FC = () => {
               }}
               className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 loginMode === 'credentials'
-                  ? 'bg-[#160824] text-[#F3E2BA] shadow-xs'
+                  ? 'bg-[#160824] text-[#F5E2B8] shadow-xs'
                   : 'text-stone-600 hover:text-stone-900'
               }`}
             >
@@ -408,7 +403,7 @@ export const AdminPartnerApp: React.FC = () => {
               }}
               className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 loginMode === 'pin'
-                  ? 'bg-[#160824] text-[#F3E2BA] shadow-xs'
+                  ? 'bg-[#160824] text-[#F5E2B8] shadow-xs'
                   : 'text-stone-600 hover:text-stone-900'
               }`}
             >
@@ -430,7 +425,7 @@ export const AdminPartnerApp: React.FC = () => {
               <div className="space-y-3 text-left text-xs">
                 <div>
                   <label className="font-bold text-stone-700 block mb-1">
-                    User ID / Username (Admin or Team Member)
+                    User ID / Username
                   </label>
                   <input
                     type="text"
@@ -441,7 +436,7 @@ export const AdminPartnerApp: React.FC = () => {
                       setLoginErrorMsg(null);
                     }}
                     placeholder="Enter User ID (e.g., admin or kavya)"
-                    className="w-full px-3.5 py-3 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold text-sm text-stone-900 focus:outline-none focus:border-[#5b6324]"
+                    className="w-full px-3.5 py-3 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold text-sm text-stone-900 focus:outline-none focus:border-[#160824]"
                   />
                 </div>
 
@@ -459,7 +454,7 @@ export const AdminPartnerApp: React.FC = () => {
                         setLoginErrorMsg(null);
                       }}
                       placeholder="Enter Password"
-                      className="w-full pl-3.5 pr-10 py-3 rounded-xl bg-[#f8f9f0] border border-stone-300 font-mono-num font-bold text-sm text-stone-900 focus:outline-none focus:border-[#5b6324]"
+                      className="w-full pl-3.5 pr-10 py-3 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num font-bold text-sm text-stone-900 focus:outline-none focus:border-[#160824]"
                     />
                     <button
                       type="button"
@@ -478,20 +473,18 @@ export const AdminPartnerApp: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
               >
-                <KeyRound className="w-4 h-4" />
-                <span>Sign In with User ID &amp; Password</span>
+                <KeyRound className="w-4 h-4 text-[#D6B77A]" />
+                <span>Sign In to Admin Panel</span>
               </button>
 
               {/* Quick Demo / Active Accounts Fill Box */}
-              <div className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 space-y-2 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#5b6324]" />
-                    <span>Tap to Quick-Fill Login Credentials:</span>
-                  </span>
-                </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] space-y-2 text-left">
+                <span className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#8C4A56]" />
+                  <span>1-Tap Quick Fill Login:</span>
+                </span>
 
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -501,9 +494,9 @@ export const AdminPartnerApp: React.FC = () => {
                       setLoginPassword('7777');
                       setLoginErrorMsg(null);
                     }}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#160824] text-[#F3E2BA] text-[11px] font-mono-num font-bold cursor-pointer hover:opacity-90"
+                    className="px-2.5 py-1.5 rounded-lg bg-[#160824] text-[#F5E2B8] text-[11px] font-mono-num font-bold cursor-pointer hover:opacity-90"
                   >
-                    Admin (ID: admin / Pass: 7777)
+                    Admin (admin / 7777)
                   </button>
 
                   {activeTeamPreview.map((member) => {
@@ -520,7 +513,7 @@ export const AdminPartnerApp: React.FC = () => {
                           setLoginPassword(pass);
                           setLoginErrorMsg(null);
                         }}
-                        className="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-[#5b6324] text-stone-800 text-[11px] font-mono-num font-semibold cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-[#160824] text-stone-800 text-[11px] font-mono-num font-semibold cursor-pointer"
                       >
                         {member.name.split(' ')[0]} ({uid} / {pass})
                       </button>
@@ -532,7 +525,7 @@ export const AdminPartnerApp: React.FC = () => {
           ) : (
             /* MODE 2: 4-DIGIT PIN KEYPAD */
             <div className="space-y-4 text-center">
-              <p className="font-mono-num text-xs font-bold text-stone-600 bg-[#e9ecd6] inline-block px-3 py-1 rounded-lg">
+              <p className="font-mono-num text-xs font-bold text-[#160824] bg-[#F3ECE0] inline-block px-3 py-1 rounded-lg">
                 Admin Quick PIN: 7777
               </p>
 
@@ -547,7 +540,7 @@ export const AdminPartnerApp: React.FC = () => {
                         pinError
                           ? 'bg-red-500 scale-110'
                           : filled
-                          ? 'bg-[#5b6324] scale-110'
+                          ? 'bg-[#160824] scale-110'
                           : 'bg-stone-200 border border-stone-300'
                       }`}
                     />
@@ -568,7 +561,7 @@ export const AdminPartnerApp: React.FC = () => {
                     key={digit}
                     type="button"
                     onClick={() => handleDigitPress(digit)}
-                    className="h-13 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6] active:scale-95 border border-stone-200 font-mono-num text-xl font-bold text-stone-900 transition-all cursor-pointer"
+                    className="h-13 rounded-2xl bg-[#FAF7F2] hover:bg-[#F3ECE0] active:scale-95 border border-[#E6DAC8] font-mono-num text-xl font-bold text-[#160824] transition-all cursor-pointer"
                   >
                     {digit}
                   </button>
@@ -583,7 +576,7 @@ export const AdminPartnerApp: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleDigitPress('0')}
-                  className="h-13 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6] active:scale-95 border border-stone-200 font-mono-num text-xl font-bold text-stone-900 transition-all cursor-pointer"
+                  className="h-13 rounded-2xl bg-[#FAF7F2] hover:bg-[#F3ECE0] active:scale-95 border border-[#E6DAC8] font-mono-num text-xl font-bold text-[#160824] transition-all cursor-pointer"
                 >
                   0
                 </button>
@@ -603,7 +596,7 @@ export const AdminPartnerApp: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="w-full py-2.5 rounded-xl bg-white border border-stone-200 text-stone-600 text-xs font-semibold hover:text-stone-900 cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-white border border-stone-200 text-stone-600 text-xs font-semibold hover:text-[#160824] cursor-pointer"
             >
               ← Return to Customer Website
             </button>
@@ -617,13 +610,13 @@ export const AdminPartnerApp: React.FC = () => {
   const activeBookingForDetails = bookingId ? getBookingById(bookingId) : undefined;
 
   return (
-    <div className="min-h-screen bg-[#f8f9f0] text-stone-900 flex flex-col">
-      {/* PART 12: ADMIN TOP BAR */}
-      <header className="sticky top-0 z-30 bg-white border-b border-stone-200 shadow-xs">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
-          {/* Left: Uploaded Logo + Subba Lakshmi Makeup + Logged-in User Badge */}
+    <div className="min-h-screen bg-[#FAF7F2] text-[#1C1619] flex flex-col">
+      {/* CLEAN MOBILE-FIRST LUXURY TOP HEADER */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E6DAC8] shadow-2xs">
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-6 h-16 flex items-center justify-between gap-2">
+          {/* Left: Logo + Brand Title + Live Cloud Status */}
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-11 h-10 rounded-xl bg-[#160824] border border-[#D6B77A]/60 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#160824] border border-[#D6B77A] overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
               <SmartImage
                 src={settings.logoUrl}
                 alt="Eden Roses Logo"
@@ -632,91 +625,45 @@ export const AdminPartnerApp: React.FC = () => {
               />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-bold text-sm sm:text-base text-stone-900 truncate">
-                  Subba Lakshmi Makeup
-                </h1>
-                {currentUser && (
-                  <span
-                    className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                      currentUser.isAdmin
-                        ? 'bg-[#160824] text-[#F3E2BA]'
-                        : 'bg-[#e9ecd6] text-[#5b6324]'
-                    }`}
-                  >
-                    {currentUser.isAdmin
-                      ? 'Admin'
-                      : `Team: ${currentUser.name.split(' ')[0]}`}
-                  </span>
-                )}
-              </div>
+              <h1 className="font-display font-bold text-base sm:text-lg text-[#160824] truncate leading-tight">
+                {settings.makeupBrand}
+              </h1>
               <p className="text-[11px] text-stone-500 truncate flex items-center gap-1.5">
                 <span>
-                  {currentUser
-                    ? `${currentUser.name} (${currentUser.userId})`
-                    : 'Eden Roses Partner App'}
+                  {currentUser ? currentUser.name.split(' ')[0] : 'Admin'}
                 </span>
-                {firebaseConnected && (
-                  <>
-                    <span className="hidden sm:inline">·</span>
-                    <span className="hidden sm:inline-flex text-emerald-700 font-semibold items-center gap-1">
-                      <Database className="w-3 h-3" />
-                      Live Sync
-                    </span>
-                  </>
-                )}
+                <span>·</span>
+                <span className="text-emerald-700 font-semibold">
+                  {firebaseConnected ? 'Firebase + Cloud Live' : 'Cloud Ready'}
+                </span>
               </p>
             </div>
           </div>
 
-          {/* Right: Team Accounts + Products & Pricing + Add Booking + Logout */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <a
-              href="https://edenrosesunisexsalon-phi.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#f8f9f0] border border-[#5b6324]/30 text-[#5b6324] text-[11px] font-bold hover:bg-[#e9ecd6]"
-            >
-              <Globe className="w-3 h-3" />
-              <span>Live Site</span>
-            </a>
+          {/* Right: Clean Mobile Action Cluster */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={openWebsiteControlManager}
-              title="Full Website Content & Settings Control (Firebase Sync)"
-              className="px-2.5 py-2 rounded-xl bg-[#f8f9f0] hover:bg-[#e9ecd6] border border-[#5b6324]/30 text-[#5b6324] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={() => navigate('/')}
+              title="Open Customer Website"
+              className="px-3 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#F3ECE0] border border-[#E6DAC8] text-[#160824] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Database className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Website CMS</span>
+              <Globe className="w-3.5 h-3.5 text-[#8C4A56]" />
+              <span className="hidden sm:inline">Website</span>
             </button>
-            <button
-              type="button"
-              onClick={openTeamAccountsManager}
-              title="Create or Delete Team Login Accounts"
-              className="px-2.5 py-2 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F3E2BA] border border-[#D6B77A]/40 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Team Login</span>
-            </button>
-            <button
-              type="button"
-              onClick={openProductsAndPricingManager}
-              className="px-2.5 py-2 rounded-xl bg-[#e9ecd6] hover:bg-[#dfe4c4] border border-[#5b6324]/30 text-[#5b6324] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <Tag className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Products &amp; Price</span>
-            </button>
+
             <button
               type="button"
               onClick={() => {
                 setAddBookingPreselectedDate(undefined);
                 setAddBookingModalOpen(true);
               }}
-              className="px-2.5 sm:px-3 py-2 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+              className="px-3.5 py-2 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-[#D6B77A]" />
               <span>Booking</span>
             </button>
+
             <button
               type="button"
               onClick={() => {
@@ -725,7 +672,7 @@ export const AdminPartnerApp: React.FC = () => {
                 setIsAuthenticated(false);
                 setCurrentUser(null);
               }}
-              title="Logout"
+              title="Sign Out"
               className="p-2 rounded-xl bg-stone-100 hover:bg-red-50 text-stone-600 hover:text-red-600 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
@@ -735,7 +682,7 @@ export const AdminPartnerApp: React.FC = () => {
       </header>
 
       {/* MAIN CONTENT CONTAINER */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 pt-4 pb-24">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-6 pt-4 pb-24">
         {/* IF ON /admin/job/:bookingId -> SHOW JOB DETAILS VIEW */}
         {bookingId ? (
           activeBookingForDetails ? (
@@ -750,13 +697,13 @@ export const AdminPartnerApp: React.FC = () => {
               onUpdated={refreshData}
             />
           ) : (
-            <div className="bg-white rounded-2xl p-8 text-center space-y-3 border border-stone-200">
+            <div className="bg-white rounded-3xl p-8 text-center space-y-3 border border-[#E6DAC8]">
               <AlertCircle className="w-10 h-10 text-amber-600 mx-auto" />
               <p className="font-bold text-base">Booking {bookingId} Not Found</p>
               <button
                 type="button"
                 onClick={() => navigate('/admin')}
-                className="px-5 py-2.5 rounded-xl bg-[#5b6324] text-white text-xs font-bold cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#160824] text-[#F5E2B8] text-xs font-bold cursor-pointer"
               >
                 Back to Dashboard
               </button>
@@ -764,88 +711,114 @@ export const AdminPartnerApp: React.FC = () => {
           )
         ) : (
           <>
-            {/* ==================== TAB 1: DASHBOARD & JOB LIST ==================== */}
+            {/* ==================== TAB 1: DASHBOARD & QUICK STUDIO CONTROLS ==================== */}
             {activeTab === 'dashboard' && (
               <div className="space-y-5">
-                {/* PART 13: SERVICE FLOW GUIDE OLIVE BANNER */}
-                <div className="rounded-2xl bg-[#5b6324] text-white p-4 shadow-sm space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#e9ecd6]">
-                      Service Flow Guide
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/')}
-                      className="text-[11px] font-semibold text-[#e9ecd6] hover:text-white flex items-center gap-1 cursor-pointer"
-                    >
-                      <Globe className="w-3 h-3" />
-                      <span>View Customer Website</span>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                    <button
-                      type="button"
-                      onClick={openWebsiteControlManager}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#160824] text-[#F3E2BA] hover:bg-[#261139] border border-[#D6B77A]/40 text-left text-xs font-bold flex items-center justify-between transition-colors shadow-xs cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Database className="w-3.5 h-3.5 text-[#D6B77A] shrink-0" />
-                        <span>Full Website Control (CMS)</span>
-                      </span>
-                      <ChevronRight className="w-4 h-4 shrink-0" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={openProductsAndPricingManager}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white text-[#5b6324] hover:bg-[#e9ecd6] text-left text-xs font-bold flex items-center justify-between transition-colors shadow-xs cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 shrink-0" />
-                        <span>+ Add Product / Price ({services.length})</span>
-                      </span>
-                      <ChevronRight className="w-4 h-4 shrink-0" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelfieBookingId(undefined);
-                        setSelfieModalOpen(true);
-                      }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-left text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
-                    >
-                      <span>Upload Selfie</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                {/* 4 LARGE MOBILE-FRIENDLY LUXURY QUICK CONTROL TILES */}
+                <div className="rounded-3xl bg-gradient-to-r from-[#160824] via-[#261139] to-[#160824] text-white p-4 sm:p-5 border border-[#D6B77A]/40 shadow-md space-y-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#D6B77A]">
+                        Cloudinary ({CLOUDINARY_CLOUD_NAME} / {CLOUDINARY_UPLOAD_PRESET}) · Firebase Live
+                      </p>
+                      <h2 className="font-display text-lg sm:text-xl font-bold text-white">
+                        Studio Quick Control Center
+                      </h2>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setFlowGuideModalOpen(true)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-left text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                      className="text-xs font-semibold text-[#F5E2B8] hover:underline cursor-pointer"
                     >
-                      <span>Service Flow Guide</span>
-                      <ChevronRight className="w-4 h-4 shrink-0" />
+                      Flow Guide →
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => openMoreSubSection('service-management')}
+                      className="p-3.5 rounded-2xl bg-[#D6B77A] hover:bg-[#e5c98f] text-[#160824] text-left transition-all shadow-xs cursor-pointer flex flex-col justify-between gap-2"
+                    >
+                      <Tag className="w-5 h-5" />
+                      <div>
+                        <p className="font-bold text-xs leading-tight">
+                          Products &amp; Price
+                        </p>
+                        <p className="text-[10px] opacity-80 mt-0.5">
+                          + Add / Photo ({services.length})
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openMoreSubSection('gallery-management')}
+                      className="p-3.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 text-white text-left transition-all cursor-pointer flex flex-col justify-between gap-2"
+                    >
+                      <Cloud className="w-5 h-5 text-[#D6B77A]" />
+                      <div>
+                        <p className="font-bold text-xs leading-tight">
+                          Cloud Photos
+                        </p>
+                        <p className="text-[10px] text-white/75 mt-0.5">
+                          Upload to Cloudinary
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openMoreSubSection('business-profile')}
+                      className="p-3.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 text-white text-left transition-all cursor-pointer flex flex-col justify-between gap-2"
+                    >
+                      <Building2 className="w-5 h-5 text-[#D6B77A]" />
+                      <div>
+                        <p className="font-bold text-xs leading-tight">
+                          Website CMS
+                        </p>
+                        <p className="text-[10px] text-white/75 mt-0.5">
+                          Banners, Offers, Info
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openMoreSubSection('team-management')}
+                      className="p-3.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/15 text-white text-left transition-all cursor-pointer flex flex-col justify-between gap-2"
+                    >
+                      <Users className="w-5 h-5 text-[#D6B77A]" />
+                      <div>
+                        <p className="font-bold text-xs leading-tight">
+                          Team Logins
+                        </p>
+                        <p className="text-[10px] text-white/75 mt-0.5">
+                          ID &amp; Password ({team.length})
+                        </p>
+                      </div>
                     </button>
                   </div>
                 </div>
 
-                {/* PART 15: ORDERS - LAST 30 DAYS (6 LARGE BEIGE CARDS) */}
-                <div className="space-y-3">
+                {/* ORDERS SUMMARY (6 CLEAN MOBILE CARDS) */}
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-bold text-base sm:text-lg text-stone-900">
-                      Orders - Last 30 days
+                    <h2 className="font-bold text-sm sm:text-base text-[#160824]">
+                      Bookings Overview
                     </h2>
                     {activeCardFilter !== 'all' && (
                       <button
                         type="button"
                         onClick={() => setActiveCardFilter('all')}
-                        className="text-xs font-bold text-[#5b6324] underline cursor-pointer"
+                        className="text-xs font-bold text-[#8C4A56] underline cursor-pointer"
                       >
-                        Show All Orders
+                        Show All ({bookings.length})
                       </button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
                     {[
                       {
                         key: 'today' as StatCardFilter,
@@ -869,12 +842,12 @@ export const AdminPartnerApp: React.FC = () => {
                       },
                       {
                         key: 'closed' as StatCardFilter,
-                        label: 'Closed',
+                        label: 'Completed',
                         value: stats.closed,
                       },
                       {
                         key: 'report' as StatCardFilter,
-                        label: 'Report',
+                        label: 'Reported',
                         value: stats.report,
                       },
                     ].map((card) => {
@@ -888,20 +861,20 @@ export const AdminPartnerApp: React.FC = () => {
                               prev === card.key ? 'all' : card.key
                             )
                           }
-                          className={`p-4 rounded-2xl text-left transition-all border cursor-pointer ${
+                          className={`p-3.5 rounded-2xl text-left transition-all border cursor-pointer ${
                             isSelected
-                              ? 'bg-[#5b6324] text-white border-[#5b6324] shadow-md'
-                              : 'bg-[#e9ecd6] hover:bg-[#dfe4c4] text-stone-900 border-[#5b6324]/20'
+                              ? 'bg-[#160824] text-[#F5E2B8] border-[#160824] shadow-md'
+                              : 'bg-white hover:bg-[#FAF6F0] text-[#160824] border-[#E6DAC8]'
                           }`}
                         >
                           <p
-                            className={`text-xs font-semibold ${
-                              isSelected ? 'text-[#e9ecd6]' : 'text-stone-600'
+                            className={`text-[11px] font-semibold ${
+                              isSelected ? 'text-[#D6B77A]' : 'text-stone-500'
                             }`}
                           >
                             {card.label}
                           </p>
-                          <p className="font-mono-num text-2xl sm:text-3xl font-bold mt-1">
+                          <p className="font-mono-num text-xl sm:text-2xl font-bold mt-0.5">
                             {card.value}
                           </p>
                         </button>
@@ -910,26 +883,34 @@ export const AdminPartnerApp: React.FC = () => {
                   </div>
                 </div>
 
-                {/* PART 17: JOB LIST & REAL-TIME USER DETAILS SCREEN */}
-                <div className="space-y-3 pt-2">
+                {/* JOB LIST & REAL-TIME CUSTOMER LEADS */}
+                <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-base text-stone-900">
+                    <h3 className="font-bold text-sm sm:text-base text-[#160824]">
                       {activeJobPill === 'Customers'
-                        ? `Live Customer Details & Leads (${customerLeads.length})`
-                        : `Job List & Customer Bookings (${filteredJobs.length})`}
+                        ? `Customer Inquiries & Leads (${customerLeads.length})`
+                        : `Active Appointments (${filteredJobs.length})`}
                     </h3>
-                    <span className="text-xs text-stone-500">
-                      Synced in real-time via Firebase
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelfieBookingId(undefined);
+                        setSelfieModalOpen(true);
+                      }}
+                      className="text-xs font-bold text-[#8C4A56] flex items-center gap-1 cursor-pointer"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Upload Selfie</span>
+                    </button>
                   </div>
 
                   {/* Interactive Filter Buttons */}
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                     {(
                       [
                         'All',
-                        'Jobs',
                         'Visits',
+                        'Jobs',
                         'Call',
                         'Followup',
                         'Customers',
@@ -939,59 +920,53 @@ export const AdminPartnerApp: React.FC = () => {
                         key={pill}
                         type="button"
                         onClick={() => setActiveJobPill(pill)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                           activeJobPill === pill
-                            ? 'bg-[#5b6324] text-white shadow-xs'
-                            : 'bg-white text-stone-700 border border-stone-200 hover:bg-[#e9ecd6]/50'
+                            ? 'bg-[#160824] text-[#F5E2B8] shadow-xs'
+                            : 'bg-white text-stone-700 border border-[#E6DAC8] hover:bg-[#FAF6F0]'
                         }`}
                       >
                         {pill === 'Customers'
-                          ? `User Details (${customerLeads.length})`
+                          ? `Leads (${customerLeads.length})`
                           : pill}
                       </button>
                     ))}
                   </div>
 
-                  {/* IF "Customers" PILL IS ACTIVE -> SHOW ALL REAL-TIME CUSTOMER LEADS & INQUIRIES */}
+                  {/* IF "Customers" PILL IS ACTIVE -> SHOW ALL REAL-TIME CUSTOMER LEADS */}
                   {activeJobPill === 'Customers' ? (
                     <div className="space-y-3">
                       {customerLeads.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-8 text-center border border-stone-200 text-xs text-stone-500">
+                        <div className="bg-white rounded-3xl p-8 text-center border border-[#E6DAC8] text-xs text-stone-500">
                           No customer inquiries yet. Any booking or callback request on the
-                          Customer Website appears here immediately in real time!
+                          website appears here immediately.
                         </div>
                       ) : (
                         customerLeads.map((lead) => (
                           <div
                             key={lead.id}
-                            className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200 shadow-xs space-y-3"
+                            className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E6DAC8] shadow-2xs space-y-3"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <div className="flex items-center gap-2">
-                                  <Users className="w-4 h-4 text-[#5b6324]" />
-                                  <h4 className="font-bold text-base text-stone-900">
-                                    {lead.customerName}
-                                  </h4>
-                                </div>
+                                <h4 className="font-bold text-base text-[#160824]">
+                                  {lead.customerName}
+                                </h4>
                                 <p className="font-mono-num text-xs text-stone-500 mt-0.5">
-                                  Phone: {lead.phone} · WhatsApp: {lead.whatsapp}
+                                  {lead.phone} · {lead.source}
                                 </p>
                               </div>
-                              <span className="px-2.5 py-1 rounded-lg bg-[#e9ecd6] text-[#5b6324] text-[11px] font-bold">
-                                {lead.source}
-                              </span>
                             </div>
 
-                            <div className="p-3 rounded-xl bg-[#f8f9f0] text-xs space-y-1 text-stone-700">
+                            <div className="p-3 rounded-2xl bg-[#FAF7F2] text-xs space-y-1 text-stone-700">
                               <p>
-                                <strong>Event / Category:</strong> {lead.eventType}
+                                <strong>Event:</strong> {lead.eventType}
                                 {lead.totalSpend !== undefined
-                                  ? ` · Total: ₹${lead.totalSpend}`
+                                  ? ` · ₹${lead.totalSpend}`
                                   : ''}
                               </p>
                               <p>
-                                <strong>Address / Locality:</strong> {lead.address}
+                                <strong>Address:</strong> {lead.address}
                               </p>
                               <p>
                                 <strong>Details:</strong> {lead.message}
@@ -1000,7 +975,7 @@ export const AdminPartnerApp: React.FC = () => {
 
                             <div className="flex items-center justify-between pt-1">
                               <span className="text-[11px] text-stone-400">
-                                Received: {new Date(lead.createdAt).toLocaleString()}
+                                {new Date(lead.createdAt).toLocaleString()}
                               </span>
                               <div className="flex items-center gap-2">
                                 {lead.lastBookingId && (
@@ -1009,14 +984,14 @@ export const AdminPartnerApp: React.FC = () => {
                                     onClick={() =>
                                       navigate(`/admin/job/${lead.lastBookingId}`)
                                     }
-                                    className="px-3 py-1.5 rounded-xl bg-[#5b6324] text-white text-xs font-bold cursor-pointer"
+                                    className="px-3 py-1.5 rounded-xl bg-[#160824] text-[#F5E2B8] text-xs font-bold cursor-pointer"
                                   >
-                                    Open Job {lead.lastBookingId}
+                                    Open Job
                                   </button>
                                 )}
                                 <a
                                   href={`tel:${lead.phone.replace(/\s+/g, '')}`}
-                                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800"
+                                  className="p-2 rounded-xl bg-[#FAF7F2] border border-[#E6DAC8] text-[#160824]"
                                 >
                                   <Phone className="w-3.5 h-3.5" />
                                 </a>
@@ -1038,85 +1013,55 @@ export const AdminPartnerApp: React.FC = () => {
                       )}
                     </div>
                   ) : (
-                    /* CLIENT JOB CARDS (Includes Full Customer Details) */
+                    /* CLIENT JOB CARDS */
                     <div className="space-y-3">
                       {filteredJobs.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-8 text-center border border-stone-200 text-xs text-stone-500">
-                          No jobs match the selected filter.
+                        <div className="bg-white rounded-3xl p-8 text-center border border-[#E6DAC8] text-xs text-stone-500">
+                          No appointments match the selected filter.
                         </div>
                       ) : (
                         filteredJobs.map((job) => (
                           <div
                             key={job.id}
                             onClick={() => navigate(`/admin/job/${job.id}`)}
-                            className="bg-white hover:bg-[#fcfdf7] rounded-2xl p-4 sm:p-5 border border-stone-200 shadow-xs hover:border-[#5b6324]/50 transition-all cursor-pointer space-y-3"
+                            className="bg-white hover:bg-[#FFFDF9] rounded-3xl p-4 sm:p-5 border border-[#E6DAC8] shadow-2xs hover:border-[#160824]/40 transition-all cursor-pointer space-y-3"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h4 className="font-bold text-base text-stone-900">
-                                    {job.customerName}
-                                  </h4>
-                                  <span className="text-xs font-medium text-stone-500">
-                                    · Makeup Artist ({job.eventType})
-                                  </span>
-                                </div>
-                                <p className="font-mono-num text-xs font-semibold text-stone-600 mt-0.5">
-                                  {job.id} · Phone: {job.phone} · Source:{' '}
-                                  {job.bookingSource}
+                                <p className="text-[11px] font-semibold text-[#8C4A56]">
+                                  {job.id} · {job.eventType} · {job.status}
+                                </p>
+                                <h4 className="font-bold text-base text-[#160824] mt-0.5">
+                                  {job.customerName}
+                                </h4>
+                                <p className="font-mono-num text-xs text-stone-600">
+                                  {job.phone}
                                 </p>
                               </div>
 
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <span
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                                    job.status === 'Completed'
-                                      ? 'bg-stone-200 text-stone-700'
-                                      : job.status === 'Reported'
-                                      ? 'bg-red-100 text-red-700'
-                                      : 'bg-emerald-600 text-white'
-                                  }`}
-                                >
-                                  {job.badgeType || 'VISIT'}
+                              <div className="text-right font-mono-num">
+                                <span className="text-sm font-bold text-[#160824] block">
+                                  ₹{(job.itemsTotal - job.discount).toLocaleString('en-IN')}
+                                </span>
+                                <span className="text-[11px] text-stone-500">
+                                  {formatShortDate(job.date)} · {job.time}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-[#5b6324] bg-[#f8f9f0] px-3 py-2 rounded-xl">
-                              <span className="font-mono-num">
-                                Date: {formatShortDate(job.date)} ({job.date})
-                              </span>
-                              <span>·</span>
-                              <span className="font-mono-num">Time: {job.time}</span>
-                              <span>·</span>
-                              <span className="font-mono-num">
-                                Total: ₹{job.itemsTotal}
-                              </span>
-                              <span>·</span>
-                              <span className="font-mono-num">
-                                Adv: ₹{job.advancePaid} | Due: ₹{job.amountToCollect}
-                              </span>
-                            </div>
-
-                            <div className="flex items-start gap-2 text-xs text-stone-600">
-                              <MapPin className="w-4 h-4 text-[#5b6324] shrink-0 mt-0.5" />
+                            <div className="flex items-start gap-2 text-xs text-stone-600 bg-[#FAF7F2] p-3 rounded-2xl">
+                              <MapPin className="w-4 h-4 text-[#8C4A56] shrink-0 mt-0.5" />
                               <span className="line-clamp-2">{job.address}</span>
                             </div>
 
-                            {job.notes && (
-                              <p className="text-xs text-stone-500 italic bg-stone-50 px-3 py-1.5 rounded-lg">
-                                Note: &ldquo;{job.notes}&rdquo;
-                              </p>
-                            )}
-
-                            <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs gap-2">
+                            <div className="pt-1 flex items-center justify-between text-xs gap-2">
                               <span className="text-stone-600 font-medium truncate">
                                 {job.services
                                   .map((s) => `${s.name} (×${s.quantity})`)
                                   .join(', ')}
                               </span>
-                              <span className="font-bold text-[#5b6324] flex items-center gap-1 shrink-0">
-                                <span>Job Details</span>
+                              <span className="font-bold text-[#160824] flex items-center gap-1 shrink-0">
+                                <span>Manage</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </span>
                             </div>
@@ -1132,14 +1077,14 @@ export const AdminPartnerApp: React.FC = () => {
             {/* ==================== TAB 2: INTERACTIVE MONTHLY CALENDAR ==================== */}
             {activeTab === 'calendar' && (
               <div className="space-y-5">
-                <div className="bg-white rounded-3xl p-5 border border-stone-200 shadow-xs space-y-4">
+                <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] shadow-2xs space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-bold text-lg text-stone-900">
-                        Monthly Booking Calendar
+                      <h2 className="font-display font-bold text-lg sm:text-xl text-[#160824]">
+                        Booking Schedule
                       </h2>
                       <p className="text-xs text-stone-500">
-                        Colored dots indicate active, completed, or multiple bookings
+                        Tap any date to view or schedule appointments
                       </p>
                     </div>
 
@@ -1155,11 +1100,11 @@ export const AdminPartnerApp: React.FC = () => {
                             )
                           )
                         }
-                        className="p-2 rounded-xl bg-[#f8f9f0] border border-stone-200 hover:bg-[#e9ecd6] cursor-pointer"
+                        className="p-2 rounded-xl bg-[#FAF7F2] border border-[#E6DAC8] hover:bg-[#F3ECE0] cursor-pointer"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <span className="font-bold text-sm min-w-[125px] text-center">
+                      <span className="font-bold text-sm min-w-[125px] text-center text-[#160824]">
                         {calendarMonth.toLocaleDateString('en-US', {
                           month: 'long',
                           year: 'numeric',
@@ -1176,7 +1121,7 @@ export const AdminPartnerApp: React.FC = () => {
                             )
                           )
                         }
-                        className="p-2 rounded-xl bg-[#f8f9f0] border border-stone-200 hover:bg-[#e9ecd6] cursor-pointer"
+                        className="p-2 rounded-xl bg-[#FAF7F2] border border-[#E6DAC8] hover:bg-[#F3ECE0] cursor-pointer"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -1209,10 +1154,10 @@ export const AdminPartnerApp: React.FC = () => {
                           onClick={() => setSelectedCalendarDate(cell.dateISO!)}
                           className={`h-14 rounded-2xl p-1.5 flex flex-col items-center justify-between border transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-[#5b6324] text-white border-[#5b6324] shadow-sm'
+                              ? 'bg-[#160824] text-[#F5E2B8] border-[#160824] shadow-sm'
                               : isToday
-                              ? 'bg-[#e9ecd6] text-stone-900 border-[#5b6324]'
-                              : 'bg-[#f8f9f0] hover:bg-[#e9ecd6]/60 text-stone-800 border-stone-200/80'
+                              ? 'bg-[#F3ECE0] text-[#160824] border-[#D6B77A]'
+                              : 'bg-[#FAF7F2] hover:bg-[#F3ECE0]/60 text-stone-800 border-[#E6DAC8]/80'
                           }`}
                         >
                           <span className="font-mono-num text-xs font-bold">
@@ -1226,7 +1171,7 @@ export const AdminPartnerApp: React.FC = () => {
                                   key={b.id}
                                   className={`w-2 h-2 rounded-full ${
                                     isSelected
-                                      ? 'bg-white'
+                                      ? 'bg-[#D6B77A]'
                                       : b.status === 'Completed'
                                       ? 'bg-stone-500'
                                       : b.status === 'Reported'
@@ -1247,14 +1192,14 @@ export const AdminPartnerApp: React.FC = () => {
                 </div>
 
                 {/* Selected Date Bookings Section */}
-                <div className="bg-white rounded-3xl p-5 border border-stone-200 shadow-xs space-y-4">
+                <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] shadow-2xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
                     <div>
-                      <h3 className="font-bold text-base text-stone-900">
-                        Bookings on {selectedCalendarDate} ({selectedDateBookings.length})
+                      <h3 className="font-bold text-base text-[#160824]">
+                        Appointments on {selectedCalendarDate} ({selectedDateBookings.length})
                       </h3>
                       <p className="text-xs text-stone-500">
-                        Click any booking to open Job Details or add a new appointment
+                        Tap any appointment to view full details
                       </p>
                     </div>
                     <button
@@ -1263,17 +1208,16 @@ export const AdminPartnerApp: React.FC = () => {
                         setAddBookingPreselectedDate(selectedCalendarDate);
                         setAddBookingModalOpen(true);
                       }}
-                      className="px-4 py-2.5 rounded-xl bg-[#5b6324] hover:bg-[#49501c] text-white text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-[#160824] hover:bg-[#261139] text-[#F5E2B8] text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-4 h-4 text-[#D6B77A]" />
                       <span>+ Add Booking on this Date</span>
                     </button>
                   </div>
 
                   {selectedDateBookings.length === 0 ? (
                     <div className="py-8 text-center text-xs text-stone-500">
-                      No bookings scheduled for {selectedCalendarDate}. Tap &ldquo;+ Add
-                      Booking on this Date&rdquo; to schedule one.
+                      No bookings scheduled for {selectedCalendarDate}.
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1281,20 +1225,15 @@ export const AdminPartnerApp: React.FC = () => {
                         <div
                           key={b.id}
                           onClick={() => navigate(`/admin/job/${b.id}`)}
-                          className="p-4 rounded-2xl bg-[#f8f9f0] hover:bg-[#e9ecd6]/60 border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition-colors"
+                          className="p-4 rounded-2xl bg-[#FAF7F2] hover:bg-[#F3ECE0]/60 border border-[#E6DAC8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition-colors"
                         >
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-stone-900">
-                                {b.customerName}
+                            <p className="font-bold text-sm text-[#160824]">
+                              {b.customerName}{' '}
+                              <span className="font-normal text-xs text-stone-500">
+                                · {b.id} · {b.status}
                               </span>
-                              <span className="font-mono-num text-xs text-stone-500">
-                                ({b.id} · {b.phone})
-                              </span>
-                              <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">
-                                {b.status}
-                              </span>
-                            </div>
+                            </p>
                             <p className="text-xs text-stone-600">
                               {b.services.map((s) => `${s.name} (×${s.quantity})`).join(', ')}
                             </p>
@@ -1302,10 +1241,10 @@ export const AdminPartnerApp: React.FC = () => {
 
                           <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
                             <div className="text-right">
-                              <span className="font-mono-num text-xs font-bold text-[#5b6324] block">
+                              <span className="font-mono-num text-xs font-bold text-[#8C4A56] block">
                                 {b.time}
                               </span>
-                              <span className="font-mono-num text-sm font-bold text-stone-900">
+                              <span className="font-mono-num text-sm font-bold text-[#160824]">
                                 ₹{b.itemsTotal - b.discount}
                               </span>
                             </div>
@@ -1319,95 +1258,114 @@ export const AdminPartnerApp: React.FC = () => {
               </div>
             )}
 
-            {/* ==================== TAB 3: WALLET ==================== */}
-            {activeTab === 'wallet' && (
+            {/* ==================== TAB 3 & 4: WALLET & EARNINGS ==================== */}
+            {(activeTab === 'wallet' || activeTab === 'earnings') && (
               <div className="space-y-5">
-                <div className="rounded-3xl bg-[#5b6324] text-white p-6 shadow-md space-y-4">
+                <div className="rounded-3xl bg-gradient-to-r from-[#160824] via-[#261139] to-[#160824] text-white p-6 border border-[#D6B77A]/40 shadow-md space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-[#e9ecd6]">
-                        Eden Roses Partner Wallet
+                      <p className="text-xs font-semibold text-[#D6B77A]">
+                        Eden Roses Partner Wallet &amp; Revenue
                       </p>
                       <h2 className="font-mono-num text-3xl sm:text-4xl font-bold mt-1">
                         ₹{stats.availableBalance.toLocaleString('en-IN')}
                       </h2>
-                      <p className="text-xs text-[#e9ecd6] mt-0.5">
+                      <p className="text-xs text-white/75 mt-0.5">
                         Available Balance (Completed Jobs + Verified Advances)
                       </p>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-[#D6B77A]/40 flex items-center justify-center text-[#D6B77A]">
                       <WalletIcon className="w-6 h-6" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/15">
                     <div>
-                      <span className="text-[11px] text-[#e9ecd6] block">
-                        Total Earnings
+                      <span className="text-[11px] text-white/70 block">
+                        Total Revenue
                       </span>
-                      <span className="font-mono-num text-base font-bold">
+                      <span className="font-mono-num text-base font-bold text-[#F5E2B8]">
                         ₹{stats.totalEarnings.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[11px] text-[#e9ecd6] block">
-                        Advance Payments
+                      <span className="text-[11px] text-white/70 block">
+                        Advances Paid
                       </span>
                       <span className="font-mono-num text-base font-bold">
                         ₹{stats.advancePaymentsTotal.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[11px] text-[#e9ecd6] block">
-                        Pending Collections
+                      <span className="text-[11px] text-white/70 block">
+                        Pending Balance
                       </span>
-                      <span className="font-mono-num text-base font-bold text-amber-200">
+                      <span className="font-mono-num text-base font-bold text-amber-300">
                         ₹{stats.pendingCollectionsTotal.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[11px] text-[#e9ecd6] block">
-                        Completed Payments
+                      <span className="text-[11px] text-white/70 block">
+                        Completed Jobs
                       </span>
                       <span className="font-mono-num text-base font-bold">
-                        ₹{stats.completedPaymentsTotal.toLocaleString('en-IN')}
+                        {stats.closed} Jobs
                       </span>
                     </div>
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-2xl bg-white border border-[#E6DAC8]">
+                    <span className="text-xs text-stone-500">Today&apos;s Earnings</span>
+                    <p className="font-mono-num text-2xl font-bold text-[#160824] mt-1">
+                      ₹{stats.dailyEarnings.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white border border-[#E6DAC8]">
+                    <span className="text-xs text-stone-500">Last 7 Days</span>
+                    <p className="font-mono-num text-2xl font-bold text-[#160824] mt-1">
+                      ₹{stats.weeklyEarnings.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white border border-[#E6DAC8]">
+                    <span className="text-xs text-stone-500">Last 30 Days</span>
+                    <p className="font-mono-num text-2xl font-bold text-[#160824] mt-1">
+                      ₹{stats.monthlyEarnings.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Live Wallet Ledger Derived From Bookings */}
-                <div className="bg-white rounded-3xl p-5 border border-stone-200 space-y-3">
-                  <h3 className="font-bold text-base text-stone-900">
+                <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-3">
+                  <h3 className="font-bold text-base text-[#160824]">
                     Booking Payment Ledger
                   </h3>
                   <div className="space-y-2.5">
                     {bookings
                       .filter((b) => b.status !== 'Cancelled')
-                      .slice(0, 12)
+                      .slice(0, 15)
                       .map((b) => (
                         <div
                           key={b.id}
                           onClick={() => navigate(`/admin/job/${b.id}`)}
-                          className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 flex items-center justify-between gap-3 cursor-pointer hover:border-[#5b6324]"
+                          className="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6DAC8] flex items-center justify-between gap-3 cursor-pointer hover:border-[#160824]"
                         >
                           <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-sm text-stone-900">
-                                {b.customerName}
-                              </p>
-                              <span className="font-mono-num text-xs text-stone-500">
-                                {b.id}
+                            <p className="font-bold text-sm text-[#160824]">
+                              {b.customerName}{' '}
+                              <span className="font-mono-num font-normal text-xs text-stone-500">
+                                · {b.id}
                               </span>
-                            </div>
+                            </p>
                             <p className="text-xs text-stone-500">
                               {b.date} · {b.phone} · {b.status}
                             </p>
                           </div>
 
                           <div className="text-right font-mono-num">
-                            <p className="text-sm font-bold text-[#5b6324]">
-                              ₹{b.itemsTotal - b.discount}
+                            <p className="text-sm font-bold text-[#160824]">
+                              ₹{(b.itemsTotal - b.discount).toLocaleString('en-IN')}
                             </p>
                             <p className="text-[11px] text-stone-500">
                               Adv: ₹{b.advancePaid} · Due: ₹{b.amountToCollect}
@@ -1420,93 +1378,7 @@ export const AdminPartnerApp: React.FC = () => {
               </div>
             )}
 
-            {/* ==================== TAB 4: EARNINGS ==================== */}
-            {activeTab === 'earnings' && (
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-5 rounded-2xl bg-[#e9ecd6] border border-[#5b6324]/20">
-                    <span className="text-xs font-semibold text-stone-600">
-                      Daily Earnings (Today)
-                    </span>
-                    <p className="font-mono-num text-2xl font-bold text-[#5b6324] mt-1">
-                      ₹{stats.dailyEarnings.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <div className="p-5 rounded-2xl bg-[#e9ecd6] border border-[#5b6324]/20">
-                    <span className="text-xs font-semibold text-stone-600">
-                      Weekly Earnings (Last 7 Days)
-                    </span>
-                    <p className="font-mono-num text-2xl font-bold text-[#5b6324] mt-1">
-                      ₹{stats.weeklyEarnings.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <div className="p-5 rounded-2xl bg-[#e9ecd6] border border-[#5b6324]/20">
-                    <span className="text-xs font-semibold text-stone-600">
-                      Monthly Earnings (30 Days)
-                    </span>
-                    <p className="font-mono-num text-2xl font-bold text-[#5b6324] mt-1">
-                      ₹{stats.monthlyEarnings.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-4 rounded-2xl bg-white border border-stone-200">
-                    <span className="text-xs text-stone-500">Total Completed Jobs</span>
-                    <p className="font-mono-num text-xl font-bold text-stone-900 mt-0.5">
-                      {stats.closed} Jobs
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white border border-stone-200">
-                    <span className="text-xs text-stone-500">Total Collected</span>
-                    <p className="font-mono-num text-xl font-bold text-emerald-700 mt-0.5">
-                      ₹{stats.totalEarnings.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white border border-stone-200">
-                    <span className="text-xs text-stone-500">Pending Collections</span>
-                    <p className="font-mono-num text-xl font-bold text-amber-700 mt-0.5">
-                      ₹{stats.pendingCollectionsTotal.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-3xl p-5 border border-stone-200 space-y-3">
-                  <h3 className="font-bold text-base text-stone-900">
-                    Completed Jobs Breakdown ({stats.closed})
-                  </h3>
-                  <div className="space-y-2.5">
-                    {bookings
-                      .filter((b) => b.status === 'Completed')
-                      .map((b) => (
-                        <div
-                          key={b.id}
-                          onClick={() => navigate(`/admin/job/${b.id}`)}
-                          className="p-3.5 rounded-2xl bg-[#f8f9f0] border border-stone-200 flex items-center justify-between gap-3 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                            <div>
-                              <p className="font-bold text-sm text-stone-900">
-                                {b.customerName} ({b.id})
-                              </p>
-                              <p className="text-xs text-stone-500">
-                                {b.date} · {b.services.map((s) => s.name).join(', ')}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="font-mono-num font-bold text-sm text-[#5b6324] flex items-center gap-1">
-                            <span>₹{b.itemsTotal - b.discount}</span>
-                            <ArrowUpRight className="w-4 h-4" />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ==================== TAB 5: MORE ==================== */}
+            {/* ==================== TAB 5: MORE / PRODUCTS / CMS / CLOUD GALLERY ==================== */}
             {activeTab === 'more' && (
               <AdminMoreScreen
                 settings={settings}
@@ -1529,61 +1401,77 @@ export const AdminPartnerApp: React.FC = () => {
         )}
       </main>
 
-      {/* PART 14: ADMIN BOTTOM NAVIGATION (5 FUNCTIONAL TABS) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 shadow-lg">
+      {/* MOBILE-FRIENDLY 5-TAB BOTTOM NAVIGATION BAR */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E6DAC8] shadow-lg">
         <div className="max-w-4xl mx-auto grid grid-cols-5 h-16">
           {[
             {
-              id: 'dashboard' as AdminTab,
-              label: 'Dashboard',
+              id: 'dashboard' as const,
+              label: 'Bookings',
               icon: LayoutDashboard,
-              path: '/admin',
+              isActive: !bookingId && activeTab === 'dashboard',
+              onClick: () => {
+                setActiveTab('dashboard');
+                navigate('/admin');
+              },
             },
             {
-              id: 'calendar' as AdminTab,
+              id: 'products' as const,
+              label: 'Products',
+              icon: Tag,
+              isActive:
+                !bookingId &&
+                activeTab === 'more' &&
+                moreInitialSubScreen === 'service-management',
+              onClick: () => openMoreSubSection('service-management'),
+            },
+            {
+              id: 'calendar' as const,
               label: 'Calendar',
               icon: CalendarIcon,
-              path: '/admin/calendar',
+              isActive: !bookingId && activeTab === 'calendar',
+              onClick: () => {
+                setActiveTab('calendar');
+                navigate('/admin/calendar');
+              },
             },
             {
-              id: 'wallet' as AdminTab,
+              id: 'wallet' as const,
               label: 'Wallet',
               icon: WalletIcon,
-              path: '/admin',
+              isActive:
+                !bookingId && (activeTab === 'wallet' || activeTab === 'earnings'),
+              onClick: () => {
+                setActiveTab('wallet');
+                navigate('/admin');
+              },
             },
             {
-              id: 'earnings' as AdminTab,
-              label: 'Earnings',
-              icon: TrendingUp,
-              path: '/admin',
-            },
-            {
-              id: 'more' as AdminTab,
-              label: 'More',
+              id: 'more' as const,
+              label: 'CMS & More',
               icon: MoreHorizontal,
-              path: '/admin',
+              isActive:
+                !bookingId &&
+                activeTab === 'more' &&
+                moreInitialSubScreen !== 'service-management',
+              onClick: () => openMoreSubSection('menu'),
             },
           ].map((tab) => {
             const IconComp = tab.icon;
-            const isActive = !bookingId && activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => {
-                  if (tab.id === 'more') {
-                    setMoreInitialSubScreen('menu');
-                  }
-                  setActiveTab(tab.id);
-                  navigate(tab.path);
-                }}
+                onClick={tab.onClick}
                 className={`flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
-                  isActive
-                    ? 'text-[#5b6324] font-bold'
-                    : 'text-stone-500 hover:text-stone-800 font-medium'
+                  tab.isActive
+                    ? 'text-[#160824] font-bold'
+                    : 'text-stone-400 hover:text-stone-800 font-medium'
                 }`}
               >
-                <IconComp className="w-5 h-5" />
+                <IconComp
+                  className={`w-5 h-5 ${tab.isActive ? 'text-[#8C4A56]' : ''}`}
+                />
                 <span className="text-[11px] tracking-tight">{tab.label}</span>
               </button>
             );
@@ -1591,7 +1479,7 @@ export const AdminPartnerApp: React.FC = () => {
         </div>
       </nav>
 
-      {/* MODALS */}
+      {/* SHARED ADMIN MODALS */}
       <AddBookingModal
         isOpen={addBookingModalOpen}
         initialDate={addBookingPreselectedDate}
@@ -1603,6 +1491,7 @@ export const AdminPartnerApp: React.FC = () => {
         isOpen={selfieModalOpen}
         bookingId={selfieBookingId}
         onClose={() => setSelfieModalOpen(false)}
+        onSuccess={refreshData}
       />
 
       <ServiceFlowGuideModal
