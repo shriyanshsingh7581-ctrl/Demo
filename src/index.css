@@ -14,8 +14,8 @@
 
   body {
     font-family: var(--font-sans);
-    color: #2A1818;
-    background-color: #FFFDF9;
+    color: #1E1218;
+    background-color: #FAF6F0;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
@@ -42,16 +42,150 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Couture Ambient Mesh Backdrop for Authentic Glassmorphism Refraction */
+.couture-mesh-bg {
+  background-color: #FAF6F0;
+  background-image:
+    radial-gradient(at 12% 8%, rgba(214, 183, 122, 0.22) 0px, transparent 48%),
+    radial-gradient(at 88% 14%, rgba(183, 110, 121, 0.18) 0px, transparent 50%),
+    radial-gradient(at 50% 45%, rgba(255, 250, 242, 0.9) 0px, transparent 60%),
+    radial-gradient(at 15% 78%, rgba(183, 110, 121, 0.14) 0px, transparent 52%),
+    radial-gradient(at 85% 88%, rgba(214, 183, 122, 0.2) 0px, transparent 52%);
+  background-attachment: fixed;
+}
+
+/* Sticky Top Header & Bottom Bar Frosted Glass */
+.luxury-glass {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 253, 249, 0.84) 0%,
+    rgba(251, 246, 238, 0.76) 100%
+  );
+  backdrop-filter: blur(26px) saturate(190%);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  box-shadow:
+    0 10px 32px -12px rgba(22, 8, 36, 0.09),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.92);
+}
+
+/* Primary Section Container Glassmorphism */
+.premium-surface,
+.glass-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 250, 243, 0.62) 55%,
+    rgba(253, 245, 235, 0.72) 100%
+  );
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 20px 48px -16px rgba(22, 8, 36, 0.08),
+    0 0 0 1px rgba(214, 183, 122, 0.28),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Interactive Service, Offer & Category Frosted Glass Card */
+.glass-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.86) 0%,
+    rgba(255, 250, 244, 0.66) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 12px 28px -12px rgba(22, 8, 36, 0.07),
+    0 0 0 1px rgba(214, 183, 122, 0.26),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 200ms ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(255, 249, 240, 0.82) 100%
+  );
+  box-shadow:
+    0 18px 36px -12px rgba(22, 8, 36, 0.13),
+    0 0 0 1px rgba(214, 183, 122, 0.52),
+    inset 0 1px 0 0 rgba(255, 255, 255, 1);
+}
+
+/* Deep Royal Plum Crystal Glass */
+.royal-plum-glass,
+.glass-dark-royal {
+  background: linear-gradient(
+    135deg,
+    rgba(22, 8, 36, 0.9) 0%,
+    rgba(46, 17, 71, 0.84) 52%,
+    rgba(25, 9, 41, 0.93) 100%
+  );
+  backdrop-filter: blur(26px) saturate(190%);
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  border: 1px solid rgba(214, 183, 122, 0.42);
+  box-shadow:
+    0 24px 50px -14px rgba(22, 8, 36, 0.36),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Frosted Glass Search & Form Input */
+.glass-input {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(214, 183, 122, 0.38);
+  box-shadow:
+    inset 0 1px 2px rgba(22, 8, 36, 0.03),
+    0 2px 10px -2px rgba(22, 8, 36, 0.04);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: #160824;
+  box-shadow:
+    0 0 0 3px rgba(214, 183, 122, 0.28),
+    0 8px 20px -6px rgba(22, 8, 36, 0.08);
+  outline: none;
+}
+
+/* Frosted Glass Bottom Sheet & Modal Surface */
+.glass-modal-sheet {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 254, 251, 0.92) 0%,
+    rgba(252, 246, 238, 0.86) 100%
+  );
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 28px 64px -12px rgba(22, 8, 36, 0.32),
+    0 0 0 1px rgba(214, 183, 122, 0.35),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+
 /* Luxury 3D Card Perspective & Hover Lift */
 .luxury-card-3d {
-  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 240ms ease;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease;
   will-change: transform;
 }
 
 .luxury-card-3d:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 20px 40px -15px rgba(22, 8, 36, 0.12),
     0 0 1px 1px rgba(214, 183, 122, 0.45);
 }
@@ -64,32 +198,11 @@
   transform: scale(0.97);
 }
 
-/* Subtle Royal Ivory Glassmorphism */
-.luxury-glass {
-  background: rgba(255, 253, 249, 0.94);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-/* Royal Plum Dark Glass */
-.royal-plum-glass {
-  background: linear-gradient(135deg, rgba(22, 8, 36, 0.97) 0%, rgba(44, 17, 66, 0.95) 100%);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
 /* Gold Foil Text Gradient */
 .gold-gradient-text {
-  background: linear-gradient(135deg, #F5E2B8 0%, #D6B77A 50%, #B8924A 100%);
+  background: linear-gradient(135deg, #FFF3D1 0%, #E5C88E 48%, #C69C53 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-/* Premium Soft Card Shadow */
-.premium-surface {
-  background: #FFFFFF;
-  border: 1px solid rgba(226, 214, 198, 0.75);
-  box-shadow: 0 10px 30px -12px rgba(22, 8, 36, 0.06);
 }
 
 /* Hide scrollbars on mobile horizontal filter rails */
@@ -119,4 +232,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #B76E79;
 }
-
