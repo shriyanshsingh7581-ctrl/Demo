@@ -1,9 +1,11 @@
 import {
+  CLOUDINARY_ASSETS,
   EDEN_ROSES_LOGOS,
   EDEN_ROSES_PORTFOLIO_GALLERY,
   EDEN_ROSES_SERVICE_THUMBNAILS,
   OFFICIAL_UPLOADED_LOGO_URL,
   EdenRoseImage,
+  resolveWorkingImageUrl,
 } from '../config/edenRosesImages';
 import {
   db,
@@ -230,13 +232,13 @@ export interface PartnerSelfieLog {
 }
 
 const STORAGE_KEYS = {
-  SEED_VERSION: 'eden_roses_seed_v5',
+  SEED_VERSION: 'eden_roses_seed_v6',
   BOOKINGS: 'eden_roses_bookings_v4',
   CUSTOMERS: 'eden_roses_customers_v4',
-  SERVICES: 'eden_roses_services_v5',
-  SETTINGS: 'eden_roses_business_settings_v5',
+  SERVICES: 'eden_roses_services_v6',
+  SETTINGS: 'eden_roses_business_settings_v6',
   TEAM: 'eden_roses_team_members_v5',
-  GALLERY: 'eden_roses_gallery_images_v5',
+  GALLERY: 'eden_roses_gallery_images_v6',
   SELFIES: 'eden_roses_partner_selfies_v4',
 };
 
@@ -264,8 +266,7 @@ export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
     'At Eden Roses Makeover, beauty is more than makeup. It is about confidence, individuality, and creating unforgettable memories. Subba Lakshmi specializes in professional makeup artistry, bridal transformations, hairstyling, and personalized beauty services designed to complement every client’s personality and special occasion.',
   serviceArea:
     'Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman Nagar, Nagavarapalya, Brookefield, Whitefield, Jayanagar, Koramangala, HSR Layout, Marathahalli, Domlur, Banaswadi, Hebbal, Malleswaram, Electronic City',
-  heroImageUrl:
-    'https://edenroses.in/wp-content/uploads/2024/12/Short-and-sweet-just-like-a-perfect-love-story.-.A-touch-of-makeup-a-touch-of-magicWe-are-here-to-doll-you-up-for.your-best-day.jpg',
+  heroImageUrl: CLOUDINARY_ASSETS.bridalHd,
   headerTagline: 'Studio & On-Venue Service Across Bengaluru',
   defaultCity: 'Bangalore',
   heroBannerTitle: 'Professional Makeup',
@@ -324,7 +325,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
       'Available at our C V Raman Nagar studio or at your home/venue across Bengaluru',
       'High-hygiene sanitized brushes and authentic international cosmetics used',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.34.17.jpeg',
+    image: CLOUDINARY_ASSETS.partyBasic1,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -356,7 +357,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
       'Ideal for cocktail nights, sangeet, receptions, and studio photoshoots',
       'Long-wear sweat-resistant setting spray included',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.34.17-1.jpeg',
+    image: CLOUDINARY_ASSETS.partyHd,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -387,7 +388,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Recommended for close family weddings, milestone anniversaries & red-carpet events',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2024/12/Purple-or-pink-Makeup-by-@subbalakshmi.s_makeup_artist-Outfit-@fashionnova-2.jpg',
+    image: CLOUDINARY_ASSETS.partyLuxury2,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -420,7 +421,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Available at studio or on-venue across Indiranagar, Varthur, Yelahanka, Kaggadasapura & all Bengaluru',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.28.jpeg',
+    image: CLOUDINARY_ASSETS.engagement1,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -451,7 +452,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Includes complimentary touch-up kit for your ceremony',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.09-1.jpeg',
+    image: CLOUDINARY_ASSETS.engagementHd,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -484,7 +485,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Early morning Muhurtham slots available from 04:30 AM / 05:00 AM onwards',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07.jpeg',
+    image: CLOUDINARY_ASSETS.bridalClassic,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -515,7 +516,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Most popular bridal choice for South Indian Muhurtham & Grand Receptions',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08.jpeg',
+    image: CLOUDINARY_ASSETS.bridalHd,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -546,7 +547,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Includes dedicated senior stylist assistance for rapid outfit/look transitions',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.30.jpeg',
+    image: CLOUDINARY_ASSETS.bridalPremium,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -578,7 +579,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Group bookings supported for bridal families at wedding venues or home',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.24.57.jpeg',
+    image: CLOUDINARY_ASSETS.weddingGuest1,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -608,7 +609,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Ideal for Haldi, Mehendi, Sangeet, Muhurtham & Reception guests',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.24.50.jpeg',
+    image: CLOUDINARY_ASSETS.weddingGuestHd,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -639,7 +640,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Can be booked standalone or combined with any hairstyling or makeup service',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-saree-draping'].url,
+    image: CLOUDINARY_ASSETS.sareeBasic,
     isPackage: true,
   },
   {
@@ -667,7 +668,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Pre-pleating service also available a day prior to the wedding',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07-1.jpeg',
+    image: CLOUDINARY_ASSETS.sareeAdvance,
     isPackage: true,
   },
 
@@ -697,7 +698,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Please ensure hair is washed and completely dry prior to appointment',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-half-up'].url,
+    image: CLOUDINARY_ASSETS.hairBasic1,
     isPackage: true,
   },
   {
@@ -725,7 +726,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Supports clip-in hair extensions and long bridal braids',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-braid-curls'].url,
+    image: CLOUDINARY_ASSETS.hairAdvance,
     isPackage: true,
   },
   {
@@ -753,7 +754,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Perfect for cocktail nights, receptions, bridesmaids & festive parties',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['pkg-hair-messy-updo'].url,
+    image: CLOUDINARY_ASSETS.hairBasic2,
     isPackage: true,
   },
 
@@ -784,7 +785,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Bestseller combo for wedding guests, housewarmings, naming ceremonies & parties',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.28.14.jpeg',
+    image: CLOUDINARY_ASSETS.comboPackage,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -814,7 +815,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Custom multi-event packages (Haldi + Mehendi + Sangeet + Muhurtham) also available',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.10.jpeg',
+    image: CLOUDINARY_ASSETS.bridalPackage,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -844,7 +845,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     additionalInfo: [
       'Available at studio or at your engagement venue in Bengaluru',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.31.jpeg',
+    image: CLOUDINARY_ASSETS.engagement2,
     isPackage: true,
     airbrushAvailable: true,
   },
@@ -871,7 +872,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
       '1 Pair of premium false eyelashes (Natural, Wispy, or Bridal Volume)',
       'Seamless lash-line blending with liner & mascara',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08-2.jpeg',
+    image: CLOUDINARY_ASSETS.addonLashes,
     isPackage: false,
   },
   {
@@ -895,7 +896,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
       'Decorative pearl/crystal pins or floral styling arrangement',
       'Secure pinning of Maang Tikka, Matha Patti, Jhumar, or Rakodi',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.25.00.jpeg',
+    image: CLOUDINARY_ASSETS.sareeAdvance,
     isPackage: false,
   },
   {
@@ -919,7 +920,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
       'Full hair texturizing, volume crimping & structural updo/braid crafting',
       'Blending and securing of client’s hair extensions',
     ],
-    image: 'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.28.15.jpeg',
+    image: CLOUDINARY_ASSETS.hairBasic2,
     isPackage: false,
   },
   {
@@ -943,7 +944,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
       'Choice of Airbrush Base Upgrade, 2 Saree Pre-Pleatings, or Groom Touch-up',
       'Performed at studio or at your event venue',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-airbrush-makeup'].url,
+    image: CLOUDINARY_ASSETS.addonMakeup,
     isPackage: false,
     airbrushAvailable: true,
   },
@@ -1279,7 +1280,7 @@ function sanitizeServiceForFirestore(s: ServiceCatalogItem): ServiceCatalogItem 
       s.description || 'Professional makeup & beauty service at Eden Roses Makeover.'
     ).slice(0, 1500),
     price: s.price === null || s.price === undefined ? null : Math.max(0, Number(s.price)),
-    image: String(s.image || '').slice(0, 1500),
+    image: resolveWorkingImageUrl(String(s.image || '')).slice(0, 1500),
     isPackage: Boolean(s.isPackage),
   };
 
@@ -1342,8 +1343,14 @@ function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSett
     makeupBrand: String(merged.makeupBrand || INITIAL_BUSINESS_SETTINGS.makeupBrand).slice(0, 150),
     artistName: String(merged.artistName || INITIAL_BUSINESS_SETTINGS.artistName).slice(0, 120),
     businessCategory: String(merged.businessCategory || INITIAL_BUSINESS_SETTINGS.businessCategory).slice(0, 300),
-    logoUrl: String(merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL).slice(0, 450000),
-    footerLogoUrl: String(merged.footerLogoUrl || merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL).slice(0, 450000),
+    logoUrl: resolveWorkingImageUrl(
+      String(merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL),
+      OFFICIAL_UPLOADED_LOGO_URL
+    ).slice(0, 450000),
+    footerLogoUrl: resolveWorkingImageUrl(
+      String(merged.footerLogoUrl || merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL),
+      OFFICIAL_UPLOADED_LOGO_URL
+    ).slice(0, 450000),
     phonePrimary: String(merged.phonePrimary || INITIAL_BUSINESS_SETTINGS.phonePrimary).slice(0, 40),
     phoneSecondary: String(merged.phoneSecondary || '').slice(0, 40),
     whatsappNumber: String(merged.whatsappNumber || INITIAL_BUSINESS_SETTINGS.whatsappNumber).slice(0, 40),
@@ -1357,7 +1364,10 @@ function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSett
     facebookUrl: String(merged.facebookUrl || INITIAL_BUSINESS_SETTINGS.facebookUrl).slice(0, 250),
     description: String(merged.description || INITIAL_BUSINESS_SETTINGS.description).slice(0, 3000),
     serviceArea: String(merged.serviceArea || INITIAL_BUSINESS_SETTINGS.serviceArea).slice(0, 1000),
-    heroImageUrl: String(merged.heroImageUrl || INITIAL_BUSINESS_SETTINGS.heroImageUrl).slice(0, 450000),
+    heroImageUrl: resolveWorkingImageUrl(
+      String(merged.heroImageUrl || INITIAL_BUSINESS_SETTINGS.heroImageUrl),
+      CLOUDINARY_ASSETS.bridalHd
+    ).slice(0, 450000),
     headerTagline: String(merged.headerTagline || INITIAL_BUSINESS_SETTINGS.headerTagline).slice(0, 200),
     defaultCity: String(merged.defaultCity || INITIAL_BUSINESS_SETTINGS.defaultCity).slice(0, 80),
     heroBannerTitle: String(merged.heroBannerTitle || INITIAL_BUSINESS_SETTINGS.heroBannerTitle).slice(0, 160),
@@ -1393,7 +1403,7 @@ function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSett
 function sanitizeGalleryItemForFirestore(img: EdenRoseImage): EdenRoseImage {
   return {
     id: String(img.id || `gal-${Date.now()}`).slice(0, 80).replace(/[^a-zA-Z0-9_-]/g, '-'),
-    url: String(img.url || '').slice(0, 450000),
+    url: resolveWorkingImageUrl(String(img.url || '')).slice(0, 450000),
     alt: String(img.alt || 'Eden Roses Makeover Portfolio').slice(0, 300),
     category: (img.category || 'Bridal Portfolio') as EdenRoseImage['category'],
     galleryCategory: img.galleryCategory || 'Bridal Makeup',
@@ -1865,7 +1875,7 @@ export function startFirebaseRealtimeSync(): void {
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as ServiceCatalogItem;
         if (data && data.id) {
-          remoteServicesMap.set(data.id, data);
+          remoteServicesMap.set(data.id, sanitizeServiceForFirestore(data));
         }
       });
 
@@ -1882,7 +1892,9 @@ export function startFirebaseRealtimeSync(): void {
         INITIAL_SERVICES_CATALOG.forEach((seedSrv) => {
           const remoteSrv = remoteServicesMap.get(seedSrv.id);
           if (remoteSrv) {
-            orderedKnown.push({ ...seedSrv, ...remoteSrv });
+            orderedKnown.push(sanitizeServiceForFirestore({ ...seedSrv, ...remoteSrv }));
+          } else {
+            orderedKnown.push(seedSrv);
           }
         });
         const merged = [...customServices, ...orderedKnown];
@@ -2547,7 +2559,10 @@ export function getBusinessSettings(): BusinessSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!raw) return INITIAL_BUSINESS_SETTINGS;
-    return { ...INITIAL_BUSINESS_SETTINGS, ...JSON.parse(raw) };
+    return sanitizeBusinessSettingsForFirestore({
+      ...INITIAL_BUSINESS_SETTINGS,
+      ...JSON.parse(raw),
+    });
   } catch {
     return INITIAL_BUSINESS_SETTINGS;
   }
@@ -2581,7 +2596,8 @@ export function getServicesCatalog(): ServiceCatalogItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SERVICES);
     if (!raw) return INITIAL_SERVICES_CATALOG;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as ServiceCatalogItem[];
+    return parsed.map((s) => sanitizeServiceForFirestore(s));
   } catch {
     return INITIAL_SERVICES_CATALOG;
   }
@@ -2797,7 +2813,8 @@ export function getGalleryImages(): EdenRoseImage[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.GALLERY);
     if (!raw) return EDEN_ROSES_PORTFOLIO_GALLERY;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as EdenRoseImage[];
+    return parsed.map((img) => sanitizeGalleryItemForFirestore(img));
   } catch {
     return EDEN_ROSES_PORTFOLIO_GALLERY;
   }

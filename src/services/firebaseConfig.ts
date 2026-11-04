@@ -147,10 +147,26 @@ export function isCloudinaryUrl(url?: string | null): boolean {
   return Boolean(url && url.includes('res.cloudinary.com'));
 }
 
+export function normalizeCloudinaryUrl(url: string): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  let normalized = url.trim();
+  if (
+    normalized.includes('/image/upload/') &&
+    !normalized.includes('/image/upload/f_auto')
+  ) {
+    normalized = normalized.replace(
+      '/image/upload/',
+      '/image/upload/f_auto,q_auto/'
+    );
+  }
+  normalized = normalized.replace(/\.(heic|heif)$/i, '.jpg');
+  return normalized;
+}
+
 /**
  * Cloudinary Production Image Upload Helper
  * Configured with Cloud Name: dxeuzdwkz and Upload Preset: Makeup
- * Uploads directly to Cloudinary CDN and returns the HTTPS secure_url.
+ * Uploads directly to Cloudinary CDN and returns the browser-safe HTTPS secure_url.
  */
 export async function uploadImageAsset(file: File): Promise<string> {
   const cloudName = CLOUDINARY_CLOUD_NAME.trim();
@@ -178,7 +194,7 @@ export async function uploadImageAsset(file: File): Promise<string> {
         if (res.ok) {
           const data = await res.json();
           if (data.secure_url) {
-            return data.secure_url as string;
+            return normalizeCloudinaryUrl(String(data.secure_url));
           }
         } else {
           const errText = await res.text().catch(() => '');

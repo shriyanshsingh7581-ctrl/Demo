@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
+import { CLOUDINARY_ASSETS, resolveWorkingImageUrl } from '../config/edenRosesImages';
 
 interface SmartImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -18,9 +19,19 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   className = '',
   ...props
 }) => {
+  const resolvedPrimarySrc = resolveWorkingImageUrl(src);
+  const [currentSrc, setCurrentSrc] = useState<string>(resolvedPrimarySrc);
+  const [triedBackup, setTriedBackup] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  if (hasError || !src) {
+  useEffect(() => {
+    const nextUrl = resolveWorkingImageUrl(src);
+    setCurrentSrc(nextUrl);
+    setTriedBackup(false);
+    setHasError(false);
+  }, [src]);
+
+  if (hasError || !currentSrc) {
     return (
       <div
         className={`flex flex-col items-center justify-center bg-gradient-to-br from-[#F6DDE2] via-[#FFF8EF] to-[#D6B77A]/30 text-[#321E1E] p-4 text-center select-none ${className}`}
@@ -40,11 +51,18 @@ export const SmartImage: React.FC<SmartImageProps> = ({
 
   return (
     <img
-      src={src}
+      src={currentSrc}
       alt={alt}
       loading={eager ? 'eager' : 'lazy'}
       referrerPolicy="no-referrer"
-      onError={() => setHasError(true)}
+      onError={() => {
+        if (!triedBackup && currentSrc !== CLOUDINARY_ASSETS.bridalHd) {
+          setTriedBackup(true);
+          setCurrentSrc(CLOUDINARY_ASSETS.bridalHd);
+        } else {
+          setHasError(true);
+        }
+      }}
       className={`${fit === 'contain' ? 'object-contain' : 'object-cover'} ${className}`}
       {...props}
     />

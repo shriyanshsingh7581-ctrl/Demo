@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { SmartImage } from '../components/SmartImage';
 import {
+  CLOUDINARY_ASSETS,
   EDEN_ROSES_ABOUT_IMAGES,
   EDEN_ROSES_HERO_IMAGES,
   EDEN_ROSES_TESTIMONIAL_IMAGES,
@@ -107,8 +108,7 @@ const MAKEUP_STYLING_LANDING_CATEGORIES: LandingCategoryCard[] = [
     id: 'Makeup & Styling for Women',
     title: 'Makeup & Styling for Women',
     group: 'MAKEUP',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08.jpeg',
+    image: CLOUDINARY_ASSETS.bridalHd,
     targetSubCategory: 'Party Makeup',
     badge: 'Popular',
   },
@@ -116,31 +116,28 @@ const MAKEUP_STYLING_LANDING_CATEGORIES: LandingCategoryCard[] = [
     id: 'Saree Draping',
     title: 'Saree Draping',
     group: 'MAKEUP',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07-2.jpeg',
+    image: CLOUDINARY_ASSETS.sareeBasic,
     targetSubCategory: 'Saree Draping',
   },
   {
     id: 'Hair Styling for Women',
     title: 'Hair Styling for Women',
     group: 'MAKEUP',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.26.53.jpeg',
+    image: CLOUDINARY_ASSETS.hairBasic1,
     targetSubCategory: 'Hair Styling',
   },
   {
     id: 'Salon for Women',
     title: 'Salon for Women',
     group: 'MAKEUP',
-    image:
-      'https://edenroses.in/wp-content/uploads/2024/12/Untitled-design-2024-12-28T120023.379.png',
+    image: CLOUDINARY_ASSETS.hydraFacial,
     targetSubCategory: 'Salon for Women',
   },
   {
     id: 'Salon for Men',
     title: 'Salon for Men',
     group: 'MEN SALON',
-    image: 'https://edenroses.in/wp-content/uploads/2021/03/haircut.jpg',
+    image: CLOUDINARY_ASSETS.salonExtra,
     targetSubCategory: 'Salon for Men',
   },
 ];
@@ -158,57 +155,49 @@ const MAKEUP_ARTIST_8_CATEGORIES: MakeupGridCategory[] = [
     id: 'Party Makeup',
     label: 'Party Makeup',
     shortLabel: 'Party Makeup',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.34.17.jpeg',
+    image: CLOUDINARY_ASSETS.partyBasic1,
   },
   {
     id: 'Engagement Makeup',
     label: 'Engagement Makeup',
     shortLabel: 'Engagement Makeup',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.32.28.jpeg',
+    image: CLOUDINARY_ASSETS.engagement1,
   },
   {
     id: 'Bridal Makeup',
     label: 'Bridal Makeup',
     shortLabel: 'Bridal Makeup',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07.jpeg',
+    image: CLOUDINARY_ASSETS.bridalClassic,
   },
   {
     id: 'Wedding Guest Makeup',
     label: 'Wedding Guest Makeup',
     shortLabel: 'Wedding Guest Makeup',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.24.57.jpeg',
+    image: CLOUDINARY_ASSETS.weddingGuest1,
   },
   {
     id: 'Saree Draping',
     label: 'Saree Draping',
     shortLabel: 'Saree Draping',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.07-2.jpeg',
+    image: CLOUDINARY_ASSETS.sareeBasic,
   },
   {
     id: 'Hair Styling',
     label: 'Hair Styling',
     shortLabel: 'Hair Styling',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.26.54.jpeg',
+    image: CLOUDINARY_ASSETS.hairAdvance,
   },
   {
     id: 'Packages',
     label: 'Packages',
     shortLabel: 'Packages',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.10.jpeg',
+    image: CLOUDINARY_ASSETS.bridalPackage,
   },
   {
     id: 'Add-ons',
     label: 'Add-ons',
     shortLabel: 'Add-ons',
-    image:
-      'https://edenroses.in/wp-content/uploads/2025/02/WhatsApp-Image-2025-02-11-at-05.30.08-2.jpeg',
+    image: CLOUDINARY_ASSETS.addonLashes,
   },
 ];
 
