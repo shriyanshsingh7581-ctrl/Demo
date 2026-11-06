@@ -66,6 +66,8 @@ import {
 const BENGALURU_LOCALITIES = [
   'Kaggadaspura',
   'Electronic City',
+  'Vijayapura (Near Devanahalli)',
+  'Srinagar (Banashankari)',
   'JP Nagar',
   'Horamavu',
   'BTM',
@@ -2620,6 +2622,8 @@ export const CustomerWebsite: React.FC = () => {
                           <option value="Electronic City">Electronic City (Walk-in Salon Branch)</option>
                         </optgroup>
                         <optgroup label="On-Location / Doorstep Makeup (Bangalore)">
+                          <option value="Vijayapura (Near Devanahalli)">Vijayapura (Near Devanahalli) (On-Location Makeup)</option>
+                          <option value="Srinagar (Banashankari)">Srinagar (Banashankari) (On-Location Makeup)</option>
                           <option value="JP Nagar">JP Nagar (On-Location Makeup)</option>
                           <option value="Horamavu">Horamavu (On-Location Makeup)</option>
                           <option value="BTM">BTM (On-Location Makeup)</option>
@@ -2641,6 +2645,10 @@ export const CustomerWebsite: React.FC = () => {
                               ![
                                 'kaggadaspura',
                                 'electronic city',
+                                'vijayapura (near devanahalli)',
+                                'vijayapura',
+                                'srinagar (banashankari)',
+                                'srinagar',
                                 'jp nagar',
                                 'horamavu',
                                 'btm',

@@ -245,6 +245,8 @@ export const BANGALORE_AREAS: string[] = [
   'All Areas',
   'Kaggadaspura',
   'Electronic City',
+  'Vijayapura (Near Devanahalli)',
+  'Srinagar (Banashankari)',
   'JP Nagar',
   'Horamavu',
   'BTM',
@@ -262,7 +264,7 @@ export const BANGALORE_AREAS: string[] = [
 ];
 
 const STORAGE_KEYS = {
-  CLEAN_RESET_V6: 'eden_roses_clean_v7',
+  CLEAN_RESET_V6: 'eden_roses_clean_v8',
   SEED_VERSION: 'eden_roses_seed_v9_clean',
   BOOKINGS: 'eden_roses_bookings_v6',
   CUSTOMERS: 'eden_roses_customers_v6',
