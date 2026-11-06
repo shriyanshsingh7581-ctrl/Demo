@@ -108,7 +108,8 @@ const MAKEUP_STYLING_LANDING_CATEGORIES: LandingCategoryCard[] = [
     id: 'Makeup & Styling for Women',
     title: 'Makeup & Styling for Women',
     group: 'MAKEUP',
-    image: CLOUDINARY_ASSETS.bridalHd,
+    image:
+      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=800&q=80',
     targetSubCategory: 'Party Makeup',
     badge: 'Popular',
   },
@@ -123,22 +124,124 @@ const MAKEUP_STYLING_LANDING_CATEGORIES: LandingCategoryCard[] = [
     id: 'Hair Styling for Women',
     title: 'Hair Styling for Women',
     group: 'MAKEUP',
-    image: CLOUDINARY_ASSETS.hairBasic1,
+    image:
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
     targetSubCategory: 'Hair Styling',
   },
   {
     id: 'Salon for Women',
     title: 'Salon for Women',
     group: 'MAKEUP',
-    image: CLOUDINARY_ASSETS.hydraFacial,
+    image:
+      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80',
     targetSubCategory: 'Salon for Women',
   },
   {
     id: 'Salon for Men',
     title: 'Salon for Men',
     group: 'MEN SALON',
-    image: CLOUDINARY_ASSETS.salonExtra,
+    image:
+      'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
     targetSubCategory: 'Salon for Men',
+  },
+];
+
+// 3. 100% EXACT LOCKED SIGNATURE SERVICE CARDS (Strict Title, Description & Verified Image Mapping)
+interface SignatureServiceCard {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  badge: string;
+  serviceIdToBook: string;
+  targetSubCategory: MakeupSubCategory;
+}
+
+const LOCKED_SIGNATURE_SERVICE_CARDS: SignatureServiceCard[] = [
+  {
+    id: 'sig-card-1-bridal-party-makeup',
+    title: 'Bridal & Party Makeup',
+    description:
+      'HD, Airbrush, and traditional bridal & party makeup by expert artists—available in-studio and on-location across Bangalore.',
+    image:
+      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=800&q=80',
+    badge: 'In-Studio & On-Location Across Bangalore',
+    serviceIdToBook: 'pkg-luxury-bridal',
+    targetSubCategory: 'Bridal Makeup',
+  },
+  {
+    id: 'sig-card-2-mens-grooming',
+    title: "Men's Grooming & Styling",
+    description:
+      "Precision men's haircuts, beard trimming, luxury shaves, and men's detan facials at our Kaggadaspura & Electronic City salons.",
+    image:
+      'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
+    badge: 'Kaggadaspura & Electronic City Salons',
+    serviceIdToBook: 'srv-haircuts',
+    targetSubCategory: 'Salon for Men',
+  },
+  {
+    id: 'sig-card-3-hair-spa',
+    title: 'Hair Spa & Deep Conditioning',
+    description:
+      'Nourishing hair spa, deep conditioning, scalp massage, and keratin protein hair therapy for smooth, frizz-free hair.',
+    image:
+      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+    badge: 'Deep Keratin & Protein Hair Therapy',
+    serviceIdToBook: 'srv-hair-spa',
+    targetSubCategory: 'Salon for Women',
+  },
+  {
+    id: 'sig-card-4-haircuts-styling',
+    title: 'Haircuts & Advanced Hair Styling',
+    description:
+      'Professional haircuts, layer cuts, blow-dry, curls, and smooth hair styling tailored to your look.',
+    image:
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    badge: 'Precision Cuts & Advance Styling',
+    serviceIdToBook: 'srv-skin-care',
+    targetSubCategory: 'Hair Styling',
+  },
+  {
+    id: 'sig-card-5-facial-mani-pedi',
+    title: 'Facial, Manicure & Pedicure',
+    description:
+      'Rejuvenating skin facials, glow cleanups, luxury manicure, and spa pedicure services at our salon branches.',
+    image:
+      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80',
+    badge: 'Kaggadaspura & Electronic City Salons',
+    serviceIdToBook: 'srv-mani-pedi',
+    targetSubCategory: 'Salon for Women',
+  },
+];
+
+// Physical Walk-in Branches Configuration
+const SALON_BRANCHES = [
+  {
+    id: 'branch-kaggadaspura',
+    name: 'Eden Roses Unisex Salon — Kaggadaspura Branch, Bangalore, Karnataka',
+    shortName: 'Kaggadaspura Branch',
+    badge: 'Walk-in Unisex Salon & Bridal Studio',
+    address:
+      'No.11, 1st Floor, 4th Cross, Kaggadaspura Main Road, C V Raman Nagar, Bangalore, Karnataka 560093',
+    phone: '+91 7619603016',
+    PhoneHref: 'tel:+917619603016',
+    hours: 'Mon – Sun: 09:00 AM – 08:30 PM',
+    directionsUrl:
+      'https://www.google.com/maps/search/?api=1&query=Eden+Roses+Unisex+Salon+Kaggadaspura+Main+Road+CV+Raman+Nagar+Bangalore+560093',
+  },
+  {
+    id: 'branch-electronic-city',
+    name: 'Eden Roses Unisex Salon — Electronic City Branch, Bangalore, Karnataka',
+    shortName: 'Electronic City Branch',
+    badge: 'Walk-in Unisex Salon & Bridal Studio',
+    address:
+      'Neeladri Road, Electronic City Phase 1, Bangalore, Karnataka 560100',
+    phone: '+91 7619603016',
+    PhoneHref: 'tel:+917619603016',
+    hours: 'Mon – Sun: 09:00 AM – 08:30 PM',
+    directionsUrl:
+      'https://www.google.com/maps/search/?api=1&query=Eden+Roses+Unisex+Salon+Electronic+City+Bangalore+560100',
   },
 ];
 
@@ -325,11 +428,14 @@ export const CustomerWebsite: React.FC = () => {
     useState<MakeupLandingGroup>('Makeup & Styling for Women');
   const [showLandingCategoryModal, setShowLandingCategoryModal] = useState(false);
 
-  // Gallery & Hero States
+  // Gallery, Hero & Service Division Tab States
   const [activeGalleryCategory, setActiveGalleryCategory] =
     useState<GalleryFilterCategory>('All');
   const [lightboxImage, setLightboxImage] = useState<EdenRoseImage | null>(null);
   const [heroSlideIdx, setHeroSlideIdx] = useState(0);
+  const [serviceDivisionTab, setServiceDivisionTab] = useState<'both' | 'in-salon' | 'at-home'>(
+    'both'
+  );
 
   // Cart & Package Selection State
   const [cart, setCart] = useState<BookingServiceItem[]>([
@@ -690,10 +796,14 @@ export const CustomerWebsite: React.FC = () => {
     setConfirmedBooking(result.booking);
   };
 
-  const cleanWhatsappNumber = settings.whatsappNumber.replace(/[^0-9]/g, '');
+  const primaryPhoneDisplay = '+91 7619603016';
+  const primaryPhoneTel = 'tel:+917619603016';
+  const whatsappInstantBookingUrl = `https://wa.me/917619603016?text=${encodeURIComponent(
+    `Hi Eden Roses Unisex Salon! I would like to book an appointment / inquire about services in ${locality}, Bangalore.`
+  )}`;
 
   return (
-    <div className="min-h-screen couture-mesh-bg text-[#1C1619] relative pb-32 lg:pb-0 selection:bg-[#160824] selection:text-[#D6B77A] overflow-x-hidden">
+    <div className="min-h-screen couture-mesh-bg text-[#1C1619] relative pb-36 lg:pb-0 selection:bg-[#160824] selection:text-[#D6B77A] overflow-x-hidden">
       {/* Ambient Couture Light Orbs for True Glassmorphism Refraction */}
       <div
         aria-hidden="true"
@@ -711,27 +821,27 @@ export const CustomerWebsite: React.FC = () => {
             <div className="w-6 h-6 rounded-full overflow-hidden border border-[#D6B77A] shrink-0 shadow-xs">
               <SmartImage
                 src={settings.logoUrl}
-                alt={settings.makeupBrand}
+                alt={settings.businessName}
                 className="w-full h-full object-cover"
               />
             </div>
             <span className="font-serif-luxury text-xs sm:text-sm font-bold tracking-wide text-[#F5E2B8] truncate">
-              {settings.makeupBrand}
+              Eden Roses Unisex Salon
             </span>
-            <span className="text-[#D6B77A]/60" aria-hidden="true">
+            <span className="text-[#D6B77A]/60 hidden sm:inline" aria-hidden="true">
               ·
             </span>
-            <span className="text-[#D6B77A] font-medium truncate">
-              By {settings.artistName}
+            <span className="text-[#D6B77A] font-medium truncate hidden sm:inline">
+              Salons: Kaggadaspura &amp; Electronic City | Bridal Makeup: All Bangalore
             </span>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <a
-              href={`tel:${settings.phonePrimary.replace(/\s+/g, '')}`}
+              href={primaryPhoneTel}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 backdrop-blur-md text-[#F5E2B8] font-mono-num text-[11px] font-semibold transition-colors"
             >
               <Phone className="w-3 h-3 text-[#D6B77A]" />
-              <span>{settings.phonePrimary}</span>
+              <span>{primaryPhoneDisplay}</span>
             </a>
           </div>
         </div>
@@ -956,168 +1066,458 @@ export const CustomerWebsite: React.FC = () => {
 
       {/* =====================================================================
           2. MAKEUP & STYLING LANDING PAGE SECTION (Glassmorphic Couture Surface)
-          Shows ONLY the 5 required Makeup & Styling categories:
-          1. Makeup & Styling for Women
-          2. Saree Draping
-          3. Hair Styling for Women
-          4. Salon for Women
-          5. Salon for Men
+          Shows ONLY the 5 required Makeup & Styling categories with strict aspect-[4/3] object-cover
       ===================================================================== */}
       <section
         id="makeup-styling-landing"
         className="relative z-10 pt-4 pb-2 sm:py-6"
       >
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 space-y-6">
           <div className="glass-panel rounded-3xl p-4 sm:p-6 space-y-5">
             {/* Section Title Row */}
-            <div className="flex items-center justify-between gap-2 border-b border-[#E6DAC8]/60 pb-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6DAC8]/60 pb-3.5">
               <div>
                 <p className="text-[11px] font-semibold text-[#8C4A56] tracking-wide">
-                  Doorstep &amp; Studio Artistry · {locality}, Bangalore
+                  Walk-in Salons: Kaggadaspura &amp; Electronic City · At-Home Bridal Makeup: All Bangalore
                 </p>
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#160824] tracking-tight">
                   Makeup &amp; Styling
                 </h2>
               </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={primaryPhoneTel}
+                  className="tap-scale px-3.5 py-2 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>{primaryPhoneDisplay}</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSubCategory('All');
+                    scrollToSection('makeup-artist-page');
+                  }}
+                  className="tap-scale px-3.5 py-2 rounded-xl glass-card text-[#160824] text-xs font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>All Services ({services.length})</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#8C4A56]" />
+                </button>
+              </div>
+            </div>
+
+            {/* 5 Category Cards with strict aspect-[4/3] object-cover */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              {MAKEUP_STYLING_LANDING_CATEGORIES.map((cat) => {
+                const isSelected = activeLandingCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleSelectLandingCategory(cat)}
+                    className={`tap-scale group flex flex-col text-left rounded-2xl overflow-hidden glass-card p-2 transition-all cursor-pointer focus:outline-none ${
+                      isSelected
+                        ? 'ring-2 ring-[#160824] shadow-[0_12px_28px_-8px_rgba(22,8,36,0.22)]'
+                        : 'hover:ring-1 hover:ring-[#B76E79]/60'
+                    }`}
+                  >
+                    <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-900">
+                      <SmartImage
+                        src={cat.image}
+                        alt={cat.title}
+                        eager
+                        className="w-full h-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-[#160824]/85 text-[#D6B77A] text-[9px] font-bold tracking-wide backdrop-blur-md">
+                        {cat.group === 'MEN SALON'
+                          ? 'In-Salon Only'
+                          : cat.id === 'Salon for Women'
+                          ? 'In-Salon Only'
+                          : 'Studio & At-Home'}
+                      </span>
+                    </div>
+                    <div className="pt-2.5 px-1 flex items-center justify-between gap-1">
+                      <span
+                        className={`text-xs sm:text-sm leading-snug line-clamp-1 ${
+                          isSelected
+                            ? 'font-bold text-[#160824]'
+                            : 'font-semibold text-stone-900'
+                        }`}
+                      >
+                        {cat.title}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#8C4A56] shrink-0" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* =====================================================================
+              2B. CRITICAL SEPARATION: IN-SALON SERVICES (SECTION A) VS.
+                  BANGALORE-WIDE AT-HOME MAKEUP (SECTION B)
+          ===================================================================== */}
+          <div
+            id="service-separation-guide"
+            className="glass-panel rounded-3xl p-4 sm:p-7 space-y-6"
+          >
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-[#E6DAC8]/60 pb-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#8C4A56]">
+                  Service Availability Guide · Zero Confusion Guarantee
+                </p>
+                <h2 className="font-display text-2xl sm:text-4xl font-bold text-[#160824] mt-1">
+                  In-Salon Walk-In Branches vs. Bangalore-Wide At-Home Makeup
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-3xl">
+                  Explore our full walk-in unisex salon services at{' '}
+                  <strong className="text-[#160824]">Kaggadaspura</strong> &amp;{' '}
+                  <strong className="text-[#160824]">Electronic City</strong>, or book our
+                  on-location bridal &amp; party makeup team anywhere across Bangalore.
+                </p>
+              </div>
+
+              {/* Interactive Section Filter Tabs */}
+              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/75 border border-[#E6DAC8]/80 self-start">
+                <button
+                  type="button"
+                  onClick={() => setServiceDivisionTab('both')}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    serviceDivisionTab === 'both'
+                      ? 'glass-dark-royal text-[#D6B77A]'
+                      : 'text-stone-700 hover:text-[#160824]'
+                  }`}
+                >
+                  Both Sections
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServiceDivisionTab('in-salon')}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    serviceDivisionTab === 'in-salon'
+                      ? 'glass-dark-royal text-[#D6B77A]'
+                      : 'text-stone-700 hover:text-[#160824]'
+                  }`}
+                >
+                  Section A: In-Salon
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServiceDivisionTab('at-home')}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    serviceDivisionTab === 'at-home'
+                      ? 'glass-dark-royal text-[#D6B77A]'
+                      : 'text-stone-700 hover:text-[#160824]'
+                  }`}
+                >
+                  Section B: At-Home
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              {/* SECTION A: IN-SALON SERVICES */}
+              {(serviceDivisionTab === 'both' || serviceDivisionTab === 'in-salon') && (
+                <div
+                  className={`rounded-3xl p-5 sm:p-6 glass-card border-2 border-[#D6B77A]/55 flex flex-col justify-between space-y-5 ${
+                    serviceDivisionTab === 'in-salon' ? 'lg:col-span-2' : ''
+                  }`}
+                >
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold tracking-wide">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      <span>Walk-in Salon Services — Kaggadaspura &amp; Electronic City Only</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C4A56]">
+                        SECTION A · Physical Walk-In Branches
+                      </span>
+                      <h3 className="font-display text-xl sm:text-2xl font-bold text-[#160824] mt-0.5">
+                        In-Salon Services (Available Exclusively at Kaggadaspura &amp; Electronic City Branches)
+                      </h3>
+                      <p className="text-xs sm:text-sm text-stone-600 mt-1.5 leading-relaxed">
+                        Visit our luxury unisex salon studios in{' '}
+                        <strong className="text-[#160824]">Kaggadaspura (C V Raman Nagar)</strong> or{' '}
+                        <strong className="text-[#160824]">Electronic City</strong> for complete
+                        hair, skin, spa, and grooming treatments:
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        {
+                          title: 'Facial & Skin Treatments',
+                          sub: 'HydraFacial, O3+ Bridal Glow, Detan & Cleanups',
+                          cat: 'Salon for Women' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'Manicure & Pedicure',
+                          sub: 'Crystal Spa Pedicure, Luxury Manicure & Nail Art',
+                          cat: 'Salon for Women' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'Hair Spa & Deep Conditioning',
+                          sub: 'Deep Keratin & Protein Hair Therapy & Scalp Massage',
+                          cat: 'Salon for Women' as MakeupSubCategory,
+                        },
+                        {
+                          title: "Women's Haircuts & Styling",
+                          sub: 'Layer Cuts, Feather Cuts, Blow-Dry & Curls',
+                          cat: 'Salon for Women' as MakeupSubCategory,
+                        },
+                        {
+                          title: "Men's Grooming",
+                          sub: "Precision Men's Haircuts, Beard Trim, Shaves & Detan",
+                          cat: 'Salon for Men' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'In-Studio Bridal Makeup',
+                          sub: 'Private Bridal Suite Makeovers at Both Branches',
+                          cat: 'Bridal Makeup' as MakeupSubCategory,
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.title}
+                          type="button"
+                          onClick={() => jumpToCategorySection(item.cat)}
+                          className="p-3 rounded-2xl bg-white/85 hover:bg-white border border-[#E6DAC8]/80 text-left transition-all flex items-start gap-2.5 cursor-pointer group"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-bold text-[#160824] group-hover:text-[#8C4A56] transition-colors">
+                              {item.title}
+                            </p>
+                            <p className="text-[11px] text-stone-600 leading-snug mt-0.5">
+                              {item.sub}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#E6DAC8]/60 flex flex-wrap items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection('our-salon-branches')}
+                      className="text-xs font-bold text-[#8C4A56] hover:text-[#160824] underline cursor-pointer"
+                    >
+                      View Kaggadaspura &amp; Electronic City Branch Addresses →
+                    </button>
+                    <a
+                      href={primaryPhoneTel}
+                      className="tap-scale px-4 py-2.5 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold inline-flex items-center gap-1.5"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Call Branch: {primaryPhoneDisplay}</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION B: BRIDAL MAKEUP & SELECTED AT-HOME BEAUTY SERVICES (ALL ACROSS BANGALORE) */}
+              {(serviceDivisionTab === 'both' || serviceDivisionTab === 'at-home') && (
+                <div
+                  className={`rounded-3xl p-5 sm:p-6 glass-dark-royal text-white border-2 border-[#D6B77A]/55 flex flex-col justify-between space-y-5 ${
+                    serviceDivisionTab === 'at-home' ? 'lg:col-span-2' : ''
+                  }`}
+                >
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#E6C98F] via-[#D6B77A] to-[#C29B56] text-[#160824] text-xs font-extrabold tracking-wide">
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span>On-Location / At-Home Service Across Bangalore</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#D6B77A]">
+                        SECTION B · Doorstep &amp; Wedding Venue Artistry
+                      </span>
+                      <h3 className="font-display text-xl sm:text-2xl font-bold text-[#FFF8EF] mt-0.5">
+                        Bridal Makeup &amp; Selected At-Home Beauty Services (All Across Bangalore)
+                      </h3>
+                      <p className="text-xs sm:text-sm text-[#F5E2B8]/90 mt-1.5 leading-relaxed">
+                        In areas such as{' '}
+                        <strong className="text-white">
+                          Varthur, Whitefield, Brookefield, Indiranagar, Koramangala
+                        </strong>
+                        , and all across Bangalore, we provide exclusively{' '}
+                        <strong className="text-[#D6B77A]">
+                          On-Location / At-Home Bridal Makeup, Party Makeup, Event Styling, and
+                          selected doorstep beauty packages
+                        </strong>{' '}
+                        (physical walk-in salon branches are located only in Kaggadaspura and
+                        Electronic City).
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        {
+                          title: 'On-Location Bridal Makeup',
+                          sub: 'HD, Silicone Airbrush & Traditional Muhurtham Looks',
+                          cat: 'Bridal Makeup' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'At-Home Party & Guest Makeup',
+                          sub: 'Cocktail, Reception, Birthday & Bridesmaid Glam',
+                          cat: 'Party Makeup' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'Engagement & Reception Makeup',
+                          sub: '4K Camera-Ready HD Makeovers at Your Venue/Home',
+                          cat: 'Engagement Makeup' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'Event Hair Styling & Poola Jada',
+                          sub: 'Bridal Buns, Floral Braids, Curls & Up-dos',
+                          cat: 'Hair Styling' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'Saree Draping & Box Pleating',
+                          sub: 'Kanjeevaram Silk Draping & Pre-Pleating at Home',
+                          cat: 'Saree Draping' as MakeupSubCategory,
+                        },
+                        {
+                          title: 'Doorstep Bridal & Group Packages',
+                          sub: 'Complete Bride + Family Venue Makeover Combos',
+                          cat: 'Packages' as MakeupSubCategory,
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.title}
+                          type="button"
+                          onClick={() => jumpToCategorySection(item.cat)}
+                          className="p-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-left transition-all flex items-start gap-2.5 cursor-pointer group"
+                        >
+                          <Sparkles className="w-4 h-4 text-[#D6B77A] shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-bold text-[#FFF8EF] group-hover:text-[#D6B77A] transition-colors">
+                              {item.title}
+                            </p>
+                            <p className="text-[11px] text-white/75 leading-snug mt-0.5">
+                              {item.sub}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-[11px] text-[#F5E2B8]/85">
+                      5:00 AM Early Morning Muhurtham Travel Available Across Bangalore
+                    </span>
+                    <a
+                      href={whatsappInstantBookingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tap-scale px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                      <span>Book At-Home Makeup</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* =====================================================================
+              2C. 5 LOCKED SIGNATURE SERVICE CARDS (100% Exact Title, Description & Image Mapping)
+                  Strict aspect-[4/3] object-cover so photos never stretch or cut off on mobile
+          ===================================================================== */}
+          <div
+            id="signature-services-showcase"
+            className="glass-panel rounded-3xl p-4 sm:p-7 space-y-5"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#E6DAC8]/60 pb-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#8C4A56]">
+                   Eden Roses Unisex Salon · Curated Signature Menu
+                </p>
+                <h2 className="font-display text-2xl sm:text-4xl font-bold text-[#160824] mt-0.5">
+                  Our Core Salon &amp; Bridal Makeup Services
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                  Professionally matched treatments across our Kaggadaspura &amp; Electronic City
+                  walk-in salons and Bangalore-wide bridal makeup team.
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  setActiveSubCategory('All');
-                  scrollToSection('makeup-artist-page');
-                }}
-                className="tap-scale px-3.5 py-2 rounded-xl glass-card text-[#160824] text-xs font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer"
+                onClick={() => scrollToSection('booking')}
+                className="tap-scale px-4 py-2.5 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold inline-flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
               >
-                <span>All Services ({services.length})</span>
-                <ChevronRight className="w-3.5 h-3.5 text-[#8C4A56]" />
+                <span>Book Appointment</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Group 1: MAKEUP (4 Categories on Mobile, 5 on Desktop) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-stone-700">
-                  Makeup &amp; Women Styling
-                </p>
-                <span className="text-[11px] text-stone-500">Tap any category to explore</span>
-              </div>
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-4">
-                {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
-                  (c) => c.group === 'MAKEUP'
-                ).map((cat) => {
-                  const isSelected = activeLandingCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => handleSelectLandingCategory(cat)}
-                      className="tap-scale group flex flex-col items-center text-center cursor-pointer focus:outline-none"
-                    >
-                      <div
-                        className={`relative w-full aspect-square max-w-[106px] rounded-2xl overflow-hidden glass-card p-1.5 transition-all ${
-                          isSelected
-                            ? 'ring-2 ring-[#160824] shadow-[0_12px_28px_-8px_rgba(22,8,36,0.22)]'
-                            : 'group-hover:ring-1 group-hover:ring-[#B76E79]/60'
-                        }`}
-                      >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {LOCKED_SIGNATURE_SERVICE_CARDS.map((card) => {
+                const matchedService =
+                  services.find((s) => s.id === card.serviceIdToBook) ||
+                  services.find((s) => s.name.toLowerCase() === card.title.toLowerCase());
+                return (
+                  <div
+                    key={card.id}
+                    className="rounded-3xl glass-card overflow-hidden flex flex-col justify-between border border-white/90 shadow-md hover:shadow-xl transition-all group"
+                  >
+                    <div>
+                      {/* Strict aspect-[4/3] with object-cover */}
+                      <div className="relative w-full aspect-[4/3] overflow-hidden bg-stone-900">
                         <SmartImage
-                          src={cat.image}
-                          alt={cat.title}
+                          src={card.image}
+                          alt={card.title}
                           eager
-                          className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
+                          className="w-full h-full aspect-[4/3] object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                      </div>
-                      <span
-                        className={`text-[11px] sm:text-xs mt-2 leading-tight line-clamp-2 max-w-[106px] ${
-                          isSelected
-                            ? 'font-bold text-[#160824]'
-                            : 'font-semibold text-stone-800'
-                        }`}
-                      >
-                        {cat.title}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                {/* Group 2 on Desktop same row */}
-                <div className="hidden sm:flex flex-col items-center text-center">
-                  {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
-                    (c) => c.group === 'MEN SALON'
-                  ).map((cat) => {
-                    const isSelected = activeLandingCategory === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => handleSelectLandingCategory(cat)}
-                        className="tap-scale group flex flex-col items-center text-center w-full cursor-pointer focus:outline-none"
-                      >
-                        <div
-                          className={`relative w-full aspect-square max-w-[106px] rounded-2xl overflow-hidden glass-card p-1.5 transition-all ${
-                            isSelected
-                              ? 'ring-2 ring-[#160824] shadow-[0_12px_28px_-8px_rgba(22,8,36,0.22)]'
-                              : 'group-hover:ring-1 group-hover:ring-[#B76E79]/60'
-                          }`}
-                        >
-                          <SmartImage
-                            src={cat.image}
-                            alt={cat.title}
-                            className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
-                          />
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                          <span className="px-3 py-1 rounded-full bg-[#160824]/85 text-[#D6B77A] text-[10px] font-bold tracking-wide backdrop-blur-md border border-[#D6B77A]/35">
+                            {card.badge}
+                          </span>
                         </div>
-                        <span
-                          className={`text-[11px] sm:text-xs mt-2 leading-tight line-clamp-2 max-w-[106px] ${
-                            isSelected
-                              ? 'font-bold text-[#160824]'
-                              : 'font-semibold text-stone-800'
-                          }`}
-                        >
-                          {cat.title}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Group 2: MEN SALON (Shown on Mobile matching Reference Video 0:06) */}
-            <div className="sm:hidden space-y-2.5 pt-2.5 border-t border-[#E6DAC8]/55">
-              <p className="text-xs font-bold text-stone-700">
-                Men Salon &amp; Grooming
-              </p>
-              <div className="grid grid-cols-4 gap-2.5">
-                {MAKEUP_STYLING_LANDING_CATEGORIES.filter(
-                  (c) => c.group === 'MEN SALON'
-                ).map((cat) => {
-                  const isSelected = activeLandingCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => handleSelectLandingCategory(cat)}
-                      className="tap-scale group flex flex-col items-center text-center cursor-pointer focus:outline-none"
-                    >
-                      <div
-                        className={`relative w-full aspect-square max-w-[106px] rounded-2xl overflow-hidden glass-card p-1.5 transition-all ${
-                          isSelected
-                            ? 'ring-2 ring-[#160824] shadow-md'
-                            : 'group-hover:ring-1 group-hover:ring-[#B76E79]/60'
-                        }`}
-                      >
-                        <SmartImage
-                          src={cat.image}
-                          alt={cat.title}
-                          className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
-                        />
                       </div>
-                      <span className="text-[11px] font-semibold text-stone-800 mt-1.5 leading-tight line-clamp-2">
-                        {cat.title}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+
+                      <div className="p-4 sm:p-5 space-y-2">
+                        <h3 className="font-display text-xl sm:text-2xl font-bold text-[#160824] leading-snug">
+                          {card.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                          {card.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 border-t border-[#E6DAC8]/55 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => jumpToCategorySection(card.targetSubCategory)}
+                        className="text-xs font-bold text-[#8C4A56] hover:text-[#160824] inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Explore Menu</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (matchedService) {
+                            handleAddOrIncrement(matchedService);
+                          }
+                          scrollToSection('booking');
+                        }}
+                        className="tap-scale px-4 py-2 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Book Now</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1580,16 +1980,16 @@ export const CustomerWebsite: React.FC = () => {
                               </button>
                             </div>
 
-                            {/* Right Column: High-Clarity Service Portrait + Overlapping Frosted Glass "Add" Button */}
-                            <div className="flex flex-col items-center shrink-0 w-28 sm:w-32">
+                            {/* Right Column: High-Clarity Service Portrait (strict aspect-[4/3] object-cover) + Overlapping Frosted Glass "Add" Button */}
+                            <div className="flex flex-col items-center shrink-0 w-32 sm:w-36">
                               <div
                                 onClick={() => setSelectedServiceDetail(srv)}
-                                className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-white/80 border border-white/90 shadow-md cursor-pointer relative group p-1"
+                                className="w-32 sm:w-36 aspect-[4/3] rounded-2xl overflow-hidden bg-white/80 border border-white/90 shadow-md cursor-pointer relative group p-1"
                               >
                                 <SmartImage
                                   src={srv.image}
                                   alt={srv.name}
-                                  className="w-full h-full object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
+                                  className="w-full h-full aspect-[4/3] object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
                                 />
                               </div>
 
@@ -2725,26 +3125,43 @@ export const CustomerWebsite: React.FC = () => {
       )}
 
       {/* =====================================================================
-          MOBILE BOTTOM NAVIGATION + STICKY LUXURY GLASS CART BAR
+          DESKTOP FLOATING ACTION BUTTONS + MOBILE STICKY BOTTOM BAR
+          Instant "Call Now (+91 7619603016)" & "Book on WhatsApp"
       ===================================================================== */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 luxury-glass border-t border-white/85">
+      <div className="hidden lg:flex fixed bottom-6 right-6 z-40 items-center gap-3">
+        <a
+          href={primaryPhoneTel}
+          className="tap-scale h-12 px-5 rounded-full glass-dark-royal text-[#D6B77A] border border-[#D6B77A]/50 shadow-xl flex items-center gap-2 text-xs font-extrabold tracking-wide"
+        >
+          <Phone className="w-4 h-4 text-[#D6B77A]" />
+          <span>Call Now ({primaryPhoneDisplay})</span>
+        </a>
+        <a
+          href={whatsappInstantBookingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="tap-scale h-12 px-5 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] text-white shadow-xl flex items-center gap-2 text-xs font-extrabold tracking-wide"
+        >
+          <MessageCircle className="w-4 h-4 fill-current" />
+          <span>Book on WhatsApp</span>
+        </a>
+      </div>
+
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 luxury-glass border-t border-white/85 shadow-[0_-10px_30px_rgba(22,8,36,0.14)]">
         {/* Sticky Mini Cart Strip when items are in cart */}
         {totalCartItems > 0 && (
-          <div className="glass-dark-royal text-white px-3.5 py-2.5 border-b border-[#D6B77A]/35 flex items-center justify-between gap-2">
+          <div className="glass-dark-royal text-white px-3.5 py-2 border-b border-[#D6B77A]/35 flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setCartDrawerOpen(true)}
-              className="flex items-center gap-2.5 text-left min-w-0 cursor-pointer"
+              className="flex items-center gap-2 text-left min-w-0 cursor-pointer"
             >
               <span className="px-2 py-0.5 rounded-lg bg-[#D6B77A] text-[#160824] font-mono-num text-xs font-extrabold">
                 {totalCartItems}
               </span>
               <div className="min-w-0">
-                <p className="font-mono-num text-sm font-extrabold text-[#F5E2B8] leading-tight">
-                  ₹{netPayable.toLocaleString('en-IN')}
-                </p>
-                <p className="text-[10px] text-white/75 truncate">
-                  Tap to view selected services
+                <p className="font-mono-num text-xs font-extrabold text-[#F5E2B8] leading-tight">
+                  ₹{netPayable.toLocaleString('en-IN')} · View Cart
                 </p>
               </div>
             </button>
@@ -2754,47 +3171,67 @@ export const CustomerWebsite: React.FC = () => {
                 setBookingStep(2);
                 scrollToSection('booking');
               }}
-              className="tap-scale px-4 py-2 rounded-xl bg-gradient-to-r from-[#E6C98F] via-[#D6B77A] to-[#C29B56] text-[#160824] text-xs font-extrabold flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
+              className="tap-scale px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#E6C98F] via-[#D6B77A] to-[#C29B56] text-[#160824] text-[11px] font-extrabold flex items-center gap-1 shrink-0 shadow-sm cursor-pointer"
             >
               <span>Select Slot</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         )}
 
+        {/* Primary Instant Call Now & Book on WhatsApp Sticky Action Bar */}
+        <div className="grid grid-cols-2 gap-2 px-3 pt-2 pb-1.5 bg-white/90 backdrop-blur-xl">
+          <a
+            href={primaryPhoneTel}
+            className="tap-scale h-11 rounded-xl glass-dark-royal text-[#D6B77A] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm px-2"
+          >
+            <Phone className="w-3.5 h-3.5 text-[#D6B77A] shrink-0" />
+            <span className="truncate">Call Now ({primaryPhoneDisplay})</span>
+          </a>
+          <a
+            href={whatsappInstantBookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tap-scale h-11 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm px-2"
+          >
+            <MessageCircle className="w-3.5 h-3.5 fill-current shrink-0" />
+            <span className="truncate">Book on WhatsApp</span>
+          </a>
+        </div>
+
         {/* 4-Tab App Bottom Navigation */}
-        <div className="grid grid-cols-4 h-14 text-[11px] font-semibold text-stone-600">
+        <div className="grid grid-cols-4 h-12 text-[10px] font-semibold text-stone-600 border-t border-[#E6DAC8]/55">
           <button
             type="button"
-            onClick={() => scrollToSection('makeup-styling-landing')}
+            onClick={() => scrollToSection('service-separation-guide')}
             className="tap-scale flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
           >
-            <Home className="w-4 h-4 text-stone-500" />
-            <span>Categories</span>
+            <Home className="w-3.5 h-3.5 text-stone-500" />
+            <span>In-Salon / Home</span>
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('makeup-artist-page')}
             className="tap-scale flex flex-col items-center justify-center gap-0.5 text-[#160824] font-bold cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-[#B76E79]" />
-            <span>Makeup Artist</span>
+            <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
+            <span>Services</span>
           </button>
           <button
             type="button"
-            onClick={() => scrollToSection('gallery')}
+            onClick={() => scrollToSection('our-salon-branches')}
             className="tap-scale flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] cursor-pointer"
           >
-            <ImageIcon className="w-4 h-4 text-stone-500" />
-            <span>Portfolio</span>
+            <MapPin className="w-3.5 h-3.5 text-stone-500" />
+            <span>2 Branches</span>
           </button>
           <button
             type="button"
             onClick={() => setCartDrawerOpen(true)}
             className="tap-scale flex flex-col items-center justify-center gap-0.5 hover:text-[#160824] relative cursor-pointer"
           >
-            <ShoppingBag className="w-4 h-4 text-stone-500" />
-            <span>Booking ({totalCartItems})</span>
+            <ShoppingBag className="w-3.5 h-3.5 text-stone-500" />
+            <span>Cart ({totalCartItems})</span>
           </button>
         </div>
       </div>

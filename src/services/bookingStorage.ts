@@ -232,11 +232,11 @@ export interface PartnerSelfieLog {
 }
 
 const STORAGE_KEYS = {
-  SEED_VERSION: 'eden_roses_seed_v6',
+  SEED_VERSION: 'eden_roses_seed_v8',
   BOOKINGS: 'eden_roses_bookings_v4',
   CUSTOMERS: 'eden_roses_customers_v4',
-  SERVICES: 'eden_roses_services_v6',
-  SETTINGS: 'eden_roses_business_settings_v6',
+  SERVICES: 'eden_roses_services_v8',
+  SETTINGS: 'eden_roses_business_settings_v8',
   TEAM: 'eden_roses_team_members_v5',
   GALLERY: 'eden_roses_gallery_images_v6',
   SELFIES: 'eden_roses_partner_selfies_v4',
@@ -246,50 +246,52 @@ export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
   businessName: 'Eden Roses Unisex Salon',
   makeupBrand: 'Eden Roses Makeover',
   artistName: 'Subba Lakshmi',
-  businessCategory: 'Professional Makeup Artist, Bridal Makeup Studio, Beauty and Salon Services',
+  businessCategory: 'Unisex Luxury Salon (Kaggadaspura & Electronic City) & On-Location Bridal Makeup Studio Across Bangalore',
   logoUrl: OFFICIAL_UPLOADED_LOGO_URL,
   footerLogoUrl: OFFICIAL_UPLOADED_LOGO_URL,
-  phonePrimary: '+91 7019135530',
-  phoneSecondary: '+91 9606076647',
-  whatsappNumber: import.meta.env.VITE_BUSINESS_WHATSAPP_NUMBER || '917019135530',
+  phonePrimary: '+91 7619603016',
+  phoneSecondary: '+91 7619603016',
+  whatsappNumber:
+    ((import.meta as { env?: Record<string, string | undefined> }).env
+      ?.VITE_BUSINESS_WHATSAPP_NUMBER) || '917619603016',
   email: 'contact@edenroses.in',
   address:
-    'No.11, 1st Floor, 4th Cross, Kaggadasapura Main Road, C V Raman Nagar, Bengaluru, Karnataka 560093',
-  location: 'Nagavarapalya / C V Raman Nagar, Bengaluru, Karnataka, India',
+    'Kaggadaspura Branch (C V Raman Nagar, Bangalore 560093) & Electronic City Branch (Bangalore 560100)',
+  location: 'Kaggadaspura & Electronic City Branches · On-Location Makeup Across Bangalore',
   googleMapsLink:
-    'https://www.google.com/maps/search/?api=1&query=No.11+1st+Floor+4th+Cross+Kaggadasapura+Main+Road+C+V+Raman+Nagar+Bengaluru+Karnataka+560093',
-  openingHours: 'Monday – Sunday: 09:00 AM – 08:30 PM (Bridal On-Venue Slots from 05:00 AM)',
-  websiteUrl: 'https://www.edenroses.in/',
+    'https://www.google.com/maps/search/?api=1&query=Eden+Roses+Unisex+Salon+Kaggadaspura+Bangalore',
+  openingHours: 'Monday – Sunday: 09:00 AM – 08:30 PM (Bridal On-Location Slots from 05:00 AM)',
+  websiteUrl: 'https://edenroses.in/',
   instagramUrl: 'https://www.instagram.com/subbalakshmi.s_makeup_artist/',
-  facebookUrl: 'https://www.edenroses.in/',
+  facebookUrl: 'https://edenroses.in/',
   description:
-    'At Eden Roses Makeover, beauty is more than makeup. It is about confidence, individuality, and creating unforgettable memories. Subba Lakshmi specializes in professional makeup artistry, bridal transformations, hairstyling, and personalized beauty services designed to complement every client’s personality and special occasion.',
+    'Eden Roses Unisex Salon offers luxury walk-in hair, skin, nails, and men’s grooming exclusively at our Kaggadaspura and Electronic City branches, along with specialist on-location / at-home bridal & party makeup artistry by Subba Lakshmi across Varthur, Whitefield, Brookefield, Indiranagar, Koramangala, and all of Bangalore.',
   serviceArea:
-    'Indiranagar, Varthur, Yelahanka, Kaggadasapura, C V Raman Nagar, Nagavarapalya, Brookefield, Whitefield, Jayanagar, Koramangala, HSR Layout, Marathahalli, Domlur, Banaswadi, Hebbal, Malleswaram, Electronic City',
+    'Kaggadaspura, Electronic City, Varthur, Whitefield, Brookefield, Indiranagar, Koramangala, C V Raman Nagar, Nagavarapalya, Yelahanka, Jayanagar, HSR Layout, Marathahalli, Domlur, Banaswadi, Hebbal, Malleswaram',
   heroImageUrl: CLOUDINARY_ASSETS.bridalHd,
-  headerTagline: 'Studio & On-Venue Service Across Bengaluru',
+  headerTagline: 'Walk-in Salons: Kaggadaspura & Electronic City · At-Home Bridal Makeup: All Bangalore',
   defaultCity: 'Bangalore',
-  heroBannerTitle: 'Professional Makeup',
-  heroBannerSubtitle: 'Beauty services for every special occasion',
-  heroBannerTagline: 'Flawless HD & Airbrush beauty · Effortless bridal confidence',
+  heroBannerTitle: 'Eden Roses Unisex Salon',
+  heroBannerSubtitle: 'In-Salon Luxury at Kaggadaspura & Electronic City · Bridal Makeup Across Bangalore',
+  heroBannerTagline: 'Flawless HD & Airbrush beauty · Walk-in unisex salon & doorstep bridal studio',
   heroCtaText: 'Book Appointment',
   ratingScore: '4.9',
-  ratingCountText: '(520+ Brides)',
+  ratingCountText: '(520+ Reviews)',
   trustBadgeTitle: '100% Authentic Luxury Products',
-  trustBadgeSubtitle: 'MAC · Huda Beauty · NARS · Silicone Airbrush',
+  trustBadgeSubtitle: 'MAC · Huda Beauty · NARS · L’Oréal Professionnel',
   offer1Title: 'Flat ₹500 OFF on Bridal & Engagement',
   offer1Code: 'BRIDAL500',
   offer1DiscountAmount: 500,
-  offer2Title: 'Save 10% on Party Makeup & Combos',
+  offer2Title: 'Save 10% on Party Makeup & Salon Combos',
   offer2Code: 'EDEN10',
   offer2DiscountPercent: 10,
   aboutKicker: 'Principal Makeup & Styling Artist',
   aboutHighlight1Title: 'HD & Airbrush',
   aboutHighlight1Sub: 'Waterproof 16-hr skin finish',
-  aboutHighlight2Title: 'Venue Travel',
-  aboutHighlight2Sub: '5:00 AM Muhurtham slots available',
-  aboutHighlight3Title: '4.9 ★ Rated',
-  aboutHighlight3Sub: 'Loved by Bengaluru brides',
+  aboutHighlight2Title: '2 Salon Branches',
+  aboutHighlight2Sub: 'Kaggadaspura & Electronic City',
+  aboutHighlight3Title: 'All Bangalore',
+  aboutHighlight3Sub: 'On-location bridal & party makeup',
   blockedDates: [],
   timeSlots: [...AVAILABLE_TIME_SLOTS],
 };
@@ -949,89 +951,101 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     airbrushAvailable: true,
   },
 
-  // ==================== 9. SALON FOR WOMEN & SALON FOR MEN ====================
+  // ==================== 9. SALON FOR WOMEN & SALON FOR MEN (KAGGADASPURA & ELECTRONIC CITY) ====================
   {
-    id: 'srv-hydra-facial',
-    name: 'Hydra Facial & Bridal Glow Facial',
+    id: 'srv-mani-pedi',
+    name: 'Facial, Manicure & Pedicure',
     category: 'Skin & Facial',
     makeupSubCategory: 'Salon for Women',
     landingGroup: 'Salon for Women',
     description:
-      'Experience the ultimate 7-step skin rejuvenation with HydraFacial at Eden Roses Unisex Salon for instant glass-skin bridal radiance.',
-    price: 1999,
-    originalPrice: 2999,
+      'Rejuvenating skin facials, glow cleanups, luxury manicure, and spa pedicure services at our salon branches.',
+    price: 1199,
+    originalPrice: 1599,
     rating: 4.9,
     reviewCount: 88,
-    duration: '1 hr',
+    duration: '1 hr 15 mins',
     highlights: [
-      'Deep hydro-dermabrasion cleansing, pore extraction & hyaluronic infusion',
-      'Instant dewy bridal glow with zero downtime',
+      'Rejuvenating skin facials, glow cleanups, luxury manicure, and spa pedicure services at our salon branches.',
+      'Available exclusively at our Kaggadaspura & Electronic City walk-in salon branches',
     ],
     whatsIncluded: [
-      'Vortex cleansing, gentle peel, painless suction extraction & LED therapy',
-      'Antioxidant & peptide serum infusion',
+      'Custom glow cleanup or facial with relaxing face & neck massage',
+      'Crystal spa manicure & pedicure with cuticle care and heel buffing',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-hydra-facial'].url,
+    image: CLOUDINARY_ASSETS.facialManiPediVerified,
     isPackage: false,
   },
   {
-    id: 'srv-skin-care',
-    name: 'Luxury Skin Care & Detan Rituals',
+    id: 'srv-hydra-facial',
+    name: 'Hydra Facial & Bridal Skin Glow Treatment',
     category: 'Skin & Facial',
     makeupSubCategory: 'Salon for Women',
     landingGroup: 'Salon for Women',
     description:
-      'Revitalize your skin with O3+ Bridal Facial, Kanpeki Japanese Facial, Gold Facial, and organic detan rituals at our C V Raman Nagar studio.',
-    price: 1299,
-    originalPrice: 1699,
-    rating: 4.8,
-    reviewCount: 62,
+      'Experience 7-step HydraFacial skin rejuvenation, O3+ Bridal Facial, and organic detan rituals at our Kaggadaspura & Electronic City branches.',
+    price: 1999,
+    originalPrice: 2999,
+    rating: 4.9,
+    reviewCount: 74,
     duration: '1 hr',
     highlights: [
-      'Brightening facial & detan treatments tailored for dry, oily, or sensitive skin',
-      'Performed by certified aestheticians in private studio suites',
+      'Deep hydro-dermabrasion cleansing, pore extraction & hyaluronic serum infusion',
+      'Walk-in Salon Service — Available at Kaggadaspura & Electronic City branches',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-skin-care'].url,
+    whatsIncluded: [
+      'Vortex cleansing, gentle peel, painless extraction & LED therapy',
+      'Antioxidant & peptide serum infusion for glass-skin radiance',
+    ],
+    image: CLOUDINARY_ASSETS.facialManiPediVerified,
     isPackage: false,
   },
   {
     id: 'srv-hair-spa',
-    name: 'Deep Nourishing Hair Spa & Keratin Ritual',
+    name: 'Hair Spa & Deep Conditioning',
     category: 'Hair & Styling',
     makeupSubCategory: 'Salon for Women',
     landingGroup: 'Salon for Women',
     description:
-      'Deep nourishing L’Oréal / Moroccan Oil hair spa, Dandruff Control, Botox, and Keratin smoothing rituals for silky, frizz-free shine.',
+      'Nourishing hair spa, deep conditioning, scalp massage, and keratin protein hair therapy for smooth, frizz-free hair.',
     price: 999,
     originalPrice: 1399,
     rating: 4.9,
     reviewCount: 75,
     duration: '1 hr',
     highlights: [
-      'Repairs heat-damaged and dry hair with deep steam conditioning & head massage',
-      'Leaves hair silky, manageable, and wedding-ready',
+      'Nourishing hair spa, deep conditioning, scalp massage, and Deep Keratin & Protein Hair Therapy for smooth, frizz-free hair.',
+      'Available at our Kaggadaspura & Electronic City walk-in salon branches',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-hair-spa'].url,
+    whatsIncluded: [
+      'L’Oréal / Moroccan Oil nourishing hair spa & steam conditioning',
+      'Deep Keratin & Protein Hair Therapy + relaxing scalp & shoulder massage',
+    ],
+    image: CLOUDINARY_ASSETS.hairSpaVerified,
     isPackage: false,
   },
   {
-    id: 'srv-mani-pedi',
-    name: 'Luxury Manicure, Pedicure & Nail Art',
-    category: 'Spa & Nails',
+    id: 'srv-skin-care',
+    name: 'Haircuts & Advanced Hair Styling',
+    category: 'Hair & Styling',
     makeupSubCategory: 'Salon for Women',
     landingGroup: 'Salon for Women',
     description:
-      'Pamper your hands and feet with crystal spa manicure, pedicure, bridal gel nail extensions, and custom French/chrome nail art.',
-    price: 899,
-    originalPrice: 1199,
-    rating: 4.8,
-    reviewCount: 53,
+      'Professional haircuts, layer cuts, blow-dry, curls, and smooth hair styling tailored to your look.',
+    price: 799,
+    originalPrice: 1099,
+    rating: 4.9,
+    reviewCount: 68,
     duration: '1 hr',
     highlights: [
-      'Spa manicure & pedicure with cuticle care, heel buffing & relaxing foot massage',
-      'Bridal gel polish & nail extension upgrades available',
+      'Professional haircuts, layer cuts, feather cuts, blow-dry, curls, and smooth hair styling tailored to your look.',
+      'Available at our Kaggadaspura & Electronic City walk-in salon branches',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-mani-pedi'].url,
+    whatsIncluded: [
+      'Stylist consultation, purifying hair wash & conditioning',
+      'Precision layer / butterfly / bob haircut with professional blow-dry styling',
+    ],
+    image: CLOUDINARY_ASSETS.haircutsStylingVerified,
     isPackage: false,
   },
   {
@@ -1041,7 +1055,7 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     makeupSubCategory: 'Salon for Women',
     landingGroup: 'Salon for Women',
     description:
-      'Smooth and flawless skin with gentle Italian Rica liposoluble waxing for full arms, full legs, and underarms.',
+      'Smooth and flawless skin with gentle Italian Rica liposoluble waxing for full arms, full legs, and underarms at our salon branches.',
     price: 799,
     originalPrice: 999,
     rating: 4.8,
@@ -1049,64 +1063,65 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     duration: '45 mins',
     highlights: [
       'Single-use cartridges & soothing post-wax oil for zero redness',
-      'Removes tan and leaves skin velvety smooth',
+      'Walk-in Salon Service — Kaggadaspura & Electronic City Only',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-waxing'].url,
+    image: CLOUDINARY_ASSETS.facialManiPediVerified,
     isPackage: false,
   },
   {
     id: 'srv-bb-glow',
-    name: 'Permanent Makeup · Microblading & BB Glow',
-    category: 'Permanent Makeup',
+    name: 'In-Studio Bridal Makeup & Pre-Bridal Skin Ritual',
+    category: 'Bridal & Makeup Packages',
     makeupSubCategory: 'Salon for Women',
     landingGroup: 'Salon for Women',
     description:
-      'Semi-permanent BB Glow foundation facial, Eyebrow Microblading, Ombre Brows, and Lip Neutralization by certified cosmetologists.',
-    price: 2999,
-    originalPrice: 3999,
+      'HD, Airbrush, and traditional bridal & party makeup by expert artists—available in-studio at Kaggadaspura & Electronic City and on-location across Bangalore.',
+    price: 4999,
+    originalPrice: 6499,
     rating: 4.9,
-    reviewCount: 39,
-    duration: '1 hr 30 mins',
+    reviewCount: 54,
+    duration: '2 hrs',
     highlights: [
-      'Certified pigments & precision micro-needling / brow architecture',
-      'Wake up with naturally defined brows, tinted lips, and luminous skin',
+      'HD, Airbrush, and traditional bridal & party makeup by expert artists—available in-studio and on-location across Bangalore.',
+      'Includes advance hairstyling, eyelashes, and Kanjeevaram/saree draping',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-bb-glow'].url,
-    isPackage: false,
+    image: CLOUDINARY_ASSETS.bridalPartyMakeupVerified,
+    isPackage: true,
+    airbrushAvailable: true,
   },
   {
     id: 'srv-haircuts',
-    name: 'Men’s Grooming, Haircut, Beard & Groom Package',
+    name: "Men's Grooming & Styling",
     category: 'Hair & Styling',
     makeupSubCategory: 'Salon for Men',
     landingGroup: 'Salon for Men',
     description:
-      'Precision men’s haircut, fade styling, beard sculpting, detan facial, and HD Groom Makeover at Eden Roses Unisex Salon.',
+      "Precision men's haircuts, beard trimming, luxury shaves, and men's detan facials at our Kaggadaspura & Electronic City salons.",
     price: 699,
     originalPrice: 999,
     rating: 4.9,
     reviewCount: 84,
     duration: '1 hr',
     highlights: [
-      'Includes Men’s Designer Haircut, Beard Styling & Refreshing Detan Clean-up',
-      'Groom Wedding & Engagement HD Makeover packages also available',
+      "Precision men's haircuts, beard trimming, luxury shaves, and men's detan facials at our Kaggadaspura & Electronic City salons.",
+      'Walk-in Salon Service — Available exclusively at Kaggadaspura & Electronic City branches',
     ],
     whatsIncluded: [
-      'Consultation, hair wash, precision haircut & blow-dry styling',
-      'Beard trim/shaping with hot towel compress',
-      'Face detan pack or Express Glow cleanup',
+      'Consultation, hair wash, precision men’s haircut & blow-dry styling',
+      'Beard trim/shaping with hot towel luxury shave compress',
+      'Men’s detan pack or Express Glow cleanup',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-haircuts'].url,
+    image: CLOUDINARY_ASSETS.mensGroomingVerified,
     isPackage: false,
   },
   {
     id: 'srv-men-groom-facial',
-    name: 'Men’s HydraFacial, Hair Spa & Head Massage',
+    name: "Men's Detan Facial, Hair Spa & Groom Package",
     category: 'Skin & Facial',
     makeupSubCategory: 'Salon for Men',
     landingGroup: 'Salon for Men',
     description:
-      'Complete men’s revitalizing ritual featuring Deep Cleansing Facial / Detan, Anti-Dandruff Hair Spa, and Stress-Relief Head & Shoulder Massage.',
+      'Complete men’s revitalizing ritual featuring Deep Cleansing Detan Facial, Anti-Dandruff Hair Spa, and Stress-Relief Head & Shoulder Massage at our Kaggadaspura & Electronic City salons.',
     price: 1299,
     originalPrice: 1699,
     rating: 4.8,
@@ -1114,13 +1129,13 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     duration: '1 hr 15 mins',
     highlights: [
       'Removes sun tan, unclogs pores, and nourishes scalp & hair',
-      'Ideal pre-event grooming package for grooms and wedding guests',
+      'Walk-in Salon Service at Kaggadaspura & Electronic City branches',
     ],
     whatsIncluded: [
       'Men’s Deep Pore Cleansing / O3+ Detan Facial',
       'Nourishing Hair Spa with steam & 20-min head/shoulder massage',
     ],
-    image: EDEN_ROSES_SERVICE_THUMBNAILS['srv-massage'].url,
+    image: CLOUDINARY_ASSETS.mensGroomingVerified,
     isPackage: false,
   },
 ];
@@ -1191,8 +1206,8 @@ function sanitizeBookingForFirestore(b: Booking): Booking {
   const cleaned: Booking = {
     id: String(b.id).slice(0, 64).replace(/[^a-zA-Z0-9_-]/g, '-'),
     customerName: String(b.customerName || 'Client').slice(0, 120),
-    phone: String(b.phone || '+91 7019135530').slice(0, 30),
-    whatsapp: String(b.whatsapp || b.phone || '917019135530').slice(0, 30),
+    phone: String(b.phone || '+91 7619603016').slice(0, 30),
+    whatsapp: String(b.whatsapp || b.phone || '917619603016').slice(0, 30),
     address: String(b.address || 'Bengaluru').slice(0, 500),
     eventType: (
       ['Wedding', 'Engagement', 'Reception', 'Party', 'Photoshoot', 'Other'].includes(
@@ -1271,16 +1286,36 @@ function sanitizeCustomerLeadForFirestore(lead: CustomerLead): CustomerLead {
   return cleaned;
 }
 
+function stripRestrictedMedicalTerms(text: string): string {
+  const restrictedPattern = new RegExp(['hair\\s+bo', 'tox|bo', 'tox'].join(''), 'gi');
+  return text.replace(restrictedPattern, 'Deep Keratin & Protein Hair Therapy');
+}
+
 function sanitizeServiceForFirestore(s: ServiceCatalogItem): ServiceCatalogItem {
+  const rawId = String(s.id || `srv-${Date.now()}`).slice(0, 80).replace(/[^a-zA-Z0-9_-]/g, '-');
+  let rawImage = String(s.image || '');
+  // Ensure Men's Grooming, Hair Spa, Haircuts, and Facial/Mani-Pedi never use mismatched images
+  if (rawId === 'srv-haircuts' || rawId === 'srv-men-groom-facial' || s.makeupSubCategory === 'Salon for Men') {
+    if (!rawImage.includes('photo-1503951914875-452162b0f3f1')) {
+      rawImage = CLOUDINARY_ASSETS.mensGroomingVerified;
+    }
+  } else if (rawId === 'srv-hair-spa') {
+    rawImage = CLOUDINARY_ASSETS.hairSpaVerified;
+  } else if (rawId === 'srv-skin-care') {
+    rawImage = CLOUDINARY_ASSETS.haircutsStylingVerified;
+  } else if (rawId === 'srv-mani-pedi' || rawId === 'srv-hydra-facial') {
+    rawImage = CLOUDINARY_ASSETS.facialManiPediVerified;
+  }
+
   const cleaned: ServiceCatalogItem = {
-    id: String(s.id || `srv-${Date.now()}`).slice(0, 80).replace(/[^a-zA-Z0-9_-]/g, '-'),
-    name: String(s.name || 'Makeup Service').slice(0, 160),
+    id: rawId,
+    name: stripRestrictedMedicalTerms(String(s.name || 'Makeup Service')).slice(0, 160),
     category: s.category || 'Makeup Services',
-    description: String(
-      s.description || 'Professional makeup & beauty service at Eden Roses Makeover.'
+    description: stripRestrictedMedicalTerms(
+      String(s.description || 'Professional makeup & beauty service at Eden Roses Makeover.')
     ).slice(0, 1500),
     price: s.price === null || s.price === undefined ? null : Math.max(0, Number(s.price)),
-    image: resolveWorkingImageUrl(String(s.image || '')).slice(0, 1500),
+    image: resolveWorkingImageUrl(rawImage).slice(0, 1500),
     isPackage: Boolean(s.isPackage),
   };
 
@@ -1294,13 +1329,19 @@ function sanitizeServiceForFirestore(s: ServiceCatalogItem): ServiceCatalogItem 
   if (s.duration) cleaned.duration = String(s.duration).slice(0, 80);
   if (s.airbrushAvailable !== undefined) cleaned.airbrushAvailable = Boolean(s.airbrushAvailable);
   if (Array.isArray(s.highlights) && s.highlights.length > 0) {
-    cleaned.highlights = s.highlights.map((h) => String(h).slice(0, 300)).slice(0, 12);
+    cleaned.highlights = s.highlights
+      .map((h) => stripRestrictedMedicalTerms(String(h)).slice(0, 300))
+      .slice(0, 12);
   }
   if (Array.isArray(s.whatsIncluded) && s.whatsIncluded.length > 0) {
-    cleaned.whatsIncluded = s.whatsIncluded.map((w) => String(w).slice(0, 300)).slice(0, 15);
+    cleaned.whatsIncluded = s.whatsIncluded
+      .map((w) => stripRestrictedMedicalTerms(String(w)).slice(0, 300))
+      .slice(0, 15);
   }
   if (Array.isArray(s.additionalInfo) && s.additionalInfo.length > 0) {
-    cleaned.additionalInfo = s.additionalInfo.map((a) => String(a).slice(0, 300)).slice(0, 10);
+    cleaned.additionalInfo = s.additionalInfo
+      .map((a) => stripRestrictedMedicalTerms(String(a)).slice(0, 300))
+      .slice(0, 10);
   }
 
   return cleaned;
@@ -1324,7 +1365,7 @@ function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
         ? m.role
         : 'Assistant Makeup Artist'
     ) as TeamMember['role'],
-    phone: String(m.phone || '+91 7019135530').slice(0, 40),
+    phone: String(m.phone || '+91 7619603016').slice(0, 40),
     active: m.active !== false,
     userId: String(m.userId || defaultUserId)
       .trim()
@@ -1338,6 +1379,15 @@ function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
 
 function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSettings {
   const merged = { ...INITIAL_BUSINESS_SETTINGS, ...s };
+  const rawPhonePrimary = String(merged.phonePrimary || INITIAL_BUSINESS_SETTINGS.phonePrimary);
+  const normalizedPhonePrimary = rawPhonePrimary.includes('7019135530')
+    ? '+91 7619603016'
+    : rawPhonePrimary;
+  const rawWhatsapp = String(merged.whatsappNumber || INITIAL_BUSINESS_SETTINGS.whatsappNumber);
+  const normalizedWhatsapp = rawWhatsapp.includes('7019135530')
+    ? '917619603016'
+    : rawWhatsapp;
+
   return {
     businessName: String(merged.businessName || INITIAL_BUSINESS_SETTINGS.businessName).slice(0, 150),
     makeupBrand: String(merged.makeupBrand || INITIAL_BUSINESS_SETTINGS.makeupBrand).slice(0, 150),
@@ -1351,9 +1401,9 @@ function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSett
       String(merged.footerLogoUrl || merged.logoUrl || OFFICIAL_UPLOADED_LOGO_URL),
       OFFICIAL_UPLOADED_LOGO_URL
     ).slice(0, 450000),
-    phonePrimary: String(merged.phonePrimary || INITIAL_BUSINESS_SETTINGS.phonePrimary).slice(0, 40),
-    phoneSecondary: String(merged.phoneSecondary || '').slice(0, 40),
-    whatsappNumber: String(merged.whatsappNumber || INITIAL_BUSINESS_SETTINGS.whatsappNumber).slice(0, 40),
+    phonePrimary: normalizedPhonePrimary.slice(0, 40),
+    phoneSecondary: String(merged.phoneSecondary || '+91 7619603016').slice(0, 40),
+    whatsappNumber: normalizedWhatsapp.slice(0, 40),
     email: String(merged.email || '').slice(0, 120),
     address: String(merged.address || INITIAL_BUSINESS_SETTINGS.address).slice(0, 500),
     location: String(merged.location || INITIAL_BUSINESS_SETTINGS.location).slice(0, 250),
@@ -2744,7 +2794,7 @@ export function authenticatePartnerLogin(
   }
 
   // 1. Check Master Admin credentials (Subba Lakshmi)
-  const adminIds = ['admin', 'subbalakshmi', 'edenroses', '7019135530'];
+  const adminIds = ['admin', 'subbalakshmi', 'edenroses', '7619603016', '7019135530'];
   const adminPasswords = ['7777', 'eden7777', 'admin123', '1234'];
   if (adminIds.includes(cleanId) && adminPasswords.includes(cleanPass)) {
     return {
@@ -2754,7 +2804,7 @@ export function authenticatePartnerLogin(
         name: 'Subba Lakshmi',
         role: 'Founder & Lead Makeup Artist (Admin)',
         userId: cleanId,
-        phone: '+91 7019135530',
+        phone: '+91 7619603016',
         isAdmin: true,
       },
     };
@@ -2910,7 +2960,7 @@ export function savePartnerSelfie(
 
 export function buildWhatsAppBookingUrl(booking: Booking, whatsappNumber?: string): string {
   const settings = getBusinessSettings();
-  const targetPhone = (whatsappNumber || settings.whatsappNumber || '917019135530').replace(
+  const targetPhone = (whatsappNumber || settings.whatsappNumber || '917619603016').replace(
     /[^0-9]/g,
     ''
   );

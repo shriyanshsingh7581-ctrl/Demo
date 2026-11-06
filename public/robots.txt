@@ -1,6 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /admin/
 
-Sitemap: https://www.edenroses.in/sitemap.xml
+Sitemap: https://edenroses.in/sitemap.xml

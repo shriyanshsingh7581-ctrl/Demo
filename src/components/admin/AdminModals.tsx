@@ -438,12 +438,14 @@ interface SelfieModalProps {
   isOpen: boolean;
   bookingId?: string;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export const SelfieUploadModal: React.FC<SelfieModalProps> = ({
   isOpen,
   bookingId,
   onClose,
+  onSuccess,
 }) => {
   const [selfies, setSelfies] = useState<PartnerSelfieLog[]>([]);
   const [note, setNote] = useState('');
@@ -470,6 +472,7 @@ export const SelfieUploadModal: React.FC<SelfieModalProps> = ({
       });
       setSelfies(getPartnerSelfies());
       setNote('');
+      onSuccess?.();
     } finally {
       setUploading(false);
     }
