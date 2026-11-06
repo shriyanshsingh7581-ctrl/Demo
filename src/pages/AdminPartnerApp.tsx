@@ -52,6 +52,10 @@ import {
   getTeamMembers,
   getTodayISO,
   subscribeToDataUpdates,
+  getCustomAreas,
+  addCustomArea,
+  assignBookingToArtist,
+  buildWhatsAppBookingUrl,
 } from '../services/bookingStorage';
 import { EdenRoseImage } from '../config/edenRosesImages';
 import {
@@ -181,6 +185,20 @@ export const AdminPartnerApp: React.FC = () => {
   // Dashboard & Job List Filter State
   const [activeCardFilter, setActiveCardFilter] = useState<StatCardFilter>('all');
   const [activeJobPill, setActiveJobPill] = useState<JobFilterPill>('All');
+  const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('All Areas');
+  const [customAreas, setCustomAreas] = useState<string[]>(() => getCustomAreas());
+  const [showAddAreaModal, setShowAddAreaModal] = useState<boolean>(false);
+  const [newAreaInput, setNewAreaInput] = useState<string>('');
+
+  const handleCreateNewArea = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAreaInput.trim()) return;
+    const updated = addCustomArea(newAreaInput.trim());
+    setCustomAreas(updated);
+    setSelectedAreaFilter(newAreaInput.trim());
+    setNewAreaInput('');
+    setShowAddAreaModal(false);
+  };
 
   // Interactive Monthly Calendar State
   const todayISO = getTodayISO();
@@ -303,6 +321,15 @@ export const AdminPartnerApp: React.FC = () => {
           b.status !== 'Reported'
         )
           return false;
+
+        // Area-Wise Filter
+        if (selectedAreaFilter !== 'All Areas') {
+          const areaMatch =
+            (b.area && b.area.toLowerCase().includes(selectedAreaFilter.toLowerCase())) ||
+            (b.locality && b.locality.toLowerCase().includes(selectedAreaFilter.toLowerCase())) ||
+            (b.address && b.address.toLowerCase().includes(selectedAreaFilter.toLowerCase()));
+          if (!areaMatch) return false;
+        }
 
         return true;
       })
@@ -648,9 +675,19 @@ export const AdminPartnerApp: React.FC = () => {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={() => navigate('/member')}
+              title="Open Staff Member Portal"
+              className="px-2.5 sm:px-3 py-2 rounded-xl bg-[#200F36] hover:bg-[#2b1448] border border-[#D6B77A]/40 text-[#E6C687] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Users className="w-3.5 h-3.5 text-[#D6B77A]" />
+              <span className="hidden sm:inline">Staff Portal</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => navigate('/')}
               title="Open Customer Website"
-              className="px-3 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#F3ECE0] border border-[#E6DAC8] text-[#160824] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 sm:px-3 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#F3ECE0] border border-[#E6DAC8] text-[#160824] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Globe className="w-3.5 h-3.5 text-[#8C4A56]" />
               <span className="hidden sm:inline">Website</span>
@@ -908,6 +945,41 @@ export const AdminPartnerApp: React.FC = () => {
                     </button>
                   </div>
 
+                  {/* AREA-WISE HORIZONTAL FILTER BAR (Requirement 4.A) */}
+                  <div className="bg-[#FAF7F2] p-2.5 rounded-2xl border border-[#E6DAC8] space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#160824] flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-[#8C4A56]" />
+                        <span>Filter By Area / Branch:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddAreaModal(true)}
+                        className="text-[11px] font-bold text-[#8C4A56] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>+ Add New Area</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                      {customAreas.map((area) => (
+                        <button
+                          key={area}
+                          type="button"
+                          onClick={() => setSelectedAreaFilter(area)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                            selectedAreaFilter === area
+                              ? 'bg-[#8C4A56] text-white shadow-xs font-bold'
+                              : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50'
+                          }`}
+                        >
+                          {area}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Interactive Filter Buttons */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                     {(
@@ -1055,7 +1127,69 @@ export const AdminPartnerApp: React.FC = () => {
 
                             <div className="flex items-start gap-2 text-xs text-stone-600 bg-[#FAF7F2] p-3 rounded-2xl">
                               <MapPin className="w-4 h-4 text-[#8C4A56] shrink-0 mt-0.5" />
-                              <span className="line-clamp-2">{job.address}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="font-bold text-[#8C4A56] text-[11px] px-2 py-0.5 rounded-md bg-[#8C4A56]/10">
+                                    {job.area || job.locality || 'Bangalore'}
+                                  </span>
+                                  {job.assignedArtistName && (
+                                    <span className="text-[11px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                      Assigned: {job.assignedArtistName}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="line-clamp-2">{job.address}</span>
+                              </div>
+                            </div>
+
+                            {/* Requirement 4.C: Area-Wise 1-Click Job Assignment Toolbar */}
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-2 text-xs"
+                            >
+                              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                                <Users className="w-3.5 h-3.5 text-[#8C4A56] shrink-0" />
+                                <select
+                                  value={job.assignedArtistId || ''}
+                                  onChange={async (e) => {
+                                    const artistUserId = e.target.value;
+                                    const matched = team.find(
+                                      (m) =>
+                                        (m.userId && m.userId.toLowerCase() === artistUserId.toLowerCase()) ||
+                                        m.id === artistUserId
+                                    );
+                                    if (matched) {
+                                      await assignBookingToArtist(job.id, matched);
+                                      refreshData();
+                                    }
+                                  }}
+                                  className="w-full text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-stone-300 bg-white text-stone-900"
+                                >
+                                  <option value="">-- Assign Staff / Artist --</option>
+                                  {team.map((m) => {
+                                    const isAreaMatch =
+                                      job.area &&
+                                      m.area &&
+                                      job.area.toLowerCase().includes(m.area.toLowerCase());
+                                    return (
+                                      <option key={m.id} value={m.userId || m.id}>
+                                        {isAreaMatch ? '⭐ ' : ''}
+                                        {m.name} | {m.area || 'Bangalore'} | {m.isAvailable !== false ? '🟢 Free' : '🔴 Busy'}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+
+                              <a
+                                href={buildWhatsAppBookingUrl(job, job.phone)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5a] text-white text-[11px] font-bold flex items-center gap-1 shrink-0"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>WhatsApp Job</span>
+                              </a>
                             </div>
 
                             <div className="pt-1 flex items-center justify-between text-xs gap-2">
@@ -1065,7 +1199,7 @@ export const AdminPartnerApp: React.FC = () => {
                                   .join(', ')}
                               </span>
                               <span className="font-bold text-[#160824] flex items-center gap-1 shrink-0">
-                                <span>Manage</span>
+                                <span>Manage Details</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                               </span>
                             </div>
@@ -1514,6 +1648,61 @@ export const AdminPartnerApp: React.FC = () => {
         isOpen={flowGuideModalOpen}
         onClose={() => setFlowGuideModalOpen(false)}
       />
+
+      {/* MODAL: ADD NEW BANGALORE AREA / ZONE */}
+      {showAddAreaModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleCreateNewArea}
+            className="bg-[#FAF7F2] w-full max-w-sm rounded-3xl p-5 border border-[#E6DAC8] space-y-4 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-[#E6DAC8] pb-3">
+              <h4 className="font-bold text-sm text-[#160824] flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-[#8C4A56]" />
+                <span>Add Bangalore Area / Zone</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowAddAreaModal(false)}
+                className="text-stone-400 hover:text-stone-700 text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">
+                Area Name (e.g., Sarjapur Road, Bellandur, JP Nagar)
+              </label>
+              <input
+                type="text"
+                required
+                autoFocus
+                value={newAreaInput}
+                onChange={(e) => setNewAreaInput(e.target.value)}
+                placeholder="Enter area name..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-xs font-semibold text-stone-900 outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowAddAreaModal(false)}
+                className="px-4 py-2 rounded-xl bg-white border border-stone-300 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-[#160824] text-[#F5E2B8] text-xs font-bold cursor-pointer hover:bg-[#2b1448]"
+              >
+                Save Area
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

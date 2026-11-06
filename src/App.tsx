@@ -13,6 +13,7 @@ import {
 } from 'react-router-dom';
 import { CustomerWebsite } from './pages/CustomerWebsite';
 import { AdminPartnerApp } from './pages/AdminPartnerApp';
+import { MemberDashboard } from './components/MemberDashboard';
 import { ensureSeedDataInitialized } from './services/bookingStorage';
 
 const RootOrAdminSwitch: React.FC = () => {
@@ -27,6 +28,19 @@ const RootOrAdminSwitch: React.FC = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const portal = searchParams.get('portal')?.toLowerCase();
+
+  const isMemberMode =
+    portal === 'member' ||
+    portal === 'staff' ||
+    searchParams.has('member') ||
+    hash === '#member' ||
+    hash === '#/member' ||
+    hash.startsWith('#/member/');
+
+  if (isMemberMode) {
+    return <MemberDashboard />;
+  }
+
   const isAdminMode =
     portal === 'admin' ||
     searchParams.has('admin') ||
@@ -53,6 +67,8 @@ export default function App() {
         <Route path="/admin" element={<AdminPartnerApp />} />
         <Route path="/admin/calendar" element={<AdminPartnerApp />} />
         <Route path="/admin/job/:bookingId" element={<AdminPartnerApp />} />
+        <Route path="/member" element={<MemberDashboard />} />
+        <Route path="/staff" element={<MemberDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

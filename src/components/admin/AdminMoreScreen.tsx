@@ -52,6 +52,8 @@ import {
   upsertGalleryImage,
   upsertServiceCatalogItem,
   upsertTeamMember,
+  getCustomAreas,
+  updateTeamMemberAvailability,
 } from '../../services/bookingStorage';
 import { EdenRoseImage, GalleryFilterCategory } from '../../config/edenRosesImages';
 import {
@@ -207,11 +209,13 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] =
     useState<TeamMember['role']>('Assistant Makeup Artist');
+  const [newMemberArea, setNewMemberArea] = useState('Kaggadaspura');
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [newMemberUserId, setNewMemberUserId] = useState('');
   const [newMemberPassword, setNewMemberPassword] = useState('eden123');
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
+  const [teamAreaFilter, setTeamAreaFilter] = useState<string>('All Areas');
 
   // Availability State
   const [newSlotInput, setNewSlotInput] = useState('');
@@ -478,6 +482,8 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
       id: `tm-${Date.now()}`,
       name: newMemberName.trim(),
       role: newMemberRole,
+      area: newMemberArea,
+      isAvailable: true,
       phone: newMemberPhone.trim(),
       active: true,
       userId: cleanUserId,
@@ -488,6 +494,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     setNewMemberName('');
     setNewMemberPhone('');
     setNewMemberUserId('');
+    setNewMemberArea('Kaggadaspura');
     setNewMemberPassword('eden123');
     onRefresh();
     showToast(
@@ -2621,6 +2628,21 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
               </div>
 
               <div>
+                <label className="font-bold text-stone-700 block mb-1">Assigned Area *</label>
+                <select
+                  value={newMemberArea}
+                  onChange={(e) => setNewMemberArea(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold text-stone-900"
+                >
+                  {getCustomAreas().filter((a) => a !== 'All Areas').map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="font-bold text-stone-700 block mb-1">
                   Mobile / WhatsApp Number *
                 </label>
@@ -2692,11 +2714,29 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
             </button>
           </form>
 
-          {/* Active & Disabled Team Accounts List */}
-          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-3">
-            <h3 className="font-bold text-sm text-[#160824]">
-              Team Login Accounts ({team.length})
-            </h3>
+          {/* Active & Disabled Team Accounts List with Area Divide */}
+          <div className="bg-white rounded-3xl p-5 border border-[#E6DAC8] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="font-bold text-sm text-[#160824]">
+                Team Login Accounts ({team.length})
+              </h3>
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                {['All Areas', ...getCustomAreas().filter((a) => a !== 'All Areas')].map((area) => (
+                  <button
+                    key={area}
+                    type="button"
+                    onClick={() => setTeamAreaFilter(area)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                      teamAreaFilter === area
+                        ? 'bg-[#160824] text-[#F5E2B8]'
+                        : 'bg-[#FAF7F2] text-stone-700 border border-stone-200'
+                    }`}
+                  >
+                    {area}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {team.length === 0 ? (
               <p className="text-xs text-stone-500 py-6 text-center">
@@ -2704,7 +2744,12 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
               </p>
             ) : (
               <div className="space-y-3">
-                {team.map((m) => {
+                {team
+                  .filter((m) => {
+                    if (teamAreaFilter === 'All Areas') return true;
+                    return m.area && m.area.toLowerCase().includes(teamAreaFilter.toLowerCase());
+                  })
+                  .map((m) => {
                   const isPassVisible = Boolean(visiblePasswords[m.id]);
                   const userIdDisplay =
                     m.userId || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2720,16 +2765,49 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-sm text-[#160824]">
-                            {m.name}{' '}
-                            <span className="font-normal text-xs text-stone-500">
-                              · {m.role} ·{' '}
-                              {m.active !== false ? 'Active' : 'Login Disabled'}
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-bold text-sm text-[#160824]">
+                              {m.name}
+                            </p>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#8C4A56]/15 text-[#8C4A56]">
+                              {m.role}
                             </span>
-                          </p>
-                          <p className="font-mono-num text-xs text-stone-600">
-                            Phone: {m.phone}
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-200 text-stone-700">
+                              📍 {m.area || 'Bangalore'}
+                            </span>
+                            {/* Real-time Availability Badge (Requirement 4.B) */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await updateTeamMemberAvailability(m.id, !(m.isAvailable !== false));
+                                onRefresh();
+                              }}
+                              title="Click to toggle availability"
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition ${
+                                m.isAvailable !== false
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : 'bg-rose-100 text-rose-800 border border-rose-300'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  m.isAvailable !== false ? 'bg-emerald-600' : 'bg-rose-600'
+                                }`}
+                              />
+                              <span>
+                                {m.isAvailable !== false ? 'Online / Free' : 'Offline / Busy'}
+                              </span>
+                            </button>
+                          </div>
+                          <p className="font-mono-num text-xs text-stone-600 flex items-center gap-2">
+                            <span>Phone: {m.phone}</span>
+                            <a
+                              href={`tel:${m.phone}`}
+                              className="text-[11px] text-[#8C4A56] font-bold underline"
+                            >
+                              Call Now
+                            </a>
                           </p>
                         </div>
 

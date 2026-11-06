@@ -241,7 +241,7 @@ const SALON_BRANCHES = [
     PhoneHref: 'tel:+917619603016',
     hours: 'Mon – Sun: 09:00 AM – 08:30 PM',
     directionsUrl:
-      'https://www.google.com/maps/search/?api=1&query=Eden+Roses+Unisex+Salon+Electronic+City+Bangalore+560100',
+      'https://share.google/78Ld7qMoTiNC8HHKD',
   },
 ];
 
@@ -310,6 +310,11 @@ const ALL_SERVICE_SECTIONS_ORDER: {
   subtitle: string;
 }[] = [
   {
+    id: 'Signature Makeup by Shubhalaxmi',
+    title: 'Signature Makeup by Shubhalaxmi',
+    subtitle: 'Exclusive luxury bridal, muhurtham & reception transformations handcrafted by founder Shubhalaxmi',
+  },
+  {
     id: 'Party Makeup',
     title: 'Party Makeup',
     subtitle: 'Flawless party, cocktail & festive looks with hairstyling and draping',
@@ -322,7 +327,7 @@ const ALL_SERVICE_SECTIONS_ORDER: {
   {
     id: 'Bridal Makeup',
     title: 'Bridal Makeup',
-    subtitle: 'Signature Muhurtham & Reception bridal artistry by Subba Lakshmi',
+    subtitle: '4K HD & Airbrush bridal artistry performed by Certified Eden Roses Artists',
   },
   {
     id: 'Wedding Guest Makeup',
@@ -500,12 +505,27 @@ export const CustomerWebsite: React.FC = () => {
     return availableLocalities.filter((loc) => loc.toLowerCase().includes(q));
   }, [availableLocalities, locationSearchQuery]);
 
-  // Enrich services with inferred subCategory
+  // Enrich services with inferred subCategory & enforce STRICT deduplication by title + image
   const enrichedServices = useMemo(() => {
-    return services.map((s) => ({
+    const rawServices = services.map((s) => ({
       ...s,
       makeupSubCategory: inferMakeupSubCategory(s),
     }));
+
+    const seenTitles = new Set<string>();
+    const seenImages = new Set<string>();
+    const uniqueServices = rawServices.filter((item) => {
+      const normTitle = (item.name || '').trim().toLowerCase();
+      const normImg = (item.image || '').trim().toLowerCase();
+      if (seenTitles.has(normTitle) || (normImg && seenImages.has(normImg))) {
+        return false;
+      }
+      seenTitles.add(normTitle);
+      if (normImg) seenImages.add(normImg);
+      return true;
+    });
+
+    return uniqueServices;
   }, [services]);
 
   // Search-filtered services
@@ -826,6 +846,7 @@ export const CustomerWebsite: React.FC = () => {
       phone: phone.trim(),
       whatsapp: (whatsapp.trim() || phone.trim()).replace(/[^0-9]/g, ''),
       address: fullAddress,
+      area: locality,
       locality,
       eventType,
       services: cart,
@@ -982,6 +1003,20 @@ export const CustomerWebsite: React.FC = () => {
               >
                 Contact
               </button>
+              <button
+                type="button"
+                onClick={() => navigate('/member')}
+                className="text-[#8C4A56] font-bold hover:underline underline-offset-4 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Staff Portal
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin')}
+                className="text-[#160824] font-bold hover:underline underline-offset-4 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Owner Admin
+              </button>
             </nav>
 
             {/* Right Action Cluster: Categories Sheet Trigger + Cart Icon + Mobile Menu */}
@@ -1125,6 +1160,24 @@ export const CustomerWebsite: React.FC = () => {
                   {item.label}
                 </button>
               ))}
+            </div>
+
+            {/* Quick Portal Switcher for Staff & Admin */}
+            <div className="pt-2 border-t border-white/80 grid grid-cols-2 gap-2 text-center text-xs">
+              <button
+                type="button"
+                onClick={() => navigate('/member')}
+                className="py-2.5 px-3 rounded-xl bg-[#200F36] text-[#E6C687] font-bold border border-[#D6B77A]/40 flex items-center justify-center gap-1.5"
+              >
+                <span>Staff Login Portal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin')}
+                className="py-2.5 px-3 rounded-xl bg-stone-900 text-white font-bold border border-stone-700 flex items-center justify-center gap-1.5"
+              >
+                <span>Owner Admin</span>
+              </button>
             </div>
           </div>
         )}
@@ -2547,19 +2600,49 @@ export const CustomerWebsite: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                        Service Location (Bangalore Area) *
+                      <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center justify-between">
+                        <span>Select Area / Branch *</span>
+                        <span className="text-[10px] text-[#8C4A56] font-normal">Mandatory for Area Routing</span>
                       </label>
                       <select
                         value={locality}
                         onChange={(e) => setLocality(e.target.value)}
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm font-medium text-stone-900 bg-white/80"
                       >
-                        {availableLocalities.map((loc) => (
-                          <option key={loc} value={loc}>
-                            {loc}
-                          </option>
-                        ))}
+                        <optgroup label="Walk-in Salon Branches">
+                          <option value="Kaggadaspura">Kaggadaspura (Walk-in Salon Branch)</option>
+                          <option value="Electronic City">Electronic City (Walk-in Salon Branch)</option>
+                        </optgroup>
+                        <optgroup label="On-Location / Doorstep Makeup (Bangalore)">
+                          <option value="Whitefield">Whitefield (On-Location Makeup)</option>
+                          <option value="Brookefield">Brookefield (On-Location Makeup)</option>
+                          <option value="Varthur">Varthur (On-Location Makeup)</option>
+                          <option value="Indiranagar">Indiranagar (On-Location Makeup)</option>
+                          <option value="Koramangala">Koramangala (On-Location Makeup)</option>
+                          <option value="HSR Layout">HSR Layout (On-Location Makeup)</option>
+                          <option value="Marathahalli">Marathahalli (On-Location Makeup)</option>
+                          <option value="Yelahanka / Other Bangalore Area">Other Bangalore Area (On-Location Makeup)</option>
+                        </optgroup>
+                        {availableLocalities
+                          .filter(
+                            (loc) =>
+                              ![
+                                'kaggadaspura',
+                                'electronic city',
+                                'whitefield',
+                                'brookefield',
+                                'varthur',
+                                'indiranagar',
+                                'koramangala',
+                                'hsr layout',
+                                'marathahalli',
+                              ].includes(loc.toLowerCase())
+                          )
+                          .map((loc) => (
+                            <option key={loc} value={loc}>
+                              {loc} (On-Location Makeup)
+                            </option>
+                          ))}
                       </select>
                     </div>
                     <div>
@@ -3705,8 +3788,8 @@ export const CustomerWebsite: React.FC = () => {
                 <ul className="space-y-1 text-xs text-stone-600">
                   {(
                     selectedServiceDetail.additionalInfo || [
-                      `Available at your venue/home in ${locality} or at our C V Raman Nagar Studio`,
-                      'Performed by Subba Lakshmi & certified Eden Roses Makeover team',
+                      `Available at your venue/home in ${locality} or at our Kaggadaspura & Electronic City branches`,
+                      'Performed by Certified Eden Roses Artists',
                     ]
                   ).map((info, i) => (
                     <li key={i}>• {info}</li>

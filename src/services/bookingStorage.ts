@@ -37,6 +37,7 @@ export type TimeSlot = (typeof AVAILABLE_TIME_SLOTS)[number] | string;
 
 export type BookingStatus =
   | 'Confirmed'
+  | 'Assigned'
   | 'Visit Scheduled'
   | 'Journey Started'
   | 'In Progress'
@@ -71,11 +72,13 @@ export interface BookingServiceItem {
 export interface TeamMember {
   id: string;
   name: string;
-  role: 'Assistant Makeup Artist' | 'Hairstylist' | 'Saree Drapist' | 'Other Team Member';
+  role: 'Makeup Artist' | 'Hair Stylist' | 'Beautician' | 'Assistant Makeup Artist' | 'Hairstylist' | 'Saree Drapist' | 'Other Team Member';
   phone: string;
   active: boolean;
   userId?: string;
   password?: string;
+  area?: string;
+  isAvailable?: boolean; // true = Online/Free (Green), false = Offline/Busy (Red)
   createdAt?: string;
 }
 
@@ -85,6 +88,8 @@ export interface PartnerSessionUser {
   role: string;
   userId: string;
   phone?: string;
+  area?: string;
+  isAvailable?: boolean;
   isAdmin: boolean;
 }
 
@@ -95,6 +100,7 @@ export interface Booking {
   whatsapp: string;
   address: string;
   locality?: string;
+  area?: string;
   eventType: EventType;
   services: BookingServiceItem[];
   date: string; // YYYY-MM-DD
@@ -107,6 +113,8 @@ export interface Booking {
   status: BookingStatus;
   bookingSource: BookingSource;
   assignedTeam: TeamMember[];
+  assignedArtistId?: string; // Target Member userId for 1-click dispatch
+  assignedArtistName?: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
@@ -121,6 +129,7 @@ export interface CustomerLead {
   whatsapp: string;
   address: string;
   locality?: string;
+  area?: string;
   eventType: string;
   message: string;
   lastBookingId?: string;
@@ -130,6 +139,7 @@ export interface CustomerLead {
 }
 
 export type MakeupSubCategory =
+  | 'Signature Makeup by Shubhalaxmi'
   | 'Party Makeup'
   | 'Engagement Makeup'
   | 'Bridal Makeup'
@@ -231,15 +241,31 @@ export interface PartnerSelfieLog {
   note: string;
 }
 
+export const BANGALORE_AREAS: string[] = [
+  'All Areas',
+  'Kaggadaspura',
+  'Electronic City',
+  'Whitefield',
+  'Brookefield',
+  'Varthur',
+  'Indiranagar',
+  'Koramangala',
+  'HSR Layout',
+  'Marathahalli',
+  'Yelahanka',
+];
+
 const STORAGE_KEYS = {
-  SEED_VERSION: 'eden_roses_seed_v8',
-  BOOKINGS: 'eden_roses_bookings_v4',
-  CUSTOMERS: 'eden_roses_customers_v4',
-  SERVICES: 'eden_roses_services_v8',
-  SETTINGS: 'eden_roses_business_settings_v8',
-  TEAM: 'eden_roses_team_members_v5',
+  CLEAN_RESET_V6: 'eden_roses_clean_v6',
+  SEED_VERSION: 'eden_roses_seed_v9_clean',
+  BOOKINGS: 'eden_roses_bookings_v6',
+  CUSTOMERS: 'eden_roses_customers_v6',
+  SERVICES: 'eden_roses_services_v9_clean',
+  SETTINGS: 'eden_roses_business_settings_v9',
+  TEAM: 'eden_roses_team_members_v7',
   GALLERY: 'eden_roses_gallery_images_v6',
   SELFIES: 'eden_roses_partner_selfies_v4',
+  AREAS: 'eden_roses_custom_areas_v1',
 };
 
 export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
@@ -492,20 +518,53 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
     airbrushAvailable: true,
   },
   {
+    id: 'pkg-signature-shubhalaxmi',
+    name: 'Signature Makeup by Shubhalaxmi',
+    category: 'Bridal & Makeup Packages',
+    makeupSubCategory: 'Signature Makeup by Shubhalaxmi',
+    landingGroup: 'Makeup & Styling for Women',
+    description:
+      'Exclusive luxury bridal & reception transformation personally handcrafted by founder & celebrity artist Shubhalaxmi. Includes 1-on-1 consultation, 4K HD/Airbrush glass skin finish, luxury couture cosmetics, bespoke bridal hair architecture, Kanjeevaram silk saree box draping, and authentic temple jewellery setting.',
+    price: 9999,
+    originalPrice: 12999,
+    rating: 5.0,
+    reviewCount: 148,
+    duration: '3 hrs 30 mins',
+    highlights: [
+      'Handcrafted exclusively by Founder & Celebrity Artist Shubhalaxmi',
+      'Ultra-HD & Silicone Airbrush options with 16-hr waterproof tear-proof glow',
+      'Includes bridal hair architecture, luxury 3D lashes & Kanjeevaram box draping',
+    ],
+    whatsIncluded: [
+      '1-on-1 private bridal styling & skin consultation with Shubhalaxmi',
+      'Ultra-HD couture base (Charlotte Tilbury, Huda Beauty, NARS, Dior)',
+      'Intricate bridal eye artistry & premium natural mink eyelashes',
+      'Sculptural bridal updo / traditional Poola Jada with floral placement',
+      'Precision saree box-pleating, pallu pinning & complete jewellery setting',
+    ],
+    additionalInfo: [
+      'Available for early morning Muhurtham & grand receptions across all of Bangalore',
+      'Includes exclusive bridal touch-up kit',
+    ],
+    image: CLOUDINARY_ASSETS.bridalHd,
+    isPackage: true,
+    airbrushAvailable: true,
+  },
+  {
     id: 'pkg-luxury-bridal',
     name: 'HD Bridal Makeup',
     category: 'Bridal & Makeup Packages',
     makeupSubCategory: 'Bridal Makeup',
     landingGroup: 'Makeup & Styling for Women',
     description:
-      'Signature High-Definition bridal transformation by Subba Lakshmi including luxury HD skin finish, bespoke bridal hairstyling, saree draping, and jewellery setting.',
+      'High-Definition bridal transformation performed by Certified Eden Roses Artists including luxury HD skin finish, bespoke bridal hairstyling, saree draping, and jewellery setting.',
     price: 8999,
     originalPrice: 10999,
     rating: 5.0,
     reviewCount: 112,
     duration: '3 hrs',
     highlights: [
-      'Signature 4K HD bridal transformation by Lead Artist Subba Lakshmi',
+      'Signature 4K HD bridal transformation performed by Certified Eden Roses Artists',
       'Includes intricate bridal hairstyling, silk saree box-draping & maang tikka setting',
     ],
     whatsIncluded: [
@@ -1149,6 +1208,8 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     active: true,
     userId: 'kavya',
     password: 'eden123',
+    area: 'Kaggadaspura',
+    isAvailable: true,
     createdAt: '2026-10-01T09:00:00.000Z',
   },
   {
@@ -1159,6 +1220,8 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     active: true,
     userId: 'deepika',
     password: 'eden123',
+    area: 'Electronic City',
+    isAvailable: true,
     createdAt: '2026-10-02T09:00:00.000Z',
   },
   {
@@ -1169,6 +1232,8 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     active: true,
     userId: 'anusha',
     password: 'eden123',
+    area: 'Whitefield',
+    isAvailable: true,
     createdAt: '2026-10-03T09:00:00.000Z',
   },
   {
@@ -1179,6 +1244,8 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     active: true,
     userId: 'meghana',
     password: 'eden123',
+    area: 'Indiranagar',
+    isAvailable: false,
     createdAt: '2026-10-04T09:00:00.000Z',
   },
 ];
@@ -1232,6 +1299,7 @@ function sanitizeBookingForFirestore(b: Booking): Booking {
     status: (
       [
         'Confirmed',
+        'Assigned',
         'Visit Scheduled',
         'Journey Started',
         'In Progress',
@@ -1259,6 +1327,9 @@ function sanitizeBookingForFirestore(b: Booking): Booking {
     updatedAt: String(b.updatedAt || new Date().toISOString()).slice(0, 50),
   };
 
+  if (b.area) cleaned.area = String(b.area).slice(0, 100);
+  if (b.assignedArtistId) cleaned.assignedArtistId = String(b.assignedArtistId).slice(0, 80);
+  if (b.assignedArtistName) cleaned.assignedArtistName = String(b.assignedArtistName).slice(0, 120);
   if (b.locality) cleaned.locality = String(b.locality).slice(0, 120);
   if (b.completedAt) cleaned.completedAt = String(b.completedAt).slice(0, 50);
   if (b.reportReason) cleaned.reportReason = String(b.reportReason).slice(0, 500);
@@ -1279,6 +1350,7 @@ function sanitizeCustomerLeadForFirestore(lead: CustomerLead): CustomerLead {
     source: String(lead.source || 'Customer Website').slice(0, 50),
     createdAt: String(lead.createdAt || new Date().toISOString()).slice(0, 50),
   };
+  if (lead.area) cleaned.area = String(lead.area).slice(0, 100);
   if (lead.locality) cleaned.locality = String(lead.locality).slice(0, 120);
   if (lead.lastBookingId) cleaned.lastBookingId = String(lead.lastBookingId).slice(0, 64);
   if (lead.totalSpend !== undefined)
@@ -1372,6 +1444,8 @@ function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
       .toLowerCase()
       .slice(0, 80),
     password: String(m.password || 'eden123').trim().slice(0, 120),
+    area: m.area ? String(m.area).slice(0, 100) : 'Kaggadaspura',
+    isAvailable: m.isAvailable !== false,
     createdAt: String(m.createdAt || new Date().toISOString()).slice(0, 50),
   };
   return cleaned;
@@ -2128,6 +2202,33 @@ export function startFirebaseRealtimeSync(): void {
 
 export function ensureSeedDataInitialized(): void {
   try {
+    const cleanResetDone = localStorage.getItem(STORAGE_KEYS.CLEAN_RESET_V6);
+    if (!cleanResetDone) {
+      // Wipe old duplicate keys from prior revisions
+      [
+        'eden_roses_services_v6',
+        'eden_roses_services_v7',
+        'eden_roses_services_v8',
+        'eden_roses_services_v9',
+        'eden_roses_services_v9_clean',
+        'eden_roses_bookings_v5',
+        'eden_roses_team_members_v6',
+        'eden_roses_seed_v9_clean',
+        STORAGE_KEYS.SERVICES,
+        STORAGE_KEYS.SEED_VERSION,
+      ].forEach((k) => localStorage.removeItem(k));
+
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(INITIAL_SERVICES_CATALOG));
+      localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(INITIAL_TEAM_MEMBERS));
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_BUSINESS_SETTINGS));
+      localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(EDEN_ROSES_PORTFOLIO_GALLERY));
+      if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) {
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(buildInitialSeedBookings()));
+      }
+      localStorage.setItem(STORAGE_KEYS.CLEAN_RESET_V6, 'true');
+      localStorage.setItem(STORAGE_KEYS.SEED_VERSION, 'true');
+    }
+
     const seeded = localStorage.getItem(STORAGE_KEYS.SEED_VERSION);
     if (!seeded) {
       const seedBookings = buildInitialSeedBookings();
@@ -2645,12 +2746,81 @@ export function getServicesCatalog(): ServiceCatalogItem[] {
   ensureSeedDataInitialized();
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SERVICES);
-    if (!raw) return INITIAL_SERVICES_CATALOG;
-    const parsed = JSON.parse(raw) as ServiceCatalogItem[];
-    return parsed.map((s) => sanitizeServiceForFirestore(s));
+    const parsed = raw ? (JSON.parse(raw) as ServiceCatalogItem[]) : INITIAL_SERVICES_CATALOG;
+    const sanitized = parsed.map((s) => sanitizeServiceForFirestore(s));
+
+    // STRICT DEDUPLICATION: Title + Image
+    const seenTitles = new Set<string>();
+    const seenImages = new Set<string>();
+    const uniqueServices = sanitized.filter((item) => {
+      const normTitle = (item.name || '').trim().toLowerCase();
+      const normImg = (item.image || '').trim().toLowerCase();
+      if (seenTitles.has(normTitle) || (normImg && seenImages.has(normImg))) {
+        return false;
+      }
+      seenTitles.add(normTitle);
+      if (normImg) seenImages.add(normImg);
+      return true;
+    });
+
+    return uniqueServices;
   } catch {
     return INITIAL_SERVICES_CATALOG;
   }
+}
+
+// ==================== AREA & ASSIGNMENT HELPERS ====================
+
+export function getCustomAreas(): string[] {
+  ensureSeedDataInitialized();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.AREAS);
+    if (!raw) return BANGALORE_AREAS;
+    const list = JSON.parse(raw) as string[];
+    const merged = Array.from(new Set([...BANGALORE_AREAS, ...list]));
+    return merged;
+  } catch {
+    return BANGALORE_AREAS;
+  }
+}
+
+export function addCustomArea(newArea: string): string[] {
+  const clean = newArea.trim();
+  if (!clean) return getCustomAreas();
+  const current = getCustomAreas();
+  if (!current.some((a) => a.toLowerCase() === clean.toLowerCase())) {
+    const updated = [...current, clean];
+    localStorage.setItem(STORAGE_KEYS.AREAS, JSON.stringify(updated));
+    notifyDataUpdated();
+    return updated;
+  }
+  return current;
+}
+
+export async function updateTeamMemberAvailability(
+  memberId: string,
+  isAvailable: boolean
+): Promise<TeamMember | undefined> {
+  const current = getTeamMembers();
+  const idx = current.findIndex(
+    (m) => m.id === memberId || (m.userId && m.userId.toLowerCase() === memberId.toLowerCase())
+  );
+  if (idx === -1) return undefined;
+  current[idx].isAvailable = isAvailable;
+  await saveTeamMembers(current);
+  return current[idx];
+}
+
+export async function assignBookingToArtist(
+  bookingId: string,
+  artist: TeamMember
+): Promise<{ success: boolean; booking?: Booking; error?: string }> {
+  return await updateBooking(bookingId, {
+    status: 'Assigned',
+    assignedArtistId: artist.userId || artist.id,
+    assignedArtistName: artist.name,
+    assignedTeam: [artist],
+  });
 }
 
 export async function saveServicesCatalog(services: ServiceCatalogItem[]): Promise<void> {
