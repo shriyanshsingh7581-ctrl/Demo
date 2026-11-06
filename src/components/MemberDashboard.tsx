@@ -261,32 +261,6 @@ export const MemberDashboard: React.FC = () => {
                 Sign In to Member Dashboard
               </button>
             </form>
-
-            <div className="mt-6 pt-5 border-t border-stone-800 text-center">
-              <p className="text-[11px] text-stone-400 mb-2">Demo Staff Accounts:</p>
-              <div className="flex flex-wrap justify-center gap-2 text-[10px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserIdInput('kavya');
-                    setPasswordInput('eden123');
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-700 text-stone-300 hover:border-[#C59A45]"
-                >
-                  kavya (Kaggadaspura)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserIdInput('deepika');
-                    setPasswordInput('eden123');
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-700 text-stone-300 hover:border-[#C59A45]"
-                >
-                  deepika (Electronic City)
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Quick Portal Switcher */}

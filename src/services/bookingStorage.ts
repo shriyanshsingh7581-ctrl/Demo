@@ -245,6 +245,12 @@ export const BANGALORE_AREAS: string[] = [
   'All Areas',
   'Kaggadaspura',
   'Electronic City',
+  'JP Nagar',
+  'Horamavu',
+  'BTM',
+  'Harlur Road',
+  'Nagarbhavi',
+  'Kudlu Gate',
   'Whitefield',
   'Brookefield',
   'Varthur',
@@ -256,7 +262,7 @@ export const BANGALORE_AREAS: string[] = [
 ];
 
 const STORAGE_KEYS = {
-  CLEAN_RESET_V6: 'eden_roses_clean_v6',
+  CLEAN_RESET_V6: 'eden_roses_clean_v7',
   SEED_VERSION: 'eden_roses_seed_v9_clean',
   BOOKINGS: 'eden_roses_bookings_v6',
   CUSTOMERS: 'eden_roses_customers_v6',
@@ -2216,12 +2222,14 @@ export function ensureSeedDataInitialized(): void {
         'eden_roses_seed_v9_clean',
         STORAGE_KEYS.SERVICES,
         STORAGE_KEYS.SEED_VERSION,
+        STORAGE_KEYS.AREAS,
       ].forEach((k) => localStorage.removeItem(k));
 
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(INITIAL_SERVICES_CATALOG));
       localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(INITIAL_TEAM_MEMBERS));
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_BUSINESS_SETTINGS));
       localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(EDEN_ROSES_PORTFOLIO_GALLERY));
+      localStorage.setItem(STORAGE_KEYS.AREAS, JSON.stringify(BANGALORE_AREAS));
       if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) {
         localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(buildInitialSeedBookings()));
       }

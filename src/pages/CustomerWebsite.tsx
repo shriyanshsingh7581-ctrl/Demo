@@ -64,23 +64,29 @@ import {
 
 // Configurable Service Areas in Bangalore (Editable / extensible via Business Settings)
 const BENGALURU_LOCALITIES = [
+  'Kaggadaspura',
+  'Electronic City',
+  'JP Nagar',
+  'Horamavu',
+  'BTM',
+  'Harlur Road',
+  'Nagarbhavi',
+  'Kudlu Gate',
   'Indiranagar',
-  'Varthur',
-  'Yelahanka',
-  'Kaggadasapura',
-  'C V Raman Nagar',
-  'Nagavarapalya',
   'Whitefield',
   'Brookefield',
-  'Jayanagar',
+  'Varthur',
   'Koramangala',
   'HSR Layout',
   'Marathahalli',
+  'Yelahanka',
+  'Jayanagar',
+  'C V Raman Nagar',
+  'Nagavarapalya',
   'Domlur',
   'Banaswadi',
   'Hebbal',
   'Malleswaram',
-  'Electronic City',
   'Other Bengaluru Locality',
 ];
 
@@ -2614,6 +2620,12 @@ export const CustomerWebsite: React.FC = () => {
                           <option value="Electronic City">Electronic City (Walk-in Salon Branch)</option>
                         </optgroup>
                         <optgroup label="On-Location / Doorstep Makeup (Bangalore)">
+                          <option value="JP Nagar">JP Nagar (On-Location Makeup)</option>
+                          <option value="Horamavu">Horamavu (On-Location Makeup)</option>
+                          <option value="BTM">BTM (On-Location Makeup)</option>
+                          <option value="Harlur Road">Harlur Road (On-Location Makeup)</option>
+                          <option value="Nagarbhavi">Nagarbhavi (On-Location Makeup)</option>
+                          <option value="Kudlu Gate">Kudlu Gate (On-Location Makeup)</option>
                           <option value="Whitefield">Whitefield (On-Location Makeup)</option>
                           <option value="Brookefield">Brookefield (On-Location Makeup)</option>
                           <option value="Varthur">Varthur (On-Location Makeup)</option>
@@ -2629,6 +2641,12 @@ export const CustomerWebsite: React.FC = () => {
                               ![
                                 'kaggadaspura',
                                 'electronic city',
+                                'jp nagar',
+                                'horamavu',
+                                'btm',
+                                'harlur road',
+                                'nagarbhavi',
+                                'kudlu gate',
                                 'whitefield',
                                 'brookefield',
                                 'varthur',
