@@ -163,9 +163,13 @@ export const AdminPartnerApp: React.FC = () => {
     useState<MoreSectionId>('menu');
 
   const openMoreSubSection = (section: MoreSectionId) => {
+    setAddBookingModalOpen(false);
+    setSelfieModalOpen(false);
+    setFlowGuideModalOpen(false);
     setMoreInitialSubScreen(section);
     setActiveTab('more');
     navigate('/admin');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -230,7 +234,7 @@ export const AdminPartnerApp: React.FC = () => {
           name: 'Subba Lakshmi',
           role: 'Founder & Lead Makeup Artist (Admin)',
           userId: 'admin',
-          phone: '+91 7019135530',
+          phone: '+91 7619603016',
           isAdmin: true,
         });
       } else {
@@ -1411,8 +1415,12 @@ export const AdminPartnerApp: React.FC = () => {
               icon: LayoutDashboard,
               isActive: !bookingId && activeTab === 'dashboard',
               onClick: () => {
+                setAddBookingModalOpen(false);
+                setSelfieModalOpen(false);
+                setFlowGuideModalOpen(false);
                 setActiveTab('dashboard');
                 navigate('/admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               },
             },
             {
@@ -1431,8 +1439,12 @@ export const AdminPartnerApp: React.FC = () => {
               icon: CalendarIcon,
               isActive: !bookingId && activeTab === 'calendar',
               onClick: () => {
+                setAddBookingModalOpen(false);
+                setSelfieModalOpen(false);
+                setFlowGuideModalOpen(false);
                 setActiveTab('calendar');
                 navigate('/admin/calendar');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               },
             },
             {
@@ -1442,8 +1454,12 @@ export const AdminPartnerApp: React.FC = () => {
               isActive:
                 !bookingId && (activeTab === 'wallet' || activeTab === 'earnings'),
               onClick: () => {
+                setAddBookingModalOpen(false);
+                setSelfieModalOpen(false);
+                setFlowGuideModalOpen(false);
                 setActiveTab('wallet');
                 navigate('/admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               },
             },
             {
