@@ -339,7 +339,7 @@ export const AdminPartnerApp: React.FC = () => {
         if (aActive !== bActive) return aActive - bActive;
         return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
       });
-  }, [bookings, activeCardFilter, activeJobPill, todayISO, tomorrowISO]);
+  }, [bookings, activeCardFilter, activeJobPill, selectedAreaFilter, todayISO, tomorrowISO]);
 
   // Calendar Grid Computation
   const adminCalendarCells = useMemo(() => {

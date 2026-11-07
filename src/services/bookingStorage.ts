@@ -74,6 +74,7 @@ export interface TeamMember {
   name: string;
   role: 'Makeup Artist' | 'Hair Stylist' | 'Beautician' | 'Assistant Makeup Artist' | 'Hairstylist' | 'Saree Drapist' | 'Other Team Member';
   phone: string;
+  email?: string;
   active: boolean;
   userId?: string;
   password?: string;
@@ -88,6 +89,7 @@ export interface PartnerSessionUser {
   role: string;
   userId: string;
   phone?: string;
+  email?: string;
   area?: string;
   isAvailable?: boolean;
   isAdmin: boolean;
@@ -243,37 +245,77 @@ export interface PartnerSelfieLog {
 
 export const BANGALORE_AREAS: string[] = [
   'All Areas',
+  'All Bangalore (Engagement & Wedding)',
+  'Ulsoor',
+  'Marathahalli',
   'Kaggadaspura',
-  'Electronic City',
-  'Vijayapura (Near Devanahalli)',
-  'Srinagar (Banashankari)',
-  'JP Nagar',
-  'Horamavu',
-  'BTM',
-  'Harlur Road',
-  'Nagarbhavi',
-  'Kudlu Gate',
   'Whitefield',
   'Brookefield',
   'Varthur',
-  'Indiranagar',
+  'Hoodi',
+  'KR Puram',
+  'Hebbal',
+  'Yelahanka',
+  'Malleshwaram',
+  'Vijayanagar',
+  'Rajajinagar',
   'Koramangala',
   'HSR Layout',
-  'Marathahalli',
-  'Yelahanka',
+  'HBR Layout',
+  'Banashankari',
+  'BTM Layout',
+  'Residency Road',
+  'MG Road',
+  'Ashok Nagar',
+  'Jayanagar',
+  'JP Nagar',
+  'Electronic City (E City)',
+  'Hennur',
+  'Indiranagar',
+  'Chikkaballapur',
+  'Hoskote',
+  'Kolar',
+  'Dodballapur',
+  'Vijayapura (Devanahalli)',
+  'Vidyapeeta',
+  'Girinagar',
+  'Bankcolony',
+  'Hanumanth Nagar',
+  'Nayandahalli',
+  'Raja Rajeshwari Nagar',
+  'Hosakerahalli',
+  'Gandi Bazar',
+  'Basvangudi',
+  'VV Puram',
+  'Yediur',
+  'Chamrajpet',
+  'Padmanab Nagar',
+  'Kumarswamy Layout',
+  'Uttrahalli',
+  'Srinagar',
+  'Avalahalli',
+  'Kanakapura',
+  'Kamakhya Outer Ring Road',
+  'Konanakunte',
+  'Mysore Road Circle',
+  'Deepanjali Nagar',
+  'Magdi Road',
+  'Nagarbhavi',
+  'Housing Board',
+  'Mudalapalya',
 ];
 
 const STORAGE_KEYS = {
-  CLEAN_RESET_V6: 'eden_roses_clean_v8',
-  SEED_VERSION: 'eden_roses_seed_v9_clean',
+  CLEAN_RESET_V6: 'eden_roses_clean_v9',
+  SEED_VERSION: 'eden_roses_seed_v10_clean',
   BOOKINGS: 'eden_roses_bookings_v6',
   CUSTOMERS: 'eden_roses_customers_v6',
   SERVICES: 'eden_roses_services_v9_clean',
   SETTINGS: 'eden_roses_business_settings_v9',
-  TEAM: 'eden_roses_team_members_v7',
+  TEAM: 'eden_roses_team_members_v8',
   GALLERY: 'eden_roses_gallery_images_v6',
   SELFIES: 'eden_roses_partner_selfies_v4',
-  AREAS: 'eden_roses_custom_areas_v1',
+  AREAS: 'eden_roses_custom_areas_v3',
 };
 
 export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
@@ -1209,6 +1251,32 @@ export const INITIAL_SERVICES_CATALOG: ServiceCatalogItem[] = [
 
 export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
   {
+    id: 'tm-parvathi',
+    name: 'Parvathi G',
+    role: 'Makeup Artist',
+    phone: '9241533588',
+    email: 'parvathiparu0104@gmail.com',
+    active: true,
+    userId: 'parvathi',
+    password: 'eden1234',
+    area: 'Varthur',
+    isAvailable: true,
+    createdAt: '2026-10-01T08:00:00.000Z',
+  },
+  {
+    id: 'tm-ashwini',
+    name: 'Ashwini M',
+    role: 'Makeup Artist',
+    phone: '6362302205',
+    email: 'ashrag2712@gmail.com',
+    active: true,
+    userId: 'ashwini',
+    password: 'eden1234',
+    area: 'Ulsoor',
+    isAvailable: true,
+    createdAt: '2026-10-01T08:30:00.000Z',
+  },
+  {
     id: 'tm-1',
     name: 'Kavya Nair',
     role: 'Hairstylist',
@@ -1228,7 +1296,7 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     active: true,
     userId: 'deepika',
     password: 'eden123',
-    area: 'Electronic City',
+    area: 'Electronic City (E City)',
     isAvailable: true,
     createdAt: '2026-10-02T09:00:00.000Z',
   },
@@ -1437,13 +1505,16 @@ function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
     name: String(m.name || 'Team Member').slice(0, 120),
     role: (
       [
+        'Makeup Artist',
+        'Hair Stylist',
+        'Beautician',
         'Assistant Makeup Artist',
         'Hairstylist',
         'Saree Drapist',
         'Other Team Member',
       ].includes(m.role)
         ? m.role
-        : 'Assistant Makeup Artist'
+        : 'Makeup Artist'
     ) as TeamMember['role'],
     phone: String(m.phone || '+91 7619603016').slice(0, 40),
     active: m.active !== false,
@@ -1456,7 +1527,34 @@ function sanitizeTeamMemberForFirestore(m: TeamMember): TeamMember {
     isAvailable: m.isAvailable !== false,
     createdAt: String(m.createdAt || new Date().toISOString()).slice(0, 50),
   };
+  if (m.email) {
+    cleaned.email = String(m.email).trim().slice(0, 120);
+  }
   return cleaned;
+}
+
+function ensureMandatoryStaffAccounts(members: TeamMember[]): TeamMember[] {
+  const mandatory = INITIAL_TEAM_MEMBERS.filter(
+    (m) => m.userId === 'parvathi' || m.userId === 'ashwini'
+  );
+  const result = [...members];
+  for (const reqMember of mandatory) {
+    const existingIdx = result.findIndex(
+      (m) => (m.userId || '').toLowerCase() === reqMember.userId?.toLowerCase()
+    );
+    if (existingIdx === -1) {
+      result.unshift(sanitizeTeamMemberForFirestore(reqMember));
+    } else {
+      result[existingIdx] = sanitizeTeamMemberForFirestore({
+        ...reqMember,
+        ...result[existingIdx],
+        email: result[existingIdx].email || reqMember.email,
+        area: result[existingIdx].area || reqMember.area,
+        password: result[existingIdx].password || reqMember.password,
+      });
+    }
+  }
+  return result;
 }
 
 function sanitizeBusinessSettingsForFirestore(s: BusinessSettings): BusinessSettings {
@@ -1909,12 +2007,30 @@ export function startFirebaseRealtimeSync(): void {
       });
 
       if (remoteBookings.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(remoteBookings));
+        const remoteMap = new Map<string, Booking>();
+        remoteBookings.forEach((b) => {
+          if (b && b.id) remoteMap.set(b.id, b);
+        });
+        try {
+          const localRaw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+          if (localRaw) {
+            const localList = JSON.parse(localRaw) as Booking[];
+            localList.forEach((lb) => {
+              if (lb && lb.id && !remoteMap.has(lb.id)) {
+                remoteMap.set(lb.id, lb);
+              }
+            });
+          }
+        } catch {
+          // ignore parse error
+        }
+        const merged = Array.from(remoteMap.values());
+        localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(merged));
         notifyDataUpdated();
       }
     },
     (error) => {
-      handleFirestoreError(error, OperationType.GET, bookingsPath);
+      console.warn('Bookings listener warning:', error);
     }
   );
 
@@ -2048,7 +2164,7 @@ export function startFirebaseRealtimeSync(): void {
       isFirebaseLiveConnected = true;
       if (isSeedingTeam) return;
 
-      const teamSeededKey = 'eden_roses_team_cloud_seeded_v5';
+      const teamSeededKey = 'eden_roses_team_cloud_seeded_v6';
       if (snapshot.empty && !localStorage.getItem(teamSeededKey)) {
         isSeedingTeam = true;
         try {
@@ -2077,7 +2193,19 @@ export function startFirebaseRealtimeSync(): void {
         }
       });
 
-      localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(remoteTeam));
+      const mergedTeam = ensureMandatoryStaffAccounts(remoteTeam);
+      // Sync mandatory staff accounts to Firestore if not yet present in cloud
+      if (mergedTeam.length > remoteTeam.length) {
+        const remoteIds = new Set(remoteTeam.map((m) => (m.userId || '').toLowerCase()));
+        mergedTeam.forEach((m) => {
+          if (m.userId && !remoteIds.has(m.userId.toLowerCase())) {
+            const clean = sanitizeTeamMemberForFirestore(m);
+            setDoc(doc(db, teamPath, clean.id), clean).catch(() => {});
+          }
+        });
+      }
+
+      localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(mergedTeam));
       notifyDataUpdated();
     },
     (error) => {
@@ -2315,11 +2443,10 @@ export async function saveCustomerLead(
   notifyDataUpdated();
 
   if (isFirebaseConfigured) {
-    const path = `customers/${lead.id}`;
     try {
       await setDoc(doc(db, 'customers', lead.id), lead);
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, path);
+      console.warn('Firestore saveCustomerLead warning:', error);
     }
   }
 
@@ -2382,7 +2509,7 @@ export function isSlotAvailable(
   if (settings.blockedDates.includes(date)) {
     return false;
   }
-  const existing = getBookings().find(
+  const existingMatches = getBookings().filter(
     (b) =>
       b.date === date &&
       b.time === time &&
@@ -2390,7 +2517,8 @@ export function isSlotAvailable(
       b.status !== 'Cancelled' &&
       b.status !== 'Reported'
   );
-  return !existing;
+  // Allow up to 6 concurrent bookings per slot across branches & Bangalore team
+  return existingMatches.length < 6;
 }
 
 export function getAvailableSlots(
@@ -2409,11 +2537,11 @@ export function getAvailableSlots(
   const isBlockedDate = settings.blockedDates.includes(date);
 
   return slots.map((time) => {
-    const match = dayBookings.find((b) => b.time === time);
+    const matches = dayBookings.filter((b) => b.time === time);
     return {
       time,
-      available: !isBlockedDate && !match,
-      bookedBy: match?.customerName,
+      available: !isBlockedDate && matches.length < 6,
+      bookedBy: matches[0]?.customerName,
     };
   });
 }
@@ -2467,11 +2595,10 @@ export async function saveBooking(
 
   // Write to provisioned Firebase Firestore database
   if (isFirebaseConfigured) {
-    const path = `bookings/${booking.id}`;
     try {
       await setDoc(doc(db, 'bookings', booking.id), booking);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, path);
+      console.warn('Firestore saveBooking warning:', error);
     }
   }
 
@@ -2495,6 +2622,7 @@ export async function saveBooking(
     phone: booking.phone,
     whatsapp: booking.whatsapp,
     address: booking.address,
+    area: booking.area || booking.locality,
     locality: booking.locality,
     eventType: booking.eventType,
     message: `Booked ${booking.services.map((s) => `${s.name} ×${s.quantity}`).join(', ')} on ${booking.date} at ${booking.time}${booking.notes ? ` | Notes: ${booking.notes}` : ''}`,
@@ -2571,11 +2699,10 @@ export async function updateBooking(
   persistBookingsList(all);
 
   if (isFirebaseConfigured) {
-    const path = `bookings/${bookingId}`;
     try {
       await setDoc(doc(db, 'bookings', bookingId), updatedBooking);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, path);
+      console.warn('Firestore updateBooking warning:', error);
     }
   }
 
@@ -2785,9 +2912,18 @@ export function getCustomAreas(): string[] {
   ensureSeedDataInitialized();
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.AREAS);
-    if (!raw) return BANGALORE_AREAS;
-    const list = JSON.parse(raw) as string[];
-    const merged = Array.from(new Set([...BANGALORE_AREAS, ...list]));
+    const list = raw ? (JSON.parse(raw) as string[]) : [];
+    const seen = new Set<string>();
+    const merged: string[] = [];
+    for (const item of [...BANGALORE_AREAS, ...list]) {
+      const clean = (item || '').trim();
+      if (!clean) continue;
+      const key = clean.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(clean);
+      }
+    }
     return merged;
   } catch {
     return BANGALORE_AREAS;
@@ -2894,7 +3030,8 @@ export function getTeamMembers(): TeamMember[] {
     const raw = localStorage.getItem(STORAGE_KEYS.TEAM);
     if (!raw) return INITIAL_TEAM_MEMBERS;
     const parsed = JSON.parse(raw) as TeamMember[];
-    return parsed.map((m) => sanitizeTeamMemberForFirestore(m));
+    const sanitized = parsed.map((m) => sanitizeTeamMemberForFirestore(m));
+    return ensureMandatoryStaffAccounts(sanitized);
   } catch {
     return INITIAL_TEAM_MEMBERS;
   }

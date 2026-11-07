@@ -53,6 +53,7 @@ import {
   upsertServiceCatalogItem,
   upsertTeamMember,
   getCustomAreas,
+  addCustomArea,
   updateTeamMemberAvailability,
 } from '../../services/bookingStorage';
 import { EdenRoseImage, GalleryFilterCategory } from '../../config/edenRosesImages';
@@ -208,14 +209,17 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
   // New Team Member & Login Account State
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] =
-    useState<TeamMember['role']>('Assistant Makeup Artist');
-  const [newMemberArea, setNewMemberArea] = useState('Kaggadaspura');
+    useState<TeamMember['role']>('Makeup Artist');
+  const [newMemberArea, setNewMemberArea] = useState('All Bangalore (Engagement & Wedding)');
   const [newMemberPhone, setNewMemberPhone] = useState('');
+  const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberUserId, setNewMemberUserId] = useState('');
-  const [newMemberPassword, setNewMemberPassword] = useState('eden123');
+  const [newMemberPassword, setNewMemberPassword] = useState('eden1234');
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
   const [teamAreaFilter, setTeamAreaFilter] = useState<string>('All Areas');
+  const [showAddAreaInline, setShowAddAreaInline] = useState(false);
+  const [newAreaInlineInput, setNewAreaInlineInput] = useState('');
 
   // Availability State
   const [newSlotInput, setNewSlotInput] = useState('');
@@ -485,6 +489,7 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
       area: newMemberArea,
       isAvailable: true,
       phone: newMemberPhone.trim(),
+      email: newMemberEmail.trim() || undefined,
       active: true,
       userId: cleanUserId,
       password: cleanPassword,
@@ -493,9 +498,10 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
     await upsertTeamMember(member);
     setNewMemberName('');
     setNewMemberPhone('');
+    setNewMemberEmail('');
     setNewMemberUserId('');
-    setNewMemberArea('Kaggadaspura');
-    setNewMemberPassword('eden123');
+    setNewMemberArea('All Bangalore (Engagement & Wedding)');
+    setNewMemberPassword('eden1234');
     onRefresh();
     showToast(
       `Team login created for ${member.name} (ID: ${cleanUserId} / Pass: ${cleanPassword})!`
@@ -2620,15 +2626,26 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold text-stone-900"
                 >
+                  <option value="Makeup Artist">Makeup Artist</option>
                   <option value="Assistant Makeup Artist">Assistant Makeup Artist</option>
                   <option value="Hairstylist">Hairstylist</option>
                   <option value="Saree Drapist">Saree Drapist</option>
+                  <option value="Beautician">Beautician</option>
                   <option value="Other Team Member">Other Team Member</option>
                 </select>
               </div>
 
               <div>
-                <label className="font-bold text-stone-700 block mb-1">Assigned Area *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-stone-700">Assigned Area *</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAreaInline((prev) => !prev)}
+                    className="text-[10px] font-bold text-[#8C4A56] hover:underline cursor-pointer"
+                  >
+                    + Add New Area
+                  </button>
+                </div>
                 <select
                   value={newMemberArea}
                   onChange={(e) => setNewMemberArea(e.target.value)}
@@ -2640,6 +2657,33 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                     </option>
                   ))}
                 </select>
+                {showAddAreaInline && (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={newAreaInlineInput}
+                      onChange={(e) => setNewAreaInlineInput(e.target.value)}
+                      placeholder="Type new area name..."
+                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trimmed = newAreaInlineInput.trim();
+                        if (!trimmed) return;
+                        addCustomArea(trimmed);
+                        setNewMemberArea(trimmed);
+                        setNewAreaInlineInput('');
+                        setShowAddAreaInline(false);
+                        onRefresh();
+                        showToast(`Added "${trimmed}" to Master Area List!`);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-[#160824] text-[#F5E2B8] font-bold text-[11px] cursor-pointer"
+                    >
+                      Save Area
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -2653,6 +2697,19 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                   onChange={(e) => setNewMemberPhone(e.target.value)}
                   placeholder="+91 98450XXXXX"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num text-stone-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-stone-700 block mb-1">
+                  Email Address (Optional)
+                </label>
+                <input
+                  type="email"
+                  value={newMemberEmail}
+                  onChange={(e) => setNewMemberEmail(e.target.value)}
+                  placeholder="artist@gmail.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 text-stone-900"
                 />
               </div>
             </div>
@@ -2800,8 +2857,11 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                               </span>
                             </button>
                           </div>
-                          <p className="font-mono-num text-xs text-stone-600 flex items-center gap-2">
+                          <p className="font-mono-num text-xs text-stone-600 flex flex-wrap items-center gap-2">
                             <span>Phone: {m.phone}</span>
+                            {m.email && (
+                              <span className="text-stone-500">· Email: {m.email}</span>
+                            )}
                             <a
                               href={`tel:${m.phone}`}
                               className="text-[11px] text-[#8C4A56] font-bold underline"
@@ -2953,12 +3013,36 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                         }
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
                       >
+                        <option value="Makeup Artist">Makeup Artist</option>
                         <option value="Assistant Makeup Artist">
                           Assistant Makeup Artist
                         </option>
                         <option value="Hairstylist">Hairstylist</option>
                         <option value="Saree Drapist">Saree Drapist</option>
+                        <option value="Beautician">Beautician</option>
                         <option value="Other Team Member">Other Team Member</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Assigned Area *
+                      </label>
+                      <select
+                        value={editingTeamMember.area || 'Kaggadaspura'}
+                        onChange={(e) =>
+                          setEditingTeamMember({
+                            ...editingTeamMember,
+                            area: e.target.value,
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-semibold"
+                      >
+                        {getCustomAreas().filter((a) => a !== 'All Areas').map((area) => (
+                          <option key={area} value={area}>
+                            {area}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -2977,6 +3061,23 @@ export const AdminMoreScreen: React.FC<AdminMoreScreenProps> = ({
                           })
                         }
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300 font-mono-num"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-stone-700 block mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={editingTeamMember.email || ''}
+                        onChange={(e) =>
+                          setEditingTeamMember({
+                            ...editingTeamMember,
+                            email: e.target.value,
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-stone-300"
                       />
                     </div>
                   </div>

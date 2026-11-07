@@ -50,6 +50,9 @@ service cloud.firestore {
         'whatsapp',
         'address',
         'locality',
+        'area',
+        'assignedArtistId',
+        'assignedArtistName',
         'eventType',
         'services',
         'date',
@@ -74,6 +77,9 @@ service cloud.firestore {
       data.whatsapp is string && data.whatsapp.size() <= 30 &&
       data.address is string && data.address.size() <= 500 &&
       (!('locality' in data) || (data.locality is string && data.locality.size() <= 120)) &&
+      (!('area' in data) || (data.area is string && data.area.size() <= 120)) &&
+      (!('assignedArtistId' in data) || (data.assignedArtistId is string && data.assignedArtistId.size() <= 100)) &&
+      (!('assignedArtistName' in data) || (data.assignedArtistName is string && data.assignedArtistName.size() <= 120)) &&
       data.eventType is string && data.eventType.size() <= 40 &&
       data.eventType in ['Wedding', 'Engagement', 'Reception', 'Party', 'Photoshoot', 'Other'] &&
       data.services is list && data.services.size() <= 30 &&
@@ -87,6 +93,7 @@ service cloud.firestore {
       data.status is string && data.status.size() <= 40 &&
       data.status in [
         'Confirmed',
+        'Assigned',
         'Visit Scheduled',
         'Journey Started',
         'In Progress',
@@ -130,6 +137,7 @@ service cloud.firestore {
         'whatsapp',
         'address',
         'locality',
+        'area',
         'eventType',
         'message',
         'lastBookingId',
@@ -143,6 +151,7 @@ service cloud.firestore {
       data.whatsapp is string && data.whatsapp.size() <= 30 &&
       data.address is string && data.address.size() <= 500 &&
       (!('locality' in data) || (data.locality is string && data.locality.size() <= 120)) &&
+      (!('area' in data) || (data.area is string && data.area.size() <= 120)) &&
       data.eventType is string && data.eventType.size() <= 60 &&
       data.message is string && data.message.size() <= 1000 &&
       (!('lastBookingId' in data) || (data.lastBookingId is string && data.lastBookingId.size() <= 64)) &&

@@ -262,22 +262,6 @@ export const MemberDashboard: React.FC = () => {
               </button>
             </form>
           </div>
-
-          {/* Quick Portal Switcher */}
-          <div className="mt-6 flex items-center justify-between px-2 text-xs text-stone-400">
-            <button
-              onClick={() => navigate('/')}
-              className="hover:text-[#E6C687] flex items-center gap-1 transition"
-            >
-              &larr; Back to Website
-            </button>
-            <button
-              onClick={() => navigate('/admin')}
-              className="hover:text-[#E6C687] flex items-center gap-1 transition font-semibold"
-            >
-              Owner Admin Panel &rarr;
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -306,12 +290,6 @@ export const MemberDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/')}
-              className="text-[11px] px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-stone-300 hover:text-white"
-            >
-              Website
-            </button>
             <button
               onClick={handleLogout}
               className="p-1.5 rounded-lg text-stone-400 hover:text-red-400 hover:bg-stone-900 transition"

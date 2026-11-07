@@ -54,6 +54,7 @@ import {
   getAvailableSlots,
   getBookings,
   getBusinessSettings,
+  getCustomAreas,
   getGalleryImages,
   getServicesCatalog,
   getTodayISO,
@@ -64,32 +65,64 @@ import {
 
 // Configurable Service Areas in Bangalore (Editable / extensible via Business Settings)
 const BENGALURU_LOCALITIES = [
+  'All Bangalore (Engagement & Wedding)',
+  'Ulsoor',
+  'Marathahalli',
   'Kaggadaspura',
-  'Electronic City',
-  'Vijayapura (Near Devanahalli)',
-  'Srinagar (Banashankari)',
-  'JP Nagar',
-  'Horamavu',
-  'BTM',
-  'Harlur Road',
-  'Nagarbhavi',
-  'Kudlu Gate',
-  'Indiranagar',
   'Whitefield',
   'Brookefield',
   'Varthur',
+  'Hoodi',
+  'KR Puram',
+  'Hebbal',
+  'Yelahanka',
+  'Malleshwaram',
+  'Vijayanagar',
+  'Rajajinagar',
   'Koramangala',
   'HSR Layout',
-  'Marathahalli',
-  'Yelahanka',
+  'HBR Layout',
+  'Banashankari',
+  'BTM Layout',
+  'Residency Road',
+  'MG Road',
+  'Ashok Nagar',
   'Jayanagar',
-  'C V Raman Nagar',
-  'Nagavarapalya',
-  'Domlur',
-  'Banaswadi',
-  'Hebbal',
-  'Malleswaram',
-  'Other Bengaluru Locality',
+  'JP Nagar',
+  'Electronic City (E City)',
+  'Hennur',
+  'Indiranagar',
+  'Chikkaballapur',
+  'Hoskote',
+  'Kolar',
+  'Dodballapur',
+  'Vijayapura (Devanahalli)',
+  'Vidyapeeta',
+  'Girinagar',
+  'Bankcolony',
+  'Hanumanth Nagar',
+  'Nayandahalli',
+  'Raja Rajeshwari Nagar',
+  'Hosakerahalli',
+  'Gandi Bazar',
+  'Basvangudi',
+  'VV Puram',
+  'Yediur',
+  'Chamrajpet',
+  'Padmanab Nagar',
+  'Kumarswamy Layout',
+  'Uttrahalli',
+  'Srinagar',
+  'Avalahalli',
+  'Kanakapura',
+  'Kamakhya Outer Ring Road',
+  'Konanakunte',
+  'Mysore Road Circle',
+  'Deepanjali Nagar',
+  'Magdi Road',
+  'Nagarbhavi',
+  'Housing Board',
+  'Mudalapalya',
 ];
 
 const EVENT_TYPES: EventType[] = [
@@ -162,6 +195,7 @@ interface SignatureServiceCard {
   image: string;
   badge: string;
   serviceIdToBook: string;
+  defaultPrice: number;
   targetSubCategory: MakeupSubCategory;
 }
 
@@ -174,7 +208,8 @@ const LOCKED_SIGNATURE_SERVICE_CARDS: SignatureServiceCard[] = [
     image:
       'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=800&q=80',
     badge: 'In-Studio & On-Location Across Bangalore',
-    serviceIdToBook: 'pkg-luxury-bridal',
+    serviceIdToBook: 'pkg-party-makeup',
+    defaultPrice: 1599,
     targetSubCategory: 'Bridal Makeup',
   },
   {
@@ -186,6 +221,7 @@ const LOCKED_SIGNATURE_SERVICE_CARDS: SignatureServiceCard[] = [
       'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
     badge: 'Kaggadaspura & Electronic City Salons',
     serviceIdToBook: 'srv-haircuts',
+    defaultPrice: 499,
     targetSubCategory: 'Salon for Men',
   },
   {
@@ -197,6 +233,7 @@ const LOCKED_SIGNATURE_SERVICE_CARDS: SignatureServiceCard[] = [
       'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
     badge: 'Deep Keratin & Protein Hair Therapy',
     serviceIdToBook: 'srv-hair-spa',
+    defaultPrice: 1199,
     targetSubCategory: 'Salon for Women',
   },
   {
@@ -208,6 +245,7 @@ const LOCKED_SIGNATURE_SERVICE_CARDS: SignatureServiceCard[] = [
       'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
     badge: 'Precision Cuts & Advance Styling',
     serviceIdToBook: 'srv-skin-care',
+    defaultPrice: 799,
     targetSubCategory: 'Hair Styling',
   },
   {
@@ -219,6 +257,7 @@ const LOCKED_SIGNATURE_SERVICE_CARDS: SignatureServiceCard[] = [
       'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80',
     badge: 'Kaggadaspura & Electronic City Salons',
     serviceIdToBook: 'srv-mani-pedi',
+    defaultPrice: 1299,
     targetSubCategory: 'Salon for Women',
   },
 ];
@@ -450,41 +489,66 @@ export const CustomerWebsite: React.FC = () => {
     'both'
   );
 
-  // Cart & Package Selection State
-  const [cart, setCart] = useState<BookingServiceItem[]>([
-    {
-      id: 'pkg-party-makeup',
-      name: 'Basic Party Makeup',
-      price: 1599,
-      quantity: 1,
-      category: 'Bridal & Makeup Packages',
-    },
-  ]);
+  // Cart & Package Selection State (Persisted in localStorage so user can collect multiple items)
+  const [cart, setCart] = useState<BookingServiceItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('eden_roses_customer_cart_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+  const [cartToast, setCartToast] = useState<string | null>(null);
+  const [showFullCalendarGrid, setShowFullCalendarGrid] = useState<boolean>(false);
+  const [quickAddServiceId, setQuickAddServiceId] = useState<string>('');
   const [promoCode, setPromoCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState<number>(0);
-  const [advancePayment, setAdvancePayment] = useState<number>(500);
+  const [advancePayment, setAdvancePayment] = useState<number>(0);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('eden_roses_customer_cart_v2', JSON.stringify(cart));
+    } catch {
+      // ignore
+    }
+  }, [cart]);
 
   // Interactive Monthly Booking Calendar State
   const todayISO = getTodayISO();
+  const tomorrowISO = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return formatDateISO(d);
+  }, []);
+  const dayAfterISO = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    return formatDateISO(d);
+  }, []);
+
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 2);
+    d.setDate(d.getDate() + 1);
     return formatDateISO(d);
   });
-  const [selectedTime, setSelectedTime] = useState<string>('08:00 AM');
+  const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
 
-  // Multi-Step Booking Form State
+  // Single-Screen Fast Booking Form State
   const [bookingStep, setBookingStep] = useState<1 | 2 | 3>(1);
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [address, setAddress] = useState('');
-  const [locality, setLocality] = useState('Indiranagar');
-  const [eventType, setEventType] = useState<EventType>('Wedding');
+  const [locality, setLocality] = useState('Kaggadaspura');
+  const [eventType, setEventType] = useState<EventType>('Party');
   const [specialNotes, setSpecialNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -498,14 +562,11 @@ export const CustomerWebsite: React.FC = () => {
   const [inquiryLocality, setInquiryLocality] = useState('');
   const [inquiryMessage, setInquiryMessage] = useState('');
 
-  // Dynamic Service Areas combining defaults + admin configured serviceArea
+  // Dynamic Service Areas combining Master Area List + custom areas saved in localStorage
   const availableLocalities = useMemo(() => {
-    const customFromSettings = (settings.serviceArea || '')
-      .split(',')
-      .map((s) => s.replace(/& All Across Bengaluru/i, '').trim())
-      .filter((s) => s.length > 2 && s.length < 35);
-    return Array.from(new Set([...BENGALURU_LOCALITIES, ...customFromSettings]));
-  }, [settings.serviceArea]);
+    const customStored = getCustomAreas().filter((a) => a !== 'All Areas');
+    return Array.from(new Set([...BENGALURU_LOCALITIES, ...customStored]));
+  }, [settings.serviceArea, allBookings]);
 
   const filteredLocalities = useMemo(() => {
     if (!locationSearchQuery.trim()) return availableLocalities;
@@ -586,6 +647,13 @@ export const CustomerWebsite: React.FC = () => {
     return cart.find((item) => item.id === serviceId)?.quantity || 0;
   };
 
+  const triggerCartToast = (msg: string) => {
+    setCartToast(msg);
+    window.setTimeout(() => {
+      setCartToast((curr) => (curr === msg ? null : curr));
+    }, 3200);
+  };
+
   const handleAddOrIncrement = (srv: ServiceCatalogItem) => {
     const unitPrice = srv.price ?? 999;
     setCart((prev) => {
@@ -606,6 +674,7 @@ export const CustomerWebsite: React.FC = () => {
         },
       ];
     });
+    triggerCartToast(`✓ Added "${srv.name}" to Cart`);
   };
 
   const handleUpdateQuantity = (serviceId: string, delta: number) => {
@@ -622,6 +691,10 @@ export const CustomerWebsite: React.FC = () => {
 
   const handleRemoveFromCart = (serviceId: string) => {
     setCart((prev) => prev.filter((item) => item.id !== serviceId));
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
   };
 
   const applyCodeValue = (rawCode: string) => {
@@ -821,71 +894,88 @@ export const CustomerWebsite: React.FC = () => {
     setFormError(null);
 
     if (cart.length === 0) {
-      setFormError('Please select at least one makeup or styling service.');
-      setBookingStep(1);
+      setFormError('कृपया बुकिंग कन्फर्म करने से पहले कम से कम 1 सर्विस Add to Cart करें। (Please add at least one service to your cart.)');
       return;
     }
 
-    if (!selectedDate || !selectedTime) {
-      setFormError('Please select your preferred appointment date and time slot.');
-      setBookingStep(2);
+    if (!customerName.trim() || !phone.trim()) {
+      setFormError('कृपया अपना नाम और मोबाइल नंबर दर्ज करें। (Please enter your Name and Mobile Number.)');
       return;
     }
 
-    const slotCheck = selectedDateSlots.find((s) => s.time === selectedTime);
-    if (!slotCheck || !slotCheck.available) {
-      setFormError('This time slot was just booked. Please select an available slot.');
-      setBookingStep(2);
-      return;
-    }
-
-    if (!customerName.trim() || !phone.trim() || !address.trim()) {
-      setFormError('Please enter your Full Name, Phone Number, and Complete Address.');
-      return;
-    }
+    const effectiveDate = selectedDate || tomorrowISO;
+    const effectiveTime = selectedTime || '10:00 AM';
+    const rawAddress = address.trim() || `${locality} Branch / Area`;
+    const fullAddress = rawAddress.toLowerCase().includes(locality.toLowerCase())
+      ? rawAddress
+      : `${rawAddress}, ${locality}, Bengaluru`;
 
     setIsSubmitting(true);
-    const fullAddress = address.toLowerCase().includes(locality.toLowerCase())
-      ? address.trim()
-      : `${address.trim()}, ${locality}, Bengaluru`;
+    try {
+      const result = await saveBooking({
+        customerName: customerName.trim(),
+        phone: phone.trim(),
+        whatsapp: (whatsapp.trim() || phone.trim()).replace(/[^0-9]/g, ''),
+        address: fullAddress,
+        area: locality,
+        locality,
+        eventType,
+        services: cart,
+        date: effectiveDate,
+        time: effectiveTime,
+        itemsTotal: itemsSubtotal,
+        discount: effectiveDiscount,
+        advancePaid: effectiveAdvance,
+        amountToCollect: remainingAmount,
+        notes: specialNotes.trim(),
+        status: 'Confirmed',
+        bookingSource: 'Customer Website',
+        assignedTeam: [],
+        badgeType: 'VISIT',
+      });
 
-    const result = await saveBooking({
-      customerName: customerName.trim(),
-      phone: phone.trim(),
-      whatsapp: (whatsapp.trim() || phone.trim()).replace(/[^0-9]/g, ''),
-      address: fullAddress,
-      area: locality,
-      locality,
-      eventType,
-      services: cart,
-      date: selectedDate,
-      time: selectedTime,
-      itemsTotal: itemsSubtotal,
-      discount: effectiveDiscount,
-      advancePaid: effectiveAdvance,
-      amountToCollect: remainingAmount,
-      notes: specialNotes.trim(),
-      status: 'Confirmed',
-      bookingSource: 'Customer Website',
-      assignedTeam: [],
-      badgeType: 'VISIT',
-    });
+      setIsSubmitting(false);
 
-    setIsSubmitting(false);
+      if (!result.success || !result.booking) {
+        setFormError(result.error || 'Could not confirm booking. Please try another time slot.');
+        return;
+      }
 
-    if (!result.success || !result.booking) {
-      setFormError(result.error || 'Could not confirm booking. Please try another slot.');
-      return;
+      setCartDrawerOpen(false);
+      setConfirmedBooking(result.booking);
+      setCart([]);
+    } catch (err) {
+      console.error('Booking error:', err);
+      setIsSubmitting(false);
+      setFormError('Something went wrong while saving your booking. Please try again.');
     }
-
-    setConfirmedBooking(result.booking);
   };
 
   const primaryPhoneDisplay = '+91 7619603016';
   const primaryPhoneTel = 'tel:+917619603016';
-  const whatsappInstantBookingUrl = `https://wa.me/917619603016?text=${encodeURIComponent(
-    `Hi Eden Roses Unisex Salon! I would like to book an appointment / inquire about services in ${locality}, Bangalore.`
-  )}`;
+  const whatsappInstantBookingUrl = useMemo(() => {
+    if (cart.length > 0) {
+      const lines = cart
+        .map((c) => `• ${c.name} (×${c.quantity}) - ₹${c.price * c.quantity}`)
+        .join('\n');
+      const text = [
+        `Hi Eden Roses Unisex Salon! 🌸`,
+        `I want to book the following services:`,
+        lines,
+        `Total: ₹${netPayable}`,
+        `Area / Branch: ${locality}, Bangalore`,
+        `Preferred Date: ${selectedDate} at ${selectedTime}`,
+        customerName.trim() ? `Name: ${customerName.trim()}` : '',
+        phone.trim() ? `Phone: ${phone.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+      return `https://wa.me/917619603016?text=${encodeURIComponent(text)}`;
+    }
+    return `https://wa.me/917619603016?text=${encodeURIComponent(
+      `Hi Eden Roses Unisex Salon! I would like to book an appointment / inquire about services in ${locality}, Bangalore.`
+    )}`;
+  }, [cart, netPayable, locality, selectedDate, selectedTime, customerName, phone]);
 
   return (
     <div className="min-h-screen couture-mesh-bg text-[#1C1619] relative pb-36 lg:pb-0 selection:bg-[#160824] selection:text-[#D6B77A] overflow-x-hidden">
@@ -1010,20 +1100,6 @@ export const CustomerWebsite: React.FC = () => {
                 className="hover:text-[#160824] hover:underline underline-offset-4 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Contact
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/member')}
-                className="text-[#8C4A56] font-bold hover:underline underline-offset-4 whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Staff Portal
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="text-[#160824] font-bold hover:underline underline-offset-4 whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Owner Admin
               </button>
             </nav>
 
@@ -1168,24 +1244,6 @@ export const CustomerWebsite: React.FC = () => {
                   {item.label}
                 </button>
               ))}
-            </div>
-
-            {/* Quick Portal Switcher for Staff & Admin */}
-            <div className="pt-2 border-t border-white/80 grid grid-cols-2 gap-2 text-center text-xs">
-              <button
-                type="button"
-                onClick={() => navigate('/member')}
-                className="py-2.5 px-3 rounded-xl bg-[#200F36] text-[#E6C687] font-bold border border-[#D6B77A]/40 flex items-center justify-center gap-1.5"
-              >
-                <span>Staff Login Portal</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="py-2.5 px-3 rounded-xl bg-stone-900 text-white font-bold border border-stone-700 flex items-center justify-center gap-1.5"
-              >
-                <span>Owner Admin</span>
-              </button>
             </div>
           </div>
         )}
@@ -1587,10 +1645,27 @@ export const CustomerWebsite: React.FC = () => {
                 const matchedService =
                   services.find((s) => s.id === card.serviceIdToBook) ||
                   services.find((s) => s.name.toLowerCase() === card.title.toLowerCase());
+                const effectiveService: ServiceCatalogItem = matchedService || {
+                  id: card.serviceIdToBook || card.id,
+                  name: card.title,
+                  category: 'Makeup Services',
+                  makeupSubCategory: card.targetSubCategory,
+                  description: card.description,
+                  price: card.defaultPrice,
+                  image: card.image,
+                  isPackage: false,
+                };
+                const cardQty = getItemQuantity(effectiveService.id);
+                const displayPrice = effectiveService.price ?? card.defaultPrice;
+
                 return (
                   <div
                     key={card.id}
-                    className="rounded-3xl glass-card overflow-hidden flex flex-col justify-between border border-white/90 shadow-md hover:shadow-xl transition-all group"
+                    className={`rounded-3xl glass-card overflow-hidden flex flex-col justify-between border shadow-md hover:shadow-xl transition-all group ${
+                      cardQty > 0
+                        ? 'ring-2 ring-[#D6B77A] border-[#D6B77A]'
+                        : 'border-white/90'
+                    }`}
                   >
                     <div>
                       {/* Strict aspect-[4/3] with object-cover */}
@@ -1605,20 +1680,25 @@ export const CustomerWebsite: React.FC = () => {
                           <span className="px-3 py-1 rounded-full bg-[#160824]/85 text-[#D6B77A] text-[10px] font-bold tracking-wide backdrop-blur-md border border-[#D6B77A]/35">
                             {card.badge}
                           </span>
+                          <span className="px-2.5 py-1 rounded-full bg-white/95 text-[#160824] font-mono-num text-xs font-extrabold shadow-sm">
+                            ₹{displayPrice.toLocaleString('en-IN')}
+                          </span>
                         </div>
                       </div>
 
                       <div className="p-4 sm:p-5 space-y-2">
-                        <h3 className="font-display text-xl sm:text-2xl font-bold text-[#160824] leading-snug">
-                          {card.title}
-                        </h3>
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-display text-xl sm:text-2xl font-bold text-[#160824] leading-snug">
+                            {card.title}
+                          </h3>
+                        </div>
                         <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
                           {card.description}
                         </p>
                       </div>
                     </div>
 
-                    <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2 border-t border-[#E6DAC8]/55 flex items-center justify-between gap-2">
+                    <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-2.5 border-t border-[#E6DAC8]/55 flex flex-wrap items-center justify-between gap-2">
                       <button
                         type="button"
                         onClick={() => jumpToCategorySection(card.targetSubCategory)}
@@ -1628,19 +1708,52 @@ export const CustomerWebsite: React.FC = () => {
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (matchedService) {
-                            handleAddOrIncrement(matchedService);
-                          }
-                          scrollToSection('booking');
-                        }}
-                        className="tap-scale px-4 py-2 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Book Now</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {cardQty === 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleAddOrIncrement(effectiveService)}
+                            className="tap-scale px-3.5 py-2 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#160824] border border-[#D6B77A] text-xs font-extrabold inline-flex items-center gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-[#8C4A56]" />
+                            <span>Add to Cart</span>
+                          </button>
+                        ) : (
+                          <div className="h-9 rounded-xl glass-dark-royal text-[#D6B77A] shadow-sm flex items-center gap-2 px-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuantity(effectiveService.id, -1)}
+                              className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="font-mono-num text-xs font-extrabold text-white px-0.5">
+                              {cardQty}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuantity(effectiveService.id, 1)}
+                              className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (cardQty === 0) {
+                              handleAddOrIncrement(effectiveService);
+                            }
+                            setCartDrawerOpen(true);
+                          }}
+                          className="tap-scale px-3.5 py-2 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Book Now</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -2164,39 +2277,48 @@ export const CustomerWebsite: React.FC = () => {
                                 />
                               </div>
 
-                              {/* Overlapping Frosted Glass "Add" or "- qty +" Stepper Button */}
-                              <div className="-mt-4 z-10 w-24 sm:w-26">
+                              {/* Overlapping Frosted Glass "Add to Cart" or "- qty +" Stepper Button */}
+                              <div className="-mt-4 z-10 w-28 sm:w-32 flex flex-col items-center gap-1">
                                 {qty === 0 ? (
                                   <button
                                     type="button"
                                     onClick={() => handleAddOrIncrement(srv)}
-                                    className="tap-scale w-full h-9 rounded-xl bg-white/92 backdrop-blur-xl hover:bg-white text-[#160824] border border-[#D6B77A] shadow-lg text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                    className="tap-scale w-full h-9 rounded-xl bg-white/95 backdrop-blur-xl hover:bg-white text-[#160824] border border-[#D6B77A] shadow-lg text-xs font-extrabold flex items-center justify-center gap-1 transition-all cursor-pointer"
                                   >
-                                    <span>Add</span>
                                     <Plus className="w-3.5 h-3.5 text-[#8C4A56]" />
+                                    <span>Add to Cart</span>
                                   </button>
                                 ) : (
-                                  <div className="w-full h-9 rounded-xl glass-dark-royal text-[#D6B77A] shadow-lg flex items-center justify-between px-2">
+                                  <>
+                                    <div className="w-full h-9 rounded-xl glass-dark-royal text-[#D6B77A] shadow-lg flex items-center justify-between px-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateQuantity(srv.id, -1)}
+                                        aria-label="Decrease quantity"
+                                        className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
+                                      >
+                                        <Minus className="w-3.5 h-3.5" />
+                                      </button>
+                                      <span className="font-mono-num text-xs font-extrabold text-white">
+                                        {qty} in Cart
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateQuantity(srv.id, 1)}
+                                        aria-label="Increase quantity"
+                                        className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                     <button
                                       type="button"
-                                      onClick={() => handleUpdateQuantity(srv.id, -1)}
-                                      aria-label="Decrease quantity"
-                                      className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
+                                      onClick={() => setCartDrawerOpen(true)}
+                                      className="text-[10px] font-extrabold text-[#8C4A56] hover:text-[#160824] underline cursor-pointer"
                                     >
-                                      <Minus className="w-3.5 h-3.5" />
+                                      Checkout ({totalCartItems}) →
                                     </button>
-                                    <span className="font-mono-num text-xs font-extrabold text-white">
-                                      {qty}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateQuantity(srv.id, 1)}
-                                      aria-label="Increase quantity"
-                                      className="w-6 h-6 rounded-lg hover:bg-white/15 flex items-center justify-center cursor-pointer"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -2213,58 +2335,33 @@ export const CustomerWebsite: React.FC = () => {
       </section>
 
       {/* =====================================================================
-          8. INTERACTIVE BOOKING CALENDAR + MULTI-STEP BOOKING FLOW (Glassmorphic Studio)
+          8. FAST 1-PAGE EXPRESS BOOKING & MULTI-ITEM CART CHECKOUT
       ===================================================================== */}
       <section
         id="booking"
         className="relative z-10 py-10 sm:py-16"
       >
         <div id="calendar" className="max-w-6xl mx-auto px-3.5 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-8">
+          <div className="text-center max-w-3xl mx-auto mb-7">
             <p className="text-xs font-semibold tracking-wider text-[#8C4A56]">
-              Instant Online Makeup &amp; Styling Reservation
+              Fast 1-Step Multi-Service Booking · Instant Confirmation
             </p>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#160824] mt-1">
-              Complete Your Booking
+              Quick Cart &amp; Appointment Booking
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 mt-1.5">
-              Review your selected services, choose your preferred date &amp; time slot in{' '}
-              <strong className="text-stone-900">{locality}, Bangalore</strong>, and confirm
-              your appointment.
+              Add multiple services to your cart, pick your date, time &amp; area in{' '}
+              <strong className="text-stone-900">{locality}, Bangalore</strong>, and confirm in 1 click.
             </p>
-          </div>
-
-          {/* 3-Step Glassmorphic Progress Bar */}
-          <div className="max-w-2xl mx-auto mb-7 grid grid-cols-3 gap-2.5">
-            {[
-              { step: 1 as const, title: '1. Selected Services' },
-              { step: 2 as const, title: '2. Date & Time Slot' },
-              { step: 3 as const, title: '3. Customer Details' },
-            ].map((item) => (
-              <button
-                key={item.step}
-                type="button"
-                onClick={() => setBookingStep(item.step)}
-                className={`min-h-[44px] py-2 px-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap truncate cursor-pointer ${
-                  bookingStep === item.step
-                    ? 'glass-dark-royal text-[#D6B77A]'
-                    : bookingStep > item.step
-                    ? 'bg-emerald-500/15 text-emerald-950 border border-emerald-500/30 backdrop-blur-md'
-                    : 'glass-card text-stone-700'
-                }`}
-              >
-                {item.title}
-              </button>
-            ))}
           </div>
 
           {formError && (
-            <div className="max-w-4xl mx-auto mb-6 p-4 rounded-2xl bg-red-50/90 backdrop-blur-md border border-red-200 text-red-800 text-xs sm:text-sm flex items-center justify-between">
+            <div className="max-w-4xl mx-auto mb-6 p-4 rounded-2xl bg-red-50/95 backdrop-blur-md border border-red-300 text-red-800 text-xs sm:text-sm font-semibold flex items-center justify-between">
               <span>{formError}</span>
               <button
                 type="button"
                 onClick={() => setFormError(null)}
-                className="text-xs font-semibold underline ml-4 cursor-pointer"
+                className="text-xs font-bold underline ml-4 cursor-pointer"
               >
                 Dismiss
               </button>
@@ -2272,124 +2369,185 @@ export const CustomerWebsite: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-            {/* Left / Main Interactive Area (7 cols) */}
-            <div className="lg:col-span-7 glass-panel rounded-3xl p-5 sm:p-7">
-              {/* STEP 1: SELECT SERVICES */}
-              {bookingStep === 1 && (
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between border-b border-[#E6DAC8]/60 pb-3.5">
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-[#160824]">
-                        Step 1: Review or Add Services
-                      </h3>
-                      <p className="text-xs text-stone-600 mt-0.5">
-                        Service Location: <strong className="text-stone-900">{locality}, Bangalore</strong>
-                      </p>
-                    </div>
+            {/* Left / Main Single-Screen Express Booking Form (7 cols) */}
+            <form
+              onSubmit={handleConfirmBookingSubmit}
+              className="lg:col-span-7 glass-panel rounded-3xl p-4 sm:p-7 space-y-6"
+            >
+              {/* PART 1: SELECTED CART ITEMS + QUICK ADD */}
+              <div className="space-y-3.5 border-b border-[#E6DAC8]/60 pb-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-[#160824] flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-[#8C4A56]" />
+                      <span>1. Your Selected Services ({totalCartItems})</span>
+                    </h3>
+                    <p className="text-xs text-stone-600">
+                      Add multiple services together and adjust quantities below
+                    </p>
+                  </div>
+                  {cart.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setLocationModalOpen(true)}
-                      className="text-xs font-semibold text-[#8C4A56] hover:text-[#160824] underline cursor-pointer"
+                      onClick={handleClearCart}
+                      className="text-[11px] font-bold text-red-700 hover:underline cursor-pointer"
                     >
-                      Change Location
+                      Clear Cart
                     </button>
-                  </div>
+                  )}
+                </div>
 
-                  <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
-                    {enrichedServices
-                      .filter((s) => s.price !== null)
-                      .map((srv) => {
-                        const qty = getItemQuantity(srv.id);
-                        return (
-                          <div
-                            key={srv.id}
-                            className={`p-3 rounded-2xl glass-card flex items-center justify-between gap-3 ${
-                              qty > 0
-                                ? 'ring-2 ring-[#D6B77A] bg-white/95'
-                                : ''
-                            }`}
+                {/* Selected Cart Items List */}
+                {cart.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-dashed border-[#D6B77A] text-center space-y-2">
+                    <p className="text-xs sm:text-sm font-bold text-[#160824]">
+                      Your cart is currently empty
+                    </p>
+                    <p className="text-xs text-stone-600">
+                      Select any service from the dropdown below or tap &ldquo;+ Add to Cart&rdquo; on any service card above.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {cart.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-3 rounded-2xl glass-card flex items-center justify-between gap-3 border border-[#D6B77A]/50 bg-white/95"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-xs sm:text-sm text-[#160824] truncate">
+                            {item.name}
+                          </p>
+                          <p className="font-mono-num text-xs text-stone-600">
+                            ₹{item.price.toLocaleString('en-IN')} × {item.quantity} ={' '}
+                            <strong className="text-[#160824]">
+                              ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                            </strong>
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateQuantity(item.id, -1)}
+                            className="w-8 h-8 rounded-lg bg-white border border-stone-300 flex items-center justify-center text-stone-800 hover:bg-stone-100 cursor-pointer"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/80 p-0.5 border border-white">
-                                <SmartImage
-                                  src={srv.image}
-                                  alt={srv.name}
-                                  className="w-full h-full object-cover rounded-lg"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-[10px] font-semibold text-[#8C4A56] block">
-                                  {srv.makeupSubCategory}
-                                </span>
-                                <p className="text-sm font-bold text-[#160824] truncate">
-                                  {srv.name}
-                                </p>
-                                <p className="font-mono-num text-xs font-bold text-stone-700">
-                                  ₹{srv.price} · {srv.duration || '1 hr'}
-                                </p>
-                              </div>
-                            </div>
-
-                            {qty === 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => handleAddOrIncrement(srv)}
-                                className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-white/90 hover:bg-white text-[#160824] border border-[#D6B77A] text-xs font-bold shrink-0 shadow-2xs cursor-pointer"
-                              >
-                                + Add
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateQuantity(srv.id, -1)}
-                                  className="w-8 h-8 rounded-lg bg-white/80 border border-[#D6B77A]/50 flex items-center justify-center text-stone-800 hover:bg-white cursor-pointer"
-                                >
-                                  <Minus className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="font-mono-num text-sm font-bold w-5 text-center">
-                                  {qty}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateQuantity(srv.id, 1)}
-                                  className="w-8 h-8 rounded-lg glass-dark-royal text-[#D6B77A] flex items-center justify-center cursor-pointer"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="font-mono-num text-xs sm:text-sm font-bold w-5 text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateQuantity(item.id, 1)}
+                            className="w-8 h-8 rounded-lg glass-dark-royal text-[#D6B77A] flex items-center justify-center cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFromCart(item.id)}
+                            className="p-1.5 text-stone-400 hover:text-red-600 cursor-pointer"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                )}
 
-                  <div className="pt-3 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setBookingStep(2)}
-                      className="tap-scale w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl glass-dark-royal text-[#F5E2B8] text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                {/* Quick "+ Add Service to Cart" Selector */}
+                <div className="pt-1">
+                  <label className="block text-xs font-bold text-[#8C4A56] mb-1.5">
+                    + Add More Services to Your Booking Cart:
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={quickAddServiceId}
+                      onChange={(e) => {
+                        const srvId = e.target.value;
+                        setQuickAddServiceId('');
+                        if (!srvId) return;
+                        const found = enrichedServices.find((s) => s.id === srvId);
+                        if (found) {
+                          handleAddOrIncrement(found);
+                        }
+                      }}
+                      className="flex-1 min-h-[42px] px-3 py-2 rounded-xl glass-input text-xs sm:text-sm font-semibold text-[#160824] bg-white/90"
                     >
-                      <span>Select Date &amp; Time Slot</span>
-                      <ArrowRight className="w-4 h-4 text-[#D6B77A]" />
-                    </button>
+                      <option value="">-- Tap here to add a service to cart --</option>
+                      {enrichedServices
+                        .filter((s) => s.price !== null)
+                        .map((srv) => (
+                          <option key={srv.id} value={srv.id}>
+                            + {srv.name} — ₹{srv.price} ({srv.makeupSubCategory})
+                          </option>
+                        ))}
+                    </select>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* STEP 2: INTERACTIVE MONTHLY CALENDAR & TIME SLOTS */}
-              {bookingStep === 2 && (
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6DAC8]/60 pb-4">
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-[#160824]">
-                        Step 2: Choose Preferred Date &amp; Time Slot
-                      </h3>
-                      <p className="text-xs text-stone-600 mt-0.5">
-                        Real-time slot availability synced with Eden Roses Partner Calendar.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-2 glass-card p-1.5 rounded-xl">
+              {/* PART 2: QUICK DATE & TIME SLOT SELECTION */}
+              <div className="space-y-3.5 border-b border-[#E6DAC8]/60 pb-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base sm:text-lg font-bold text-[#160824] flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 text-[#8C4A56]" />
+                    <span>2. Select Date &amp; Time Slot</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullCalendarGrid((v) => !v)}
+                    className="text-xs font-bold text-[#8C4A56] hover:underline cursor-pointer"
+                  >
+                    {showFullCalendarGrid ? 'Hide Monthly Calendar' : 'View Monthly Calendar'}
+                  </button>
+                </div>
+
+                {/* Quick 1-Tap Date Pills + Native Date Input */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Today', iso: todayISO },
+                    { label: 'Tomorrow', iso: tomorrowISO },
+                    { label: 'Day After', iso: dayAfterISO },
+                  ].map((d) => {
+                    const active = selectedDate === d.iso;
+                    return (
+                      <button
+                        key={d.label}
+                        type="button"
+                        onClick={() => setSelectedDate(d.iso)}
+                        className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          active
+                            ? 'glass-dark-royal text-[#D6B77A] shadow-sm'
+                            : 'glass-card text-stone-800 hover:bg-white'
+                        }`}
+                      >
+                        <span className="block">{d.label}</span>
+                        <span className="font-mono-num text-[10px] opacity-80">{d.iso}</span>
+                      </button>
+                    );
+                  })}
+
+                  <div>
+                    <input
+                      type="date"
+                      min={todayISO}
+                      value={selectedDate}
+                      onChange={(e) => {
+                        if (e.target.value) setSelectedDate(e.target.value);
+                      }}
+                      className="w-full min-h-[42px] px-2.5 py-2 rounded-xl glass-input text-xs font-mono-num font-bold text-[#160824] bg-white/90"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional Collapsible Full Month Calendar */}
+                {showFullCalendarGrid && (
+                  <div className="p-3.5 rounded-2xl glass-card space-y-3">
+                    <div className="flex items-center justify-between">
                       <button
                         type="button"
                         onClick={() =>
@@ -2401,12 +2559,11 @@ export const CustomerWebsite: React.FC = () => {
                             )
                           )
                         }
-                        aria-label="Previous Month"
-                        className="p-2 rounded-lg hover:bg-white/80 cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-white cursor-pointer"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <span className="text-sm font-bold min-w-[130px] text-center text-[#160824]">
+                      <span className="text-xs sm:text-sm font-bold text-[#160824]">
                         {calendarMonth.toLocaleDateString('en-US', {
                           month: 'long',
                           year: 'numeric',
@@ -2423,315 +2580,192 @@ export const CustomerWebsite: React.FC = () => {
                             )
                           )
                         }
-                        aria-label="Next Month"
-                        className="p-2 rounded-lg hover:bg-white/80 cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-white cursor-pointer"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
-
-                  {/* Weekday Headers */}
-                  <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center text-[11px] font-semibold text-stone-500">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                      <div key={d} className="py-1">
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Calendar Days Grid */}
-                  <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-                    {calendarDays.map((cell, idx) => {
-                      if (!cell.dateISO || !cell.dayNumber) {
-                        return <div key={`empty-${idx}`} className="h-12" />;
-                      }
-                      const isSelected = cell.dateISO === selectedDate;
-                      const isDisabled = cell.isPast || cell.isFullyBooked;
-
-                      return (
-                        <button
-                          key={cell.dateISO}
-                          type="button"
-                          disabled={isDisabled}
-                          onClick={() => setSelectedDate(cell.dateISO!)}
-                          className={`h-12 rounded-xl flex flex-col items-center justify-center transition-all relative ${
-                            isDisabled
-                              ? 'bg-stone-200/45 text-stone-400 cursor-not-allowed'
-                              : isSelected
-                              ? 'glass-dark-royal text-[#D6B77A] font-bold cursor-pointer'
-                              : 'glass-card text-stone-900 cursor-pointer'
-                          }`}
-                        >
-                          <span className="font-mono-num text-xs sm:text-sm">
-                            {cell.dayNumber}
-                          </span>
-                          {cell.bookedCount > 0 && (
-                            <span
-                              className={`text-[8px] sm:text-[9px] font-medium ${
-                                isSelected ? 'text-[#F5E2B8]' : 'text-[#8C4A56]'
-                              }`}
-                            >
-                              {cell.isFullyBooked ? 'Full' : `${6 - cell.bookedCount} left`}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Time Slots Selection */}
-                  <div className="pt-4 border-t border-[#E6DAC8]/60 space-y-3">
-                    <span className="text-xs sm:text-sm font-bold text-[#160824] flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-[#B76E79]" />
-                      <span>Available Time Slots on {selectedDate}</span>
-                    </span>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {selectedDateSlots.map((slot) => {
-                        const isChosen = selectedTime === slot.time && slot.available;
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-stone-500">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                        <div key={d}>{d}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarDays.map((cell, idx) => {
+                        if (!cell.dateISO || !cell.dayNumber) {
+                          return <div key={`empty-${idx}`} className="h-9" />;
+                        }
+                        const isSelected = cell.dateISO === selectedDate;
+                        const isDisabled = cell.isPast || cell.isFullyBooked;
                         return (
                           <button
-                            key={slot.time}
+                            key={cell.dateISO}
                             type="button"
-                            disabled={!slot.available}
-                            onClick={() => setSelectedTime(slot.time)}
-                            className={`p-3 rounded-xl text-left transition-all ${
-                              !slot.available
-                                ? 'bg-stone-200/45 border border-stone-200 text-stone-400 cursor-not-allowed'
-                                : isChosen
-                                ? 'glass-dark-royal text-[#D6B77A] cursor-pointer'
-                                : 'glass-card text-stone-900 cursor-pointer'
+                            disabled={isDisabled}
+                            onClick={() => setSelectedDate(cell.dateISO!)}
+                            className={`h-9 rounded-lg font-mono-num text-xs flex items-center justify-center ${
+                              isDisabled
+                                ? 'bg-stone-200/45 text-stone-400 cursor-not-allowed'
+                                : isSelected
+                                ? 'glass-dark-royal text-[#D6B77A] font-bold cursor-pointer'
+                                : 'bg-white/80 text-stone-900 cursor-pointer'
                             }`}
                           >
-                            <div className="font-mono-num text-xs sm:text-sm font-bold">
-                              {slot.time}
-                            </div>
-                            <div className="text-[11px] mt-0.5 opacity-80">
-                              {slot.available ? 'Available' : 'Booked'}
-                            </div>
+                            {cell.dayNumber}
                           </button>
                         );
                       })}
                     </div>
                   </div>
+                )}
 
-                  <div className="pt-4 flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setBookingStep(1)}
-                      className="min-h-[46px] px-5 py-2.5 rounded-xl glass-card text-xs sm:text-sm font-semibold text-stone-800 cursor-pointer"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBookingStep(3)}
-                      className="tap-scale flex-1 sm:flex-initial min-h-[46px] px-6 py-3 rounded-xl glass-dark-royal text-[#F5E2B8] text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>Continue to Customer Details</span>
-                      <ArrowRight className="w-4 h-4 text-[#D6B77A]" />
-                    </button>
+                {/* Time Slots Pills */}
+                <div className="space-y-2 pt-1">
+                  <span className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#8C4A56]" />
+                    <span>Choose Time Slot ({selectedDate}):</span>
+                  </span>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {selectedDateSlots.map((slot) => {
+                      const isChosen = selectedTime === slot.time && slot.available;
+                      return (
+                        <button
+                          key={slot.time}
+                          type="button"
+                          disabled={!slot.available}
+                          onClick={() => setSelectedTime(slot.time)}
+                          className={`py-2.5 px-2 rounded-xl text-center font-mono-num text-xs font-bold transition-all ${
+                            !slot.available
+                              ? 'bg-stone-200/45 text-stone-400 cursor-not-allowed'
+                              : isChosen
+                              ? 'glass-dark-royal text-[#D6B77A] shadow-sm cursor-pointer'
+                              : 'glass-card text-stone-900 hover:bg-white cursor-pointer'
+                          }`}
+                        >
+                          {slot.time}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* STEP 3: CUSTOMER DETAILS FORM */}
-              {bookingStep === 3 && (
-                <form onSubmit={handleConfirmBookingSubmit} className="space-y-4">
-                  <div className="border-b border-[#E6DAC8]/60 pb-3.5">
-                    <h3 className="text-lg sm:text-xl font-bold text-[#160824]">
-                      Step 3: Customer &amp; Service Location Details
-                    </h3>
-                    <p className="text-xs text-stone-600 mt-0.5">
-                      Enter your contact details and address in Bangalore to confirm your booking.
-                    </p>
-                  </div>
+              {/* PART 3: SIMPLE CUSTOMER DETAILS */}
+              <div className="space-y-4">
+                <h3 className="text-base sm:text-lg font-bold text-[#160824] flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#8C4A56]" />
+                  <span>3. Your Details &amp; Area</span>
+                </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                        Customer Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="e.g., Prarthana Rao"
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                        Event / Occasion *
-                      </label>
-                      <select
-                        value={eventType}
-                        onChange={(e) => setEventType(e.target.value as EventType)}
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm"
-                      >
-                        {EVENT_TYPES.map((evt) => (
-                          <option key={evt} value={evt}>
-                            {evt}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                        Customer Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(e.target.value);
-                          if (!whatsapp) setWhatsapp(e.target.value);
-                        }}
-                        placeholder="+91 98450 00000"
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                        WhatsApp Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={whatsapp}
-                        onChange={(e) => setWhatsapp(e.target.value)}
-                        placeholder="+91 98450 00000"
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center justify-between">
-                        <span>Select Area / Branch *</span>
-                        <span className="text-[10px] text-[#8C4A56] font-normal">Mandatory for Area Routing</span>
-                      </label>
-                      <select
-                        value={locality}
-                        onChange={(e) => setLocality(e.target.value)}
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm font-medium text-stone-900 bg-white/80"
-                      >
-                        <optgroup label="Walk-in Salon Branches">
-                          <option value="Kaggadaspura">Kaggadaspura (Walk-in Salon Branch)</option>
-                          <option value="Electronic City">Electronic City (Walk-in Salon Branch)</option>
-                        </optgroup>
-                        <optgroup label="On-Location / Doorstep Makeup (Bangalore)">
-                          <option value="Vijayapura (Near Devanahalli)">Vijayapura (Near Devanahalli) (On-Location Makeup)</option>
-                          <option value="Srinagar (Banashankari)">Srinagar (Banashankari) (On-Location Makeup)</option>
-                          <option value="JP Nagar">JP Nagar (On-Location Makeup)</option>
-                          <option value="Horamavu">Horamavu (On-Location Makeup)</option>
-                          <option value="BTM">BTM (On-Location Makeup)</option>
-                          <option value="Harlur Road">Harlur Road (On-Location Makeup)</option>
-                          <option value="Nagarbhavi">Nagarbhavi (On-Location Makeup)</option>
-                          <option value="Kudlu Gate">Kudlu Gate (On-Location Makeup)</option>
-                          <option value="Whitefield">Whitefield (On-Location Makeup)</option>
-                          <option value="Brookefield">Brookefield (On-Location Makeup)</option>
-                          <option value="Varthur">Varthur (On-Location Makeup)</option>
-                          <option value="Indiranagar">Indiranagar (On-Location Makeup)</option>
-                          <option value="Koramangala">Koramangala (On-Location Makeup)</option>
-                          <option value="HSR Layout">HSR Layout (On-Location Makeup)</option>
-                          <option value="Marathahalli">Marathahalli (On-Location Makeup)</option>
-                          <option value="Yelahanka / Other Bangalore Area">Other Bangalore Area (On-Location Makeup)</option>
-                        </optgroup>
-                        {availableLocalities
-                          .filter(
-                            (loc) =>
-                              ![
-                                'kaggadaspura',
-                                'electronic city',
-                                'vijayapura (near devanahalli)',
-                                'vijayapura',
-                                'srinagar (banashankari)',
-                                'srinagar',
-                                'jp nagar',
-                                'horamavu',
-                                'btm',
-                                'harlur road',
-                                'nagarbhavi',
-                                'kudlu gate',
-                                'whitefield',
-                                'brookefield',
-                                'varthur',
-                                'indiranagar',
-                                'koramangala',
-                                'hsr layout',
-                                'marathahalli',
-                              ].includes(loc.toLowerCase())
-                          )
-                          .map((loc) => (
-                            <option key={loc} value={loc}>
-                              {loc} (On-Location Makeup)
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                        Advance Payment to Reserve (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={netPayable}
-                        value={advancePayment}
-                        onChange={(e) => setAdvancePayment(Number(e.target.value))}
-                        className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm font-mono-num"
-                      />
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                      Complete Venue / Home / Studio Visit Address *
+                    <label className="block text-xs font-bold text-stone-800 mb-1">
+                      Your Full Name *
                     </label>
-                    <textarea
+                    <input
+                      type="text"
                       required
-                      rows={2}
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Flat / House No., Apartment / Wedding Venue Name, Street, Landmark, Bengaluru"
-                      className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm font-medium bg-white/90"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                      Special Notes (HD / Airbrush preference, Saree Draping style, etc.)
+                    <label className="block text-xs font-bold text-stone-800 mb-1">
+                      Mobile / WhatsApp Number *
                     </label>
-                    <textarea
-                      rows={2}
-                      value={specialNotes}
-                      onChange={(e) => setSpecialNotes(e.target.value)}
-                      placeholder="Optional notes for Subba Lakshmi..."
-                      className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm"
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setWhatsapp(e.target.value);
+                      }}
+                      placeholder="10-digit mobile number"
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm font-mono-num font-bold bg-white/90"
                     />
                   </div>
 
-                  <div className="pt-3 flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setBookingStep(2)}
-                      className="min-h-[46px] px-5 py-2.5 rounded-xl glass-card text-xs sm:text-sm font-semibold text-stone-800 cursor-pointer"
+                  <div>
+                    <label className="block text-xs font-bold text-stone-800 mb-1 flex items-center justify-between">
+                      <span>Select Area / Branch *</span>
+                      <span className="text-[10px] text-[#8C4A56] font-semibold">Bangalore</span>
+                    </label>
+                    <select
+                      value={locality}
+                      onChange={(e) => setLocality(e.target.value)}
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm font-semibold text-stone-900 bg-white/90"
                     >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="tap-scale flex-1 sm:flex-initial min-h-[48px] px-7 py-3 rounded-xl glass-dark-royal text-[#D6B77A] text-sm font-bold transition-all cursor-pointer"
-                    >
-                      {isSubmitting ? 'Confirming Booking...' : 'Confirm Booking'}
-                    </button>
+                      {availableLocalities.map((loc) => (
+                        <option key={loc} value={loc}>
+                          {loc}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </form>
-              )}
-            </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-800 mb-1">
+                      Occasion / Service Type
+                    </label>
+                    <select
+                      value={eventType}
+                      onChange={(e) => setEventType(e.target.value as EventType)}
+                      className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm bg-white/90"
+                    >
+                      {EVENT_TYPES.map((evt) => (
+                        <option key={evt} value={evt}>
+                          {evt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-800 mb-1">
+                    Full Address / Landmark (Optional for Salon Walk-in)
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder={`House/Flat No., Street, Landmark in ${locality} (or leave blank for Salon Walk-in)`}
+                    className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl glass-input text-sm bg-white/90"
+                  />
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="tap-scale flex-1 min-h-[50px] px-6 py-3.5 rounded-2xl glass-dark-royal text-[#D6B77A] text-sm sm:text-base font-extrabold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-[#D6B77A]" />
+                    <span>
+                      {isSubmitting
+                        ? 'Confirming Booking...'
+                        : `Confirm Booking Now (${totalCartItems} ${
+                            totalCartItems === 1 ? 'Service' : 'Services'
+                          } · ₹${netPayable.toLocaleString('en-IN')})`}
+                    </span>
+                  </button>
+
+                  <a
+                    href={whatsappInstantBookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="tap-scale min-h-[50px] px-5 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#1ebe5b] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 shadow-md"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span>Book Cart on WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            </form>
 
             {/* Right: Live Glassmorphic Booking Summary Card (5 cols) */}
             <div className="lg:col-span-5 glass-panel rounded-3xl p-5 sm:p-7 space-y-5 sticky top-28">
@@ -2739,7 +2773,7 @@ export const CustomerWebsite: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold text-[#160824]">Booking Summary</h3>
                   <p className="text-xs text-stone-600">
-                    {locality}, Bangalore · By {settings.artistName}
+                    {locality}, Bangalore · {totalCartItems} item(s) in cart
                   </p>
                 </div>
                 <CalendarIcon className="w-5 h-5 text-[#B76E79]" />
@@ -2760,13 +2794,9 @@ export const CustomerWebsite: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between pt-1.5 border-t border-[#E6DAC8]/55">
                   <span className="text-stone-600">Preferred Date &amp; Slot</span>
-                  <button
-                    type="button"
-                    onClick={() => setBookingStep(2)}
-                    className="font-mono-num font-bold text-[#160824] underline cursor-pointer"
-                  >
+                  <span className="font-mono-num font-bold text-[#160824]">
                     {selectedDate} · {selectedTime}
-                  </button>
+                  </span>
                 </div>
               </div>
 
@@ -3441,18 +3471,6 @@ export const CustomerWebsite: React.FC = () => {
               </a>
               <span aria-hidden="true">·</span>
               <span>Bengaluru 560093</span>
-              <span aria-hidden="true">·</span>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="text-white/40 hover:text-[#D6B77A] transition-colors cursor-pointer"
-                title="Staff Portal"
-              >
-                Staff Login
-              </button>
             </div>
           </div>
         </div>
@@ -4057,20 +4075,45 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       )}
 
+      {/* FLOATING CART TOAST NOTIFICATION */}
+      {cartToast && (
+        <div className="fixed top-20 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto glass-dark-royal text-[#F5E2B8] border border-[#D6B77A] px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-bold">
+            <span>{cartToast}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setCartToast(null);
+                setCartDrawerOpen(true);
+              }}
+              className="px-3 py-1 rounded-xl bg-[#D6B77A] text-[#160824] font-extrabold text-xs cursor-pointer"
+            >
+              View Cart &amp; Book ({totalCartItems})
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* =====================================================================
-          SLIDE-OVER CART & QUICK CHECKOUT DRAWER (Glassmorphic Drawer)
+          SLIDE-OVER CART & INSTANT 1-STEP EXPRESS CHECKOUT DRAWER
       ===================================================================== */}
       {cartDrawerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-md glass-modal-sheet h-full flex flex-col justify-between p-5 sm:p-6 overflow-y-auto">
-            <div className="space-y-5">
-              <div className="flex items-center justify-between border-b border-[#E6DAC8]/60 pb-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex justify-end"
+          onClick={() => setCartDrawerOpen(false)}
+        >
+          <div
+            className="w-full max-w-md glass-modal-sheet h-full flex flex-col justify-between p-4 sm:p-6 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E6DAC8]/60 pb-3.5">
                 <div>
-                  <h3 className="text-xl font-bold text-[#160824]">
-                    Your Booking Cart
+                  <h3 className="text-lg sm:text-xl font-bold text-[#160824]">
+                    Your Booking Cart ({totalCartItems})
                   </h3>
                   <p className="text-xs text-stone-600">
-                    {totalCartItems} service(s) · {locality}, Bangalore
+                    Add multiple items &amp; confirm booking right here
                   </p>
                 </div>
                 <button
@@ -4082,27 +4125,32 @@ export const CustomerWebsite: React.FC = () => {
                 </button>
               </div>
 
+              {/* Cart Items */}
               {cart.length === 0 ? (
-                <div className="py-12 text-center space-y-3">
-                  <ShoppingBag className="w-10 h-10 text-stone-300 mx-auto" />
-                  <p className="text-sm text-stone-600">Your booking cart is empty.</p>
+                <div className="py-8 text-center space-y-3 bg-[#FAF7F2] rounded-2xl p-4 border border-dashed border-[#D6B77A]">
+                  <ShoppingBag className="w-9 h-9 text-[#8C4A56] mx-auto" />
+                  <p className="text-sm font-bold text-[#160824]">Your booking cart is empty</p>
+                  <p className="text-xs text-stone-600">
+                    Pick a service from the quick dropdown below or tap &ldquo;+ Add to Cart&rdquo; on any card.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {cart.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3.5 rounded-2xl glass-card flex items-center justify-between gap-3"
+                      className="p-3 rounded-2xl glass-card flex items-center justify-between gap-2 border border-[#D6B77A]/40"
                     >
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm text-[#160824] truncate">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-xs sm:text-sm text-[#160824] truncate">
                           {item.name}
                         </p>
-                        <p className="font-mono-num text-xs text-stone-500">
-                          ₹{item.price} each
+                        <p className="font-mono-num text-xs text-stone-600">
+                          ₹{item.price} × {item.quantity} ={' '}
+                          <strong className="text-[#160824]">₹{item.price * item.quantity}</strong>
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, -1)}
@@ -4132,37 +4180,162 @@ export const CustomerWebsite: React.FC = () => {
                   ))}
                 </div>
               )}
-            </div>
 
-            <div className="pt-4 border-t border-[#E6DAC8]/60 space-y-4">
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-stone-600">Subtotal</span>
-                  <span className="font-mono-num font-bold">₹{itemsSubtotal}</span>
-                </div>
-                {effectiveDiscount > 0 && (
-                  <div className="flex justify-between text-xs text-emerald-700">
-                    <span>Discount</span>
-                    <span className="font-mono-num">-₹{effectiveDiscount}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-base pt-2 border-t border-[#E6DAC8]/60">
-                  <span>Net Payable</span>
-                  <span className="font-mono-num text-[#160824]">₹{netPayable}</span>
-                </div>
+              {/* Quick Add Another Service right inside Cart Drawer */}
+              <div>
+                <select
+                  value={quickAddServiceId}
+                  onChange={(e) => {
+                    const srvId = e.target.value;
+                    setQuickAddServiceId('');
+                    if (!srvId) return;
+                    const found = enrichedServices.find((s) => s.id === srvId);
+                    if (found) handleAddOrIncrement(found);
+                  }}
+                  className="w-full min-h-[40px] px-3 py-2 rounded-xl glass-input text-xs font-semibold text-[#160824] bg-white/95"
+                >
+                  <option value="">+ Add Another Service to Cart...</option>
+                  {enrichedServices
+                    .filter((s) => s.price !== null)
+                    .map((srv) => (
+                      <option key={srv.id} value={srv.id}>
+                        + {srv.name} — ₹{srv.price}
+                      </option>
+                    ))}
+                </select>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setCartDrawerOpen(false);
-                  setBookingStep(2);
-                  scrollToSection('booking');
-                }}
-                className="tap-scale w-full py-3.5 rounded-xl glass-dark-royal text-[#D6B77A] font-bold text-sm cursor-pointer"
-              >
-                Select Date, Slot &amp; Confirm Booking
-              </button>
+              {/* Express 1-Step Checkout Form inside Cart Drawer */}
+              <form onSubmit={handleConfirmBookingSubmit} className="space-y-3 pt-2 border-t border-[#E6DAC8]/60 text-xs">
+                <p className="font-bold text-xs uppercase tracking-wider text-[#8C4A56]">
+                  Fast 1-Step Booking Details
+                </p>
+
+                {formError && (
+                  <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 font-semibold">
+                    {formError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">Date *</label>
+                    <input
+                      type="date"
+                      min={todayISO}
+                      value={selectedDate}
+                      onChange={(e) => {
+                        if (e.target.value) setSelectedDate(e.target.value);
+                      }}
+                      className="w-full min-h-[40px] px-2.5 py-1.5 rounded-xl glass-input font-mono-num font-bold text-xs bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">Time Slot *</label>
+                    <select
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      className="w-full min-h-[40px] px-2.5 py-1.5 rounded-xl glass-input font-mono-num font-bold text-xs bg-white"
+                    >
+                      {selectedDateSlots.map((slot) => (
+                        <option key={slot.time} value={slot.time} disabled={!slot.available}>
+                          {slot.time} {!slot.available ? '(Full)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Select Area / Branch *
+                  </label>
+                  <select
+                    value={locality}
+                    onChange={(e) => setLocality(e.target.value)}
+                    className="w-full min-h-[40px] px-3 py-1.5 rounded-xl glass-input font-semibold text-xs text-stone-900 bg-white"
+                  >
+                    {availableLocalities.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">Your Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Full Name"
+                      className="w-full min-h-[40px] px-3 py-1.5 rounded-xl glass-input text-xs font-semibold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Mobile / WhatsApp *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setWhatsapp(e.target.value);
+                      }}
+                      placeholder="10-digit Phone"
+                      className="w-full min-h-[40px] px-3 py-1.5 rounded-xl glass-input font-mono-num font-bold text-xs bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Address / Landmark (Optional for Salon Walk-in)
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder={`Flat / House / Street in ${locality}`}
+                    className="w-full min-h-[40px] px-3 py-1.5 rounded-xl glass-input text-xs bg-white"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-[#E6DAC8]/60 space-y-2">
+                  <div className="flex justify-between font-bold text-sm text-[#160824]">
+                    <span>Total Payable ({totalCartItems} items)</span>
+                    <span className="font-mono-num text-base">
+                      ₹{netPayable.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="tap-scale w-full py-3.5 rounded-xl glass-dark-royal text-[#D6B77A] font-extrabold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-[#D6B77A]" />
+                    <span>
+                      {isSubmitting ? 'Confirming Booking...' : 'Confirm Booking Now'}
+                    </span>
+                  </button>
+
+                  <a
+                    href={whatsappInstantBookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="tap-scale w-full py-3 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span>Book Cart Directly on WhatsApp</span>
+                  </a>
+                </div>
+              </form>
             </div>
           </div>
         </div>
