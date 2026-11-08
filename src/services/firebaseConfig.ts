@@ -210,10 +210,43 @@ export async function uploadImageAsset(file: File): Promise<string> {
     }
   }
 
-  // Fallback to compressed DataURL only if offline or Cloudinary preset is unreachable
+  // Fallback to compressed DataURL (<120KB) if offline or Cloudinary preset is unreachable
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 900;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.72);
+            resolve(compressed);
+            return;
+          }
+        } catch {
+          // fallback to raw dataUrl
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    };
     reader.onerror = (err) => reject(err);
     reader.readAsDataURL(file);
   });

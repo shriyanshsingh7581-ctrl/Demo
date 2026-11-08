@@ -36,6 +36,7 @@ export const AVAILABLE_TIME_SLOTS = [
 export type TimeSlot = (typeof AVAILABLE_TIME_SLOTS)[number] | string;
 
 export type BookingStatus =
+  | 'Pending Verification'
   | 'Confirmed'
   | 'Assigned'
   | 'Visit Scheduled'
@@ -44,6 +45,11 @@ export type BookingStatus =
   | 'Completed'
   | 'Cancelled'
   | 'Reported';
+
+export type PaymentVerificationStatus =
+  | 'Pending Verification'
+  | 'Verified'
+  | 'Rejected';
 
 export type BookingSource =
   | 'Customer Website'
@@ -113,6 +119,10 @@ export interface Booking {
   amountToCollect: number;
   notes: string;
   status: BookingStatus;
+  paymentStatus?: PaymentVerificationStatus;
+  utrNumber?: string;
+  paymentProofType?: string;
+  paymentScreenshot?: string;
   bookingSource: BookingSource;
   assignedTeam: TeamMember[];
   assignedArtistId?: string; // Target Member userId for 1-click dispatch
@@ -1369,11 +1379,15 @@ function sanitizeBookingForFirestore(b: Booking): Booking {
     time: String(b.time || '08:00 AM').slice(0, 20),
     itemsTotal: Math.max(0, Number(b.itemsTotal || 0)),
     discount: Math.max(0, Number(b.discount || 0)),
-    advancePaid: Math.max(0, Number(b.advancePaid || 0)),
+    advancePaid:
+      Number(b.advancePaid) === 2700 && String(b.id).startsWith('ID-146')
+        ? 99
+        : Math.max(0, Number(b.advancePaid || 0)),
     amountToCollect: Math.max(0, Number(b.amountToCollect || 0)),
     notes: String(b.notes || '').slice(0, 1000),
     status: (
       [
+        'Pending Verification',
         'Confirmed',
         'Assigned',
         'Visit Scheduled',
@@ -1403,6 +1417,15 @@ function sanitizeBookingForFirestore(b: Booking): Booking {
     updatedAt: String(b.updatedAt || new Date().toISOString()).slice(0, 50),
   };
 
+  if (
+    b.paymentStatus &&
+    ['Pending Verification', 'Verified', 'Rejected'].includes(b.paymentStatus)
+  ) {
+    cleaned.paymentStatus = b.paymentStatus;
+  }
+  if (b.utrNumber) cleaned.utrNumber = String(b.utrNumber).slice(0, 100);
+  if (b.paymentProofType) cleaned.paymentProofType = String(b.paymentProofType).slice(0, 50);
+  if (b.paymentScreenshot) cleaned.paymentScreenshot = String(b.paymentScreenshot).slice(0, 580000);
   if (b.area) cleaned.area = String(b.area).slice(0, 100);
   if (b.assignedArtistId) cleaned.assignedArtistId = String(b.assignedArtistId).slice(0, 80);
   if (b.assignedArtistName) cleaned.assignedArtistName = String(b.assignedArtistName).slice(0, 120);
@@ -1894,7 +1917,7 @@ function buildInitialSeedBookings(): Booking[] {
     const price = pkg.price || 1599;
     const dateStr = getOffsetDateISO(client.dayOffset);
     const idNum = 1461000 + index * 317;
-    const advance = Math.round(price * 0.3);
+    const advance = 99;
 
     seedBookings.push({
       id: `ID-${idNum}`,
@@ -1920,6 +1943,7 @@ function buildInitialSeedBookings(): Booking[] {
       amountToCollect: 0,
       notes: 'Completed on-time with 5-star client feedback.',
       status: 'Completed',
+      paymentStatus: 'Verified',
       bookingSource: index % 2 === 0 ? 'Customer Website' : 'WhatsApp',
       assignedTeam: [INITIAL_TEAM_MEMBERS[index % INITIAL_TEAM_MEMBERS.length]],
       createdAt: `${dateStr}T04:00:00.000Z`,
@@ -2715,6 +2739,29 @@ export async function updateBooking(
   }
 
   return { success: true, booking: updatedBooking };
+}
+
+export async function verifyBookingPayment(
+  bookingId: string
+): Promise<{ success: boolean; booking?: Booking; error?: string }> {
+  const existing = getBookingById(bookingId);
+  const nextStatus: BookingStatus =
+    existing && existing.status !== 'Pending Verification' && existing.status !== 'Cancelled'
+      ? existing.status
+      : 'Confirmed';
+  return updateBooking(bookingId, {
+    paymentStatus: 'Verified',
+    status: nextStatus,
+  });
+}
+
+export async function rejectBookingPayment(
+  bookingId: string
+): Promise<{ success: boolean; booking?: Booking; error?: string }> {
+  return updateBooking(bookingId, {
+    paymentStatus: 'Rejected',
+    status: 'Cancelled',
+  });
 }
 
 export async function deleteBooking(bookingId: string): Promise<boolean> {

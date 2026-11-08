@@ -62,6 +62,13 @@ import {
   saveCustomerLead,
   subscribeToDataUpdates,
 } from '../services/bookingStorage';
+import { uploadImageAsset } from '../services/firebaseConfig';
+
+const MANDATORY_ADVANCE_AMOUNT = 99;
+const OFFICIAL_UPI_QR_IMAGE = '/assets/aistudio/IMG-20261107-WA0046_3abcf341.jpg';
+const OFFICIAL_UPI_ID = 'sublakshmisjec-2@oksbi';
+const OFFICIAL_UPI_PAY_LINK =
+  'upi://pay?pa=sublakshmisjec-2@oksbi&pn=Subha%20Eden%20Roses&am=99&cu=INR&tn=Eden%20Roses%20Advance%20Booking';
 
 // Configurable Service Areas in Bangalore (Editable / extensible via Business Settings)
 const BENGALURU_LOCALITIES = [
@@ -550,10 +557,34 @@ export const CustomerWebsite: React.FC = () => {
   const [locality, setLocality] = useState('Kaggadaspura');
   const [eventType, setEventType] = useState<EventType>('Party');
   const [specialNotes, setSpecialNotes] = useState('');
+  const [paymentProofType, setPaymentProofType] = useState<
+    'UTR Number' | 'Reference Number' | 'Transaction ID'
+  >('UTR Number');
+  const [utrNumber, setUtrNumber] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState<string>('');
+  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+  const [copiedUpi, setCopiedUpi] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
+  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(() => {
+    try {
+      const savedId = localStorage.getItem('eden_roses_active_verification_booking_id');
+      if (savedId) {
+        const found = getBookings().find((b) => b.id === savedId);
+        if (found) return found;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+
+  // Keep confirmedBooking live-synced with allBookings so Admin verification updates immediately
+  const liveConfirmedBooking = useMemo(() => {
+    if (!confirmedBooking) return null;
+    return allBookings.find((b) => b.id === confirmedBooking.id) || confirmedBooking;
+  }, [confirmedBooking, allBookings]);
 
   // Contact Inquiry Quick State
   const [contactSent, setContactSent] = useState(false);
@@ -631,16 +662,46 @@ export const CustomerWebsite: React.FC = () => {
     return galleryImages.filter((img) => img.galleryCategory === activeGalleryCategory);
   }, [galleryImages, activeGalleryCategory]);
 
-  // Cart Calculations
+  // Cart Calculations (Mandatory ₹99 Advance Payment Required for Booking)
   const itemsSubtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
   );
   const effectiveDiscount = Math.min(discountAmount, itemsSubtotal);
   const netPayable = Math.max(0, itemsSubtotal - effectiveDiscount);
-  const effectiveAdvance = Math.min(Math.max(0, advancePayment), netPayable);
+  const effectiveAdvance =
+    cart.length > 0 ? Math.min(MANDATORY_ADVANCE_AMOUNT, netPayable) : 0;
   const remainingAmount = Math.max(0, netPayable - effectiveAdvance);
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handlePaymentScreenshotUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFormError(null);
+    setIsUploadingScreenshot(true);
+    try {
+      const uploadedUrl = await uploadImageAsset(file);
+      setPaymentScreenshot(uploadedUrl);
+      triggerCartToast('✓ ₹99 Payment Screenshot Attached');
+    } catch (err) {
+      console.error('Screenshot upload error:', err);
+      setFormError('Could not process screenshot. Please try again or enter your UTR / Transaction ID.');
+    } finally {
+      setIsUploadingScreenshot(false);
+    }
+  };
+
+  const handleCopyUpiId = () => {
+    try {
+      navigator.clipboard.writeText(OFFICIAL_UPI_ID);
+      setCopiedUpi(true);
+      window.setTimeout(() => setCopiedUpi(false), 2500);
+    } catch {
+      // ignore
+    }
+  };
 
   // Cart Handlers
   const getItemQuantity = (serviceId: string): number => {
@@ -894,12 +955,31 @@ export const CustomerWebsite: React.FC = () => {
     setFormError(null);
 
     if (cart.length === 0) {
-      setFormError('कृपया बुकिंग कन्फर्म करने से पहले कम से कम 1 सर्विस Add to Cart करें। (Please add at least one service to your cart.)');
+      setFormError(
+        'कृपया बुकिंग कन्फर्म करने से पहले कम से कम 1 सर्विस Add to Cart करें। (Please add at least one service to your cart.)'
+      );
       return;
     }
 
     if (!customerName.trim() || !phone.trim()) {
-      setFormError('कृपया अपना नाम और मोबाइल नंबर दर्ज करें। (Please enter your Name and Mobile Number.)');
+      setFormError(
+        'कृपया अपना नाम और मोबाइल नंबर दर्ज करें। (Please enter your Name and Mobile Number.)'
+      );
+      return;
+    }
+
+    const cleanUtr = utrNumber.trim();
+    if (!cleanUtr && !paymentScreenshot) {
+      setFormError(
+        '⚠️ ₹99 एडवांस पेमेंट अनिवार्य (Mandatory) है! बिना पेमेंट के बुकिंग नहीं होती है। कृपया ₹99 पेमेंट करके उसका Screenshot अपलोड करें या UTR / Reference / Transaction ID दर्ज करें।'
+      );
+      return;
+    }
+
+    if (cleanUtr && cleanUtr.length < 4 && !paymentScreenshot) {
+      setFormError(
+        'कृपया सही UTR Number / Reference Number / Transaction ID दर्ज करें या पेमेंट का Screenshot अपलोड करें।'
+      );
       return;
     }
 
@@ -909,6 +989,11 @@ export const CustomerWebsite: React.FC = () => {
     const fullAddress = rawAddress.toLowerCase().includes(locality.toLowerCase())
       ? rawAddress
       : `${rawAddress}, ${locality}, Bengaluru`;
+
+    const proofNote = cleanUtr
+      ? `[₹99 Advance ${paymentProofType}: ${cleanUtr}]`
+      : '[₹99 Advance Screenshot Uploaded]';
+    const combinedNotes = [proofNote, specialNotes.trim()].filter(Boolean).join(' ');
 
     setIsSubmitting(true);
     try {
@@ -925,10 +1010,14 @@ export const CustomerWebsite: React.FC = () => {
         time: effectiveTime,
         itemsTotal: itemsSubtotal,
         discount: effectiveDiscount,
-        advancePaid: effectiveAdvance,
-        amountToCollect: remainingAmount,
-        notes: specialNotes.trim(),
-        status: 'Confirmed',
+        advancePaid: MANDATORY_ADVANCE_AMOUNT,
+        amountToCollect: Math.max(0, netPayable - MANDATORY_ADVANCE_AMOUNT),
+        notes: combinedNotes,
+        status: 'Pending Verification',
+        paymentStatus: 'Pending Verification',
+        utrNumber: cleanUtr || undefined,
+        paymentProofType: cleanUtr ? paymentProofType : 'Screenshot',
+        paymentScreenshot: paymentScreenshot || undefined,
         bookingSource: 'Customer Website',
         assignedTeam: [],
         badgeType: 'VISIT',
@@ -937,13 +1026,26 @@ export const CustomerWebsite: React.FC = () => {
       setIsSubmitting(false);
 
       if (!result.success || !result.booking) {
-        setFormError(result.error || 'Could not confirm booking. Please try another time slot.');
+        setFormError(
+          result.error || 'Could not submit booking. Please try another time slot.'
+        );
         return;
+      }
+
+      try {
+        localStorage.setItem(
+          'eden_roses_active_verification_booking_id',
+          result.booking.id
+        );
+      } catch {
+        // ignore
       }
 
       setCartDrawerOpen(false);
       setConfirmedBooking(result.booking);
       setCart([]);
+      setUtrNumber('');
+      setPaymentScreenshot('');
     } catch (err) {
       console.error('Booking error:', err);
       setIsSubmitting(false);
@@ -2738,31 +2840,180 @@ export const CustomerWebsite: React.FC = () => {
                   />
                 </div>
 
+                {/* PART 4: MANDATORY ₹99 ADVANCE PAYMENT & SCREENSHOT / UTR VERIFICATION */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#160824] text-[#FFF8EF] border-2 border-[#D6B77A] space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/15 pb-3">
+                    <div>
+                      <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#D6B77A] text-[#160824] text-[10px] font-extrabold uppercase tracking-wider mb-1">
+                        Mandatory Step · ₹99 Advance Payment
+                      </span>
+                      <h4 className="font-display text-lg sm:text-xl font-bold text-[#F5E2B8]">
+                        4. Pay ₹99 Advance to Confirm Slot
+                      </h4>
+                      <p className="text-xs text-white/80">
+                        बिना ₹99 एडवांस पेमेंट के बुकिंग नहीं होती है। QR स्कैन करके ₹99 पे करें और नीचे Screenshot या UTR/Ref/Transaction ID डालें।
+                      </p>
+                    </div>
+                    <div className="text-left sm:text-right shrink-0 bg-white/10 px-3.5 py-2 rounded-xl border border-[#D6B77A]/40">
+                      <span className="text-[10px] uppercase tracking-wider text-[#D6B77A] block font-bold">
+                        Advance Due Now
+                      </span>
+                      <span className="font-mono-num text-2xl font-extrabold text-[#F5E2B8]">
+                        ₹99
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* QR Code + UPI ID Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                    <div className="sm:col-span-5 flex flex-col items-center">
+                      <div className="w-44 sm:w-48 bg-white rounded-2xl p-2 shadow-lg border-2 border-[#D6B77A]">
+                        <img
+                          src={OFFICIAL_UPI_QR_IMAGE}
+                          alt="Scan to Pay Rs 99 UPI QR Code - Subha State Bank of India"
+                          className="w-full h-auto rounded-xl object-contain"
+                        />
+                      </div>
+                      <span className="text-[11px] text-[#D6B77A] font-bold mt-1.5">
+                        Scan with GPay, PhonePe, Paytm or Any UPI App
+                      </span>
+                    </div>
+
+                    <div className="sm:col-span-7 space-y-3 text-xs">
+                      <div className="p-3 rounded-xl bg-black/35 border border-white/15 space-y-1.5">
+                        <p className="text-[11px] text-white/70">
+                          Merchant / Account Name:{' '}
+                          <strong className="text-white">Subha (State Bank of India)</strong>
+                        </p>
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <span className="font-mono-num text-xs sm:text-sm font-bold text-[#F5E2B8] break-all">
+                            {OFFICIAL_UPI_ID}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleCopyUpiId}
+                            className="px-2.5 py-1 rounded-lg bg-[#D6B77A] text-[#160824] text-[11px] font-extrabold shrink-0 cursor-pointer"
+                          >
+                            {copiedUpi ? '✓ Copied' : 'Copy UPI ID'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <a
+                        href={OFFICIAL_UPI_PAY_LINK}
+                        className="tap-scale w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#E6C98F] via-[#D6B77A] to-[#C29B56] text-[#160824] font-extrabold text-xs flex items-center justify-center gap-2 shadow-md"
+                      >
+                        <span>Pay ₹99 Directly via UPI App</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </a>
+
+                      {/* Selectable Proof Type: UTR Number / Reference Number / Transaction ID */}
+                      <div className="space-y-2 pt-1">
+                        <label className="block text-[11px] font-bold text-[#F5E2B8]">
+                          Enter UTR Number / Reference Number / Transaction ID:
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {(
+                            [
+                              'UTR Number',
+                              'Reference Number',
+                              'Transaction ID',
+                            ] as const
+                          ).map((type) => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setPaymentProofType(type)}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                paymentProofType === type
+                                  ? 'bg-[#D6B77A] text-[#160824] border-[#D6B77A]'
+                                  : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/15'
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          value={utrNumber}
+                          onChange={(e) => setUtrNumber(e.target.value)}
+                          placeholder={`Enter ${paymentProofType} (e.g. 4312XXXXXXXX)`}
+                          className="w-full min-h-[40px] px-3 py-2 rounded-xl bg-white text-stone-900 font-mono-num text-xs font-bold placeholder:text-stone-400 border border-[#D6B77A]"
+                        />
+                      </div>
+
+                      {/* Upload Payment Screenshot */}
+                      <div className="space-y-1.5 pt-1">
+                        <label className="block text-[11px] font-bold text-[#F5E2B8]">
+                          Upload ₹99 Payment Screenshot (स्क्रीनशॉट अपलोड करें):
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="cursor-pointer px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-[#D6B77A]/60 text-[#F5E2B8] text-xs font-bold inline-flex items-center gap-1.5">
+                            <ImageIcon className="w-4 h-4 text-[#D6B77A]" />
+                            <span>
+                              {isUploadingScreenshot
+                                ? 'Uploading Screenshot...'
+                                : paymentScreenshot
+                                ? 'Change Payment Screenshot'
+                                : 'Upload Payment Screenshot'}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePaymentScreenshotUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          {paymentScreenshot && (
+                            <span className="text-[11px] text-emerald-300 font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Screenshot Attached
+                            </span>
+                          )}
+                        </div>
+
+                        {paymentScreenshot && (
+                          <div className="mt-2 flex items-center gap-3 bg-black/40 p-2 rounded-xl border border-emerald-400/40">
+                            <img
+                              src={paymentScreenshot}
+                              alt="Uploaded Payment Screenshot"
+                              className="w-14 h-14 rounded-lg object-cover border border-white/20 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-bold text-emerald-300">
+                                ✓ ₹99 Payment Screenshot Ready for Admin Verification
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setPaymentScreenshot('')}
+                                className="text-[10px] text-rose-300 underline mt-0.5 cursor-pointer"
+                              >
+                                Remove Screenshot
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="tap-scale flex-1 min-h-[50px] px-6 py-3.5 rounded-2xl glass-dark-royal text-[#D6B77A] text-sm sm:text-base font-extrabold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+                    disabled={isSubmitting || isUploadingScreenshot}
+                    className="tap-scale flex-1 min-h-[52px] px-6 py-3.5 rounded-2xl glass-dark-royal text-[#D6B77A] text-sm sm:text-base font-extrabold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer border border-[#D6B77A]/60"
                   >
-                    <CheckCircle2 className="w-5 h-5 text-[#D6B77A]" />
+                    <ShieldCheck className="w-5 h-5 text-[#D6B77A]" />
                     <span>
                       {isSubmitting
-                        ? 'Confirming Booking...'
-                        : `Confirm Booking Now (${totalCartItems} ${
+                        ? 'Sending to Admin for Verification...'
+                        : `Submit ₹99 Payment & Verify Booking (${totalCartItems} ${
                             totalCartItems === 1 ? 'Service' : 'Services'
-                          } · ₹${netPayable.toLocaleString('en-IN')})`}
+                          })`}
                     </span>
                   </button>
-
-                  <a
-                    href={whatsappInstantBookingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="tap-scale min-h-[50px] px-5 py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#1ebe5b] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 shadow-md"
-                  >
-                    <MessageCircle className="w-4 h-4 fill-current" />
-                    <span>Book Cart on WhatsApp</span>
-                  </a>
                 </div>
               </div>
             </form>
@@ -2870,12 +3121,12 @@ export const CustomerWebsite: React.FC = () => {
                     <span className="font-mono-num">-₹{effectiveDiscount}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-[#D6B77A] text-xs">
-                  <span>Advance Payment</span>
+                <div className="flex justify-between text-[#D6B77A] text-xs font-bold">
+                  <span>Mandatory Advance Payment (Due Now)</span>
                   <span className="font-mono-num">₹{effectiveAdvance}</span>
                 </div>
                 <div className="pt-2 border-t border-white/15 flex justify-between items-baseline font-bold text-base">
-                  <span>Payable at Appointment</span>
+                  <span>Balance Payable at Appointment</span>
                   <span className="font-mono-num text-lg text-[#D6B77A]">
                     ₹{remainingAmount}
                   </span>
@@ -4306,34 +4557,149 @@ export const CustomerWebsite: React.FC = () => {
                   />
                 </div>
 
+                {/* Mandatory ₹99 Advance Payment Block inside Cart Drawer */}
+                <div className="p-3.5 rounded-2xl bg-[#160824] text-[#FFF8EF] border border-[#D6B77A] space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/15 pb-2">
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#D6B77A] block">
+                        Mandatory Advance Payment
+                      </span>
+                      <span className="text-xs font-bold text-white">
+                        Pay ₹99 via QR / UPI to Book
+                      </span>
+                    </div>
+                    <span className="font-mono-num text-xl font-extrabold text-[#F5E2B8]">
+                      ₹99
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-white/5 p-2.5 rounded-xl">
+                    <img
+                      src={OFFICIAL_UPI_QR_IMAGE}
+                      alt="UPI QR Code"
+                      className="w-24 h-28 object-contain rounded-lg bg-white p-1 border border-[#D6B77A] shrink-0"
+                    />
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-[#F5E2B8]">
+                        Subha (SBI)
+                      </p>
+                      <p className="font-mono-num text-[11px] text-white/90 break-all">
+                        {OFFICIAL_UPI_ID}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleCopyUpiId}
+                          className="px-2 py-1 rounded-md bg-[#D6B77A] text-[#160824] text-[10px] font-extrabold cursor-pointer"
+                        >
+                          {copiedUpi ? '✓ Copied' : 'Copy UPI'}
+                        </button>
+                        <a
+                          href={OFFICIAL_UPI_PAY_LINK}
+                          className="px-2 py-1 rounded-md bg-emerald-500 text-white text-[10px] font-extrabold"
+                        >
+                          Open UPI App
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Proof Type Tabs */}
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-3 gap-1">
+                      {(
+                        [
+                          'UTR Number',
+                          'Reference Number',
+                          'Transaction ID',
+                        ] as const
+                      ).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setPaymentProofType(type)}
+                          className={`py-1 px-1.5 rounded-md text-[10px] font-bold border cursor-pointer ${
+                            paymentProofType === type
+                              ? 'bg-[#D6B77A] text-[#160824] border-[#D6B77A]'
+                              : 'bg-white/10 text-white/75 border-white/20'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={utrNumber}
+                      onChange={(e) => setUtrNumber(e.target.value)}
+                      placeholder={`Enter ${paymentProofType} *`}
+                      className="w-full min-h-[38px] px-2.5 py-1.5 rounded-xl bg-white text-stone-900 font-mono-num text-xs font-bold placeholder:text-stone-400"
+                    />
+                  </div>
+
+                  {/* Screenshot Upload */}
+                  <div className="space-y-1.5">
+                    <label className="cursor-pointer w-full py-2 px-3 rounded-xl bg-white/15 hover:bg-white/25 border border-[#D6B77A]/50 text-[#F5E2B8] text-xs font-bold flex items-center justify-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-[#D6B77A]" />
+                      <span>
+                        {isUploadingScreenshot
+                          ? 'Uploading Screenshot...'
+                          : paymentScreenshot
+                          ? '✓ Screenshot Attached (Tap to Change)'
+                          : 'Upload ₹99 Payment Screenshot'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePaymentScreenshotUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {paymentScreenshot && (
+                      <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-lg">
+                        <img
+                          src={paymentScreenshot}
+                          alt="Payment Screenshot"
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                        <span className="text-[10px] text-emerald-300 font-bold flex-1">
+                          Screenshot ready for Admin Panel verification
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="pt-2 border-t border-[#E6DAC8]/60 space-y-2">
-                  <div className="flex justify-between font-bold text-sm text-[#160824]">
-                    <span>Total Payable ({totalCartItems} items)</span>
-                    <span className="font-mono-num text-base">
+                  <div className="flex justify-between text-xs text-stone-600">
+                    <span>Total Bill ({totalCartItems} items)</span>
+                    <span className="font-mono-num font-bold text-[#160824]">
                       ₹{netPayable.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold text-xs text-emerald-800">
+                    <span>Mandatory Advance Paid Now</span>
+                    <span className="font-mono-num">₹99</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-sm text-[#160824]">
+                    <span>Balance Payable at Appointment</span>
+                    <span className="font-mono-num text-base">
+                      ₹{remainingAmount.toLocaleString('en-IN')}
                     </span>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingScreenshot}
                     className="tap-scale w-full py-3.5 rounded-xl glass-dark-royal text-[#D6B77A] font-extrabold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-[#D6B77A]" />
+                    <ShieldCheck className="w-4 h-4 text-[#D6B77A]" />
                     <span>
-                      {isSubmitting ? 'Confirming Booking...' : 'Confirm Booking Now'}
+                      {isSubmitting
+                        ? 'Sending to Admin Panel...'
+                        : 'Submit ₹99 Payment & Verify Booking'}
                     </span>
                   </button>
-
-                  <a
-                    href={whatsappInstantBookingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="tap-scale w-full py-3 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm"
-                  >
-                    <MessageCircle className="w-4 h-4 fill-current" />
-                    <span>Book Cart Directly on WhatsApp</span>
-                  </a>
                 </div>
               </form>
             </div>
@@ -4389,42 +4755,122 @@ export const CustomerWebsite: React.FC = () => {
         </div>
       )}
 
-      {/* BOOKING CONFIRMATION MODAL */}
-      {confirmedBooking && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="max-w-lg w-full glass-modal-sheet rounded-3xl p-6 sm:p-8 space-y-6 my-8">
-            <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
+      {/* REAL-TIME PAYMENT VERIFICATION WAITING SCREEN & APPROVED CONFIRMATION MODAL */}
+      {liveConfirmedBooking && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="max-w-lg w-full glass-modal-sheet rounded-3xl p-6 sm:p-8 space-y-6 my-8 border-2 border-[#D6B77A]">
+            {liveConfirmedBooking.paymentStatus === 'Pending Verification' ||
+            liveConfirmedBooking.status === 'Pending Verification' ? (
+              /* WAITING FOR ADMIN VERIFICATION LOADING STATE */
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-amber-500/15 border-2 border-amber-500 text-amber-700 flex items-center justify-center mx-auto relative">
+                  <div className="w-12 h-12 rounded-full border-3 border-amber-600 border-t-transparent animate-spin" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold">
+                  ⏳ Please Wait · Admin Verification in Progress
+                </span>
+                <h3 className="font-display text-2xl sm:text-3xl font-bold text-[#160824]">
+                  Verifying Your ₹99 Advance Payment...
+                </h3>
+                <p className="text-xs sm:text-sm text-stone-700 leading-relaxed bg-amber-50/90 p-3.5 rounded-2xl border border-amber-200">
+                  <strong>कृपया प्रतीक्षा करें (Please Wait):</strong> आपका ₹99 एडवांस पेमेंट और डिटेल्स{' '}
+                  <strong>Admin Panel</strong> में भेज दिए गए हैं। जैसे ही एडमिन आपका पेमेंट वेरीफाई और अप्रूव करेंगे, यह पेज अपने आप{' '}
+                  <strong className="text-emerald-700">
+                    &ldquo;Payment is Verified &amp; Approved by Admin Panel&rdquo;
+                  </strong>{' '}
+                  हो जाएगा!
+                </p>
+                <p className="font-mono-num text-sm font-bold text-[#D6B77A] glass-dark-royal inline-block px-4 py-1.5 rounded-xl">
+                  Booking ID: {liveConfirmedBooking.id}
+                </p>
               </div>
-              <p className="text-xs font-semibold tracking-widest text-[#8C4A56]">
-                Eden Roses Makeover · By {settings.artistName}
-              </p>
-              <h3 className="font-display text-3xl font-bold text-[#160824]">
-                Your Appointment Is Confirmed!
-              </h3>
-              <p className="font-mono-num text-sm font-bold text-[#D6B77A] glass-dark-royal inline-block px-4 py-1.5 rounded-xl">
-                Booking ID: {confirmedBooking.id}
-              </p>
-            </div>
+            ) : liveConfirmedBooking.paymentStatus === 'Rejected' ||
+              liveConfirmedBooking.status === 'Cancelled' ? (
+              /* PAYMENT REJECTED STATE */
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-full bg-red-500/15 border border-red-500/30 text-red-700 flex items-center justify-center mx-auto">
+                  <X className="w-8 h-8" />
+                </div>
+                <span className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-extrabold">
+                  Payment Verification Declined
+                </span>
+                <h3 className="font-display text-2xl sm:text-3xl font-bold text-red-900">
+                  Payment Not Verified by Admin
+                </h3>
+                <p className="text-xs text-stone-600">
+                  Your payment proof could not be verified. Please contact us on WhatsApp or call {primaryPhoneDisplay}.
+                </p>
+              </div>
+            ) : (
+              /* PAYMENT VERIFIED & APPROVED BY ADMIN PANEL STATE */
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 text-emerald-700 flex items-center justify-center mx-auto shadow-lg">
+                  <CheckCircle2 className="w-9 h-9" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold">
+                  ✓ Payment is Verified &amp; Approved by Admin Panel
+                </span>
+                <h3 className="font-display text-3xl font-bold text-[#160824]">
+                  Booking Approved &amp; Confirmed!
+                </h3>
+                <p className="text-xs text-emerald-800 font-semibold">
+                  आपका ₹99 एडवांस पेमेंट एडमिन पैनल द्वारा वेरीफाई और अप्रूव कर दिया गया है। आपकी बुकिंग कन्फर्म हो गई है!
+                </p>
+                <p className="font-mono-num text-sm font-bold text-[#D6B77A] glass-dark-royal inline-block px-4 py-1.5 rounded-xl">
+                  Booking ID: {liveConfirmedBooking.id}
+                </p>
+              </div>
+            )}
 
             <div className="glass-card rounded-2xl p-5 space-y-3 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-stone-600">Customer Name</span>
                 <span className="font-semibold text-[#160824]">
-                  {confirmedBooking.customerName}
+                  {liveConfirmedBooking.customerName}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-600">Date &amp; Time</span>
                 <span className="font-mono-num font-semibold text-[#160824]">
-                  {confirmedBooking.date} · {confirmedBooking.time}
+                  {liveConfirmedBooking.date} · {liveConfirmedBooking.time}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-stone-600 shrink-0">Service Location</span>
+                <span className="text-stone-600 shrink-0">Service Area</span>
                 <span className="font-medium text-[#160824] text-right">
-                  {confirmedBooking.address}
+                  {liveConfirmedBooking.address}
+                </span>
+              </div>
+
+              {liveConfirmedBooking.utrNumber && (
+                <div className="flex justify-between gap-4 pt-1 border-t border-[#E6DAC8]/50">
+                  <span className="text-stone-600">
+                    {liveConfirmedBooking.paymentProofType || 'UTR / Ref ID'}
+                  </span>
+                  <span className="font-mono-num font-bold text-[#160824]">
+                    {liveConfirmedBooking.utrNumber}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between gap-4">
+                <span className="text-stone-600">Payment Verification Status</span>
+                <span
+                  className={`font-bold ${
+                    liveConfirmedBooking.paymentStatus === 'Pending Verification' ||
+                    liveConfirmedBooking.status === 'Pending Verification'
+                      ? 'text-amber-700'
+                      : liveConfirmedBooking.paymentStatus === 'Rejected'
+                      ? 'text-red-700'
+                      : 'text-emerald-700'
+                  }`}
+                >
+                  {liveConfirmedBooking.paymentStatus === 'Pending Verification' ||
+                  liveConfirmedBooking.status === 'Pending Verification'
+                    ? '⏳ Waiting for Admin Approval'
+                    : liveConfirmedBooking.paymentStatus === 'Rejected'
+                    ? '❌ Declined'
+                    : '✅ Payment Verified & Approved'}
                 </span>
               </div>
 
@@ -4432,7 +4878,7 @@ export const CustomerWebsite: React.FC = () => {
                 <span className="text-xs font-semibold text-[#8C4A56] block mb-1.5">
                   Booked Services:
                 </span>
-                {confirmedBooking.services.map((s) => (
+                {liveConfirmedBooking.services.map((s) => (
                   <div key={s.id} className="flex justify-between text-xs py-0.5">
                     <span>
                       {s.name} × {s.quantity}
@@ -4444,32 +4890,23 @@ export const CustomerWebsite: React.FC = () => {
                 ))}
               </div>
 
-              {showBookingDetailsModal && (
-                <div className="pt-2 border-t border-[#E6DAC8]/60 text-xs space-y-1 text-stone-600">
-                  <p>Event Type: {confirmedBooking.eventType}</p>
-                  <p>Phone: {confirmedBooking.phone}</p>
-                  <p>Status: {confirmedBooking.status}</p>
-                  {confirmedBooking.notes && <p>Notes: {confirmedBooking.notes}</p>}
-                </div>
-              )}
-
               <div className="pt-3 border-t border-[#E6DAC8]/60 space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-stone-600">Total Amount</span>
+                  <span className="text-stone-600">Total Bill</span>
                   <span className="font-mono-num font-bold">
-                    ₹{confirmedBooking.itemsTotal - confirmedBooking.discount}
+                    ₹{liveConfirmedBooking.itemsTotal - liveConfirmedBooking.discount}
                   </span>
                 </div>
-                <div className="flex justify-between text-emerald-700">
-                  <span>Advance Payment</span>
-                  <span className="font-mono-num font-semibold">
-                    ₹{confirmedBooking.advancePaid}
+                <div className="flex justify-between text-emerald-700 font-bold">
+                  <span>Mandatory Advance Paid</span>
+                  <span className="font-mono-num">
+                    ₹{liveConfirmedBooking.advancePaid}
                   </span>
                 </div>
                 <div className="flex justify-between font-bold text-base text-[#160824] pt-1">
-                  <span>Remaining Amount</span>
+                  <span>Balance Payable at Appointment</span>
                   <span className="font-mono-num">
-                    ₹{confirmedBooking.amountToCollect}
+                    ₹{liveConfirmedBooking.amountToCollect}
                   </span>
                 </div>
               </div>
@@ -4477,36 +4914,30 @@ export const CustomerWebsite: React.FC = () => {
 
             <div className="space-y-2.5">
               <a
-                href={buildWhatsAppBookingUrl(confirmedBooking, settings.whatsappNumber)}
+                href={buildWhatsAppBookingUrl(liveConfirmedBooking, settings.whatsappNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md"
               >
                 <MessageCircle className="w-4 h-4 fill-current" />
-                <span>Send Booking on WhatsApp</span>
+                <span>Send Booking &amp; Payment Details on WhatsApp</span>
               </a>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowBookingDetailsModal((v) => !v)}
-                  className="py-3 rounded-xl glass-card text-stone-800 text-xs font-semibold cursor-pointer"
-                >
-                  {showBookingDetailsModal ? 'Hide Extra Details' : 'View Booking Details'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmedBooking(null);
-                    setShowBookingDetailsModal(false);
-                    setBookingStep(1);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="py-3 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-semibold cursor-pointer"
-                >
-                  Done
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('eden_roses_active_verification_booking_id');
+                  } catch {
+                    // ignore
+                  }
+                  setConfirmedBooking(null);
+                  setShowBookingDetailsModal(false);
+                }}
+                className="w-full py-3 rounded-xl glass-dark-royal text-[#D6B77A] text-xs font-semibold cursor-pointer"
+              >
+                Close Window
+              </button>
             </div>
           </div>
         </div>

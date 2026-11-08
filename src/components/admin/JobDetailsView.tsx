@@ -28,6 +28,8 @@ import {
   getServicesCatalog,
   getTeamMembers,
   updateBooking,
+  verifyBookingPayment,
+  rejectBookingPayment,
 } from '../../services/bookingStorage';
 
 interface JobDetailsViewProps {
@@ -508,6 +510,97 @@ export const JobDetailsView: React.FC<JobDetailsViewProps> = ({
               ₹{booking.amountToCollect}
             </span>
           </div>
+        </div>
+
+        {/* ₹99 ADVANCE PAYMENT VERIFICATION DETAILS (UTR / REF / SCREENSHOT) */}
+        <div
+          className={`mt-3 p-4 rounded-2xl border space-y-3 ${
+            booking.paymentStatus === 'Pending Verification' ||
+            booking.status === 'Pending Verification'
+              ? 'bg-amber-50 border-amber-300'
+              : booking.paymentStatus === 'Rejected'
+              ? 'bg-red-50 border-red-200'
+              : 'bg-emerald-50/70 border-emerald-200'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-stone-800">
+              ₹99 Advance Payment Proof &amp; Status
+            </span>
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                booking.paymentStatus === 'Pending Verification' ||
+                booking.status === 'Pending Verification'
+                  ? 'bg-amber-200 text-amber-900'
+                  : booking.paymentStatus === 'Rejected'
+                  ? 'bg-red-200 text-red-900'
+                  : 'bg-emerald-200 text-emerald-900'
+              }`}
+            >
+              {booking.paymentStatus === 'Pending Verification' ||
+              booking.status === 'Pending Verification'
+                ? '⏳ Pending Verification'
+                : booking.paymentStatus === 'Rejected'
+                ? '❌ Rejected'
+                : '✅ Verified & Approved'}
+            </span>
+          </div>
+
+          {booking.utrNumber && (
+            <div className="text-xs text-stone-800 bg-white p-2.5 rounded-xl border border-stone-200 flex items-center justify-between">
+              <span>
+                <strong>{booking.paymentProofType || 'UTR / Ref / Txn ID'}:</strong>{' '}
+                <span className="font-mono-num font-bold">{booking.utrNumber}</span>
+              </span>
+            </div>
+          )}
+
+          {booking.paymentScreenshot && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-bold text-stone-700">
+                Uploaded Payment Screenshot:
+              </p>
+              <a
+                href={booking.paymentScreenshot}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block max-w-xs rounded-xl overflow-hidden border-2 border-stone-300 bg-black"
+              >
+                <img
+                  src={booking.paymentScreenshot}
+                  alt="Customer Payment Screenshot"
+                  className="w-full max-h-64 object-contain"
+                />
+              </a>
+            </div>
+          )}
+
+          {(booking.paymentStatus === 'Pending Verification' ||
+            booking.status === 'Pending Verification') && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  await verifyBookingPayment(booking.id);
+                  onUpdated();
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>✓ Verify Payment &amp; Approve Booking</span>
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await rejectBookingPayment(booking.id);
+                  onUpdated();
+                }}
+                className="py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer"
+              >
+                Reject Payment
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

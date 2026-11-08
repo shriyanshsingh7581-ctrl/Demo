@@ -85,7 +85,9 @@
           "type": "string",
           "description": "Current workflow status of the booking",
           "enum": [
+            "Pending Verification",
             "Confirmed",
+            "Assigned",
             "Visit Scheduled",
             "Journey Started",
             "In Progress",
@@ -94,6 +96,27 @@
             "Reported"
           ],
           "maxLength": 40
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "Verification status of mandatory Rs 99 advance payment",
+          "enum": ["Pending Verification", "Verified", "Rejected"],
+          "maxLength": 40
+        },
+        "utrNumber": {
+          "type": "string",
+          "description": "UTR Number, Reference Number, or Transaction ID submitted by customer",
+          "maxLength": 100
+        },
+        "paymentProofType": {
+          "type": "string",
+          "description": "Type of payment reference submitted (UTR Number, Reference Number, Transaction ID)",
+          "maxLength": 50
+        },
+        "paymentScreenshot": {
+          "type": "string",
+          "description": "Uploaded payment screenshot URL or compressed DataURL",
+          "maxLength": 600000
         },
         "bookingSource": {
           "type": "string",

@@ -63,6 +63,10 @@ service cloud.firestore {
         'amountToCollect',
         'notes',
         'status',
+        'paymentStatus',
+        'utrNumber',
+        'paymentProofType',
+        'paymentScreenshot',
         'bookingSource',
         'assignedTeam',
         'createdAt',
@@ -92,6 +96,7 @@ service cloud.firestore {
       data.notes is string && data.notes.size() <= 1000 &&
       data.status is string && data.status.size() <= 40 &&
       data.status in [
+        'Pending Verification',
         'Confirmed',
         'Assigned',
         'Visit Scheduled',
@@ -101,6 +106,10 @@ service cloud.firestore {
         'Cancelled',
         'Reported'
       ] &&
+      (!('paymentStatus' in data) || (data.paymentStatus is string && data.paymentStatus in ['Pending Verification', 'Verified', 'Rejected'])) &&
+      (!('utrNumber' in data) || (data.utrNumber is string && data.utrNumber.size() <= 100)) &&
+      (!('paymentProofType' in data) || (data.paymentProofType is string && data.paymentProofType.size() <= 50)) &&
+      (!('paymentScreenshot' in data) || (data.paymentScreenshot is string && data.paymentScreenshot.size() <= 600000)) &&
       data.bookingSource is string && data.bookingSource.size() <= 40 &&
       data.bookingSource in [
         'Customer Website',
